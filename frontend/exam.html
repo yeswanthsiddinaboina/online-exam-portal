@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Exam Session</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- MediaPipe scripts for local real-time proctoring -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+    <!-- TensorFlow.js and COCO-SSD for Object/Mobile Phone Detection -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js" crossorigin="anonymous"></script>
+</head>
+<body style="background: #06070d;">
+    <!-- FULLSCREEN REQUIREMENT COVER -->
+    <div id="fullscreen-lockout" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #0b0c15; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; text-align: center; padding: 2rem;">
+        <div class="glass-panel" style="max-width: 480px;">
+            <div class="logo-icon" style="font-size: 3rem; margin-bottom: 1.5rem;">🔒</div>
+            <h2 style="margin-bottom: 1rem;">Fullscreen Mode Required</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 2rem; font-size: 0.95rem; line-height: 1.5;">
+                This exam is proctored. You must enter and maintain fullscreen mode. Exiting fullscreen or navigating away from this window will trigger security violations.
+            </p>
+            <button class="btn btn-primary" id="btn-enter-fullscreen" style="width: 100%;">Enter Fullscreen & Start Exam</button>
+        </div>
+    </div>
+
+    <div class="container" style="padding: 1.5rem; display: flex; flex-direction: column; height: 100vh;">
+        <!-- Header -->
+        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 1rem;">
+            <div>
+                <h3 id="exam-title" style="font-weight: 700;">Loading Examination...</h3>
+                <span id="save-status" style="font-size: 0.8rem; color: var(--accent-success); font-weight: 500;">✓ Autosaved</span>
+            </div>
+            <div class="glass-panel" style="padding: 0.5rem 1.5rem; border-radius: 8px; font-family: var(--font-heading); font-weight: 700; font-size: 1.5rem; color: var(--accent-primary);" id="timer-display">
+                00:00
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="exam-layout">
+            <!-- Left: Question Workspace -->
+            <section class="question-area glass-panel" style="padding: 2rem; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <h4 id="question-number" style="color: var(--text-secondary); margin-bottom: 0.75rem; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.05em;">Question - of -</h4>
+                    <p id="question-text" style="font-size: 1.15rem; line-height: 1.6; margin-bottom: 2rem; font-weight: 500;">Loading question content...</p>
+                    
+                    <div id="options-container">
+                        <!-- Dynamic options checkbox/radio items -->
+                    </div>
+                </div>
+                
+                <!-- Navigation controls -->
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-glass); padding-top: 1.5rem; margin-top: 2rem;">
+                    <button class="btn btn-secondary" id="btn-prev" onclick="navigatePrev()">Previous</button>
+                    <button class="btn btn-secondary" id="btn-mark" onclick="toggleMarkReview()" style="border-color: var(--accent-warning); color: var(--accent-warning);">Mark for Review</button>
+                    <button class="btn btn-secondary" id="btn-next" onclick="navigateNext()">Next</button>
+                    <button class="btn btn-danger" id="btn-submit" onclick="confirmSubmit()">Submit Exam</button>
+                </div>
+            </section>
+
+            <!-- Right: Proctoring sidebar -->
+            <aside class="proctor-sidebar">
+                <div class="glass-panel" style="padding: 1rem; text-align: center;">
+                    <div class="video-feed-wrapper">
+                        <video id="webcam-feed" autoplay playsinline muted></video>
+                        <canvas id="proctor-canvas" class="canvas-overlay"></canvas>
+                        <div class="proctor-status-indicator" style="flex-direction: column; gap: 4px; align-items: flex-start; padding: 0.5rem 0.8rem; border-radius: 6px; width: calc(100% - 24px); box-sizing: border-box;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div class="status-dot" id="proctor-dot"></div>
+                                <span id="proctor-text" style="font-weight: 600; font-size: 13px;">Proctoring Active</span>
+                            </div>
+                            <span id="detection-model-status" style="font-size: 11px; font-weight: 500; opacity: 0.85; display: inline-block;">📱 Detector: Loading Model...</span>
+                        </div>
+                    </div>
+                    <div id="proctor-debug-console" style="margin-top: 10px; font-size: 10px; font-family: monospace; color: #a1a1aa; background: rgba(0,0,0,0.4); border-radius: 6px; padding: 6px 10px; text-align: left; max-height: 80px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.05); line-height: 1.4; word-break: break-all;">
+                        [SYSTEM] Initializing logs...
+                    </div>
+                </div>
+
+                <div class="glass-panel" style="padding: 1.25rem; flex-grow: 1;">
+                    <h4 style="margin-bottom: 1rem; font-size: 1rem;">Questions Overview</h4>
+                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem;" id="nav-matrix">
+                        <!-- Exam matrix buttons -->
+                    </div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <!-- WARNING NOTIFICATION MODAL -->
+    <div class="modal-backdrop" id="warning-modal">
+        <div class="glass-panel modal-content alert-warning" style="text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+            <h3 style="margin-bottom: 1rem; color: var(--accent-warning);">Security Warning</h3>
+            <p id="warning-message" style="line-height: 1.6; margin-bottom: 1.5rem; color: var(--text-primary); font-size: 0.95rem;">
+                Warning: Examination policy violation detected. Please remain focused on the examination environment.
+            </p>
+            <button class="btn btn-primary" onclick="dismissWarningModal()">Acknowledge</button>
+        </div>
+    </div>
+
+    <!-- TERMINATION MODAL -->
+    <div class="modal-backdrop" id="termination-modal">
+        <div class="glass-panel modal-content alert-danger" style="text-align: center; max-width: 450px;">
+            <div style="font-size: 4rem; margin-bottom: 1rem;">🚫</div>
+            <h3 style="margin-bottom: 1rem; color: var(--accent-danger);">Exam Terminated</h3>
+            <p id="termination-message" style="line-height: 1.6; margin-bottom: 2rem; color: var(--text-primary);">
+                Your examination has been terminated because the permitted violation threshold was exceeded.
+            </p>
+            <a href="#" class="btn btn-danger" onclick="redirectToDashboard(); return false;" style="width: 100%; display: block; text-decoration: none; box-sizing: border-box; text-align: center;">Return to Dashboard</a>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        checkAuth("student");
+
+        // Assert attempt exists
+        if (!currentAttemptId || !currentSessionToken) {
+            window.location.href = "dashboard.html";
+        }
+
+        let questions = [];
+        let currentIndex = 0;
+        let selectedAnswersMap = {}; // Maps question_id to selected answers array
+        let textAnswersMap = {}; // Maps question_id to text answer string
+        let reviewSet = new Set();
+        let timeRemaining = 0;
+        let aiCamera = null;
+
+        // Enter Fullscreen Enforcer
+        document.getElementById("btn-enter-fullscreen").addEventListener("click", () => {
+            document.documentElement.requestFullscreen().then(() => {
+                document.getElementById("fullscreen-lockout").style.display = "none";
+                initializeExam();
+            }).catch(err => {
+                alert("Fullscreen authorization failed. Please allow fullscreen permission.");
+            });
+        });
+
+        // Initialize exam session on screen lock
+        async function initializeExam() {
+            // Load examination questions
+            const res = await API.get(`/exams/${localStorage.getItem("selected_exam_id") || 1}/questions`);
+            if (res.success) {
+                questions = res.questions;
+                
+                // Initialize responses map
+                questions.forEach(q => {
+                    selectedAnswersMap[q.id] = [];
+                    textAnswersMap[q.id] = "";
+                });
+                
+                // Load metadata
+                const metadataRes = await API.get(`/exams/${localStorage.getItem("selected_exam_id") || 1}`);
+                if (metadataRes.success) {
+                    document.getElementById("exam-title").innerText = metadataRes.exam.title;
+                }
+
+                // Render first question
+                renderQuestion();
+                renderMatrix();
+
+                // Setup Sandbox & local AI
+                setupSecuritySandbox();
+                setupWebcamProctoring();
+
+                // Start threads
+                startHeartbeat();
+                startLocalTimer();
+            } else {
+                alert("Failed to load examination questions.");
+                redirectToDashboard();
+            }
+        }
+
+        function renderQuestion() {
+            if (questions.length === 0) return;
+            const q = questions[currentIndex];
+            
+            document.getElementById("question-number").innerText = `Question ${currentIndex + 1} of ${questions.length}`;
+            document.getElementById("question-text").innerText = q.question_text;
+            
+            const container = document.getElementById("options-container");
+            container.innerHTML = "";
+
+            if (q.question_type === "MCQ" || q.question_type === "TF") {
+                q.options.forEach(opt => {
+                    const isSelected = selectedAnswersMap[q.id].includes(opt.option_letter);
+                    const div = document.createElement("div");
+                    div.className = `option-item ${isSelected ? 'selected' : ''}`;
+                    div.innerHTML = `
+                        <input type="checkbox" class="option-checkbox" ${isSelected ? 'checked' : ''}>
+                        <span style="font-weight: 600; margin-right: 0.5rem;">${opt.option_letter}.</span>
+                        <span>${opt.option_text}</span>
+                    `;
+                    
+                    div.addEventListener("click", () => handleOptionSelection(opt.option_letter, div));
+                    container.appendChild(div);
+                });
+            } else if (q.question_type === "SHORT_ANSWER") {
+                const textarea = document.createElement("textarea");
+                textarea.className = "form-control";
+                textarea.rows = 5;
+                textarea.placeholder = "Type your answer here...";
+                textarea.value = textAnswersMap[q.id];
+                textarea.addEventListener("input", (e) => {
+                    textAnswersMap[q.id] = e.target.value;
+                    triggerAutoSave();
+                });
+                container.appendChild(textarea);
+            }
+
+            // Update Nav state
+            document.getElementById("btn-prev").disabled = currentIndex === 0;
+            document.getElementById("btn-next").disabled = currentIndex === questions.length - 1;
+            
+            const markBtn = document.getElementById("btn-mark");
+            if (reviewSet.has(q.id)) {
+                markBtn.innerText = "Unmark Review";
+                markBtn.style.background = "rgba(245, 158, 11, 0.1)";
+            } else {
+                markBtn.innerText = "Mark for Review";
+                markBtn.style.background = "transparent";
+            }
+        }
+
+        function handleOptionSelection(letter, element) {
+            const q = questions[currentIndex];
+            const checkbox = element.querySelector(".option-checkbox");
+            
+            if (selectedAnswersMap[q.id].includes(letter)) {
+                selectedAnswersMap[q.id] = selectedAnswersMap[q.id].filter(l => l !== letter);
+                element.classList.remove("selected");
+                checkbox.checked = false;
+            } else {
+                // If single option MCQ, clear others
+                if (q.question_type === "TF" || q.question_type === "MCQ") {
+                    selectedAnswersMap[q.id] = [letter];
+                    const items = document.querySelectorAll(".option-item");
+                    items.forEach(el => el.classList.remove("selected"));
+                    const checkBoxes = document.querySelectorAll(".option-checkbox");
+                    checkBoxes.forEach(cb => cb.checked = false);
+                } else {
+                    selectedAnswersMap[q.id].push(letter);
+                }
+                element.classList.add("selected");
+                checkbox.checked = true;
+            }
+            
+            triggerAutoSave();
+            renderMatrix();
+        }
+
+        function renderMatrix() {
+            const container = document.getElementById("nav-matrix");
+            container.innerHTML = questions.map((q, idx) => {
+                let statusClass = "btn-secondary";
+                const isSelected = selectedAnswersMap[q.id].length > 0 || textAnswersMap[q.id] !== "";
+                const isReview = reviewSet.has(q.id);
+
+                if (currentIndex === idx) {
+                    statusClass = "btn-primary";
+                } else if (isReview) {
+                    statusClass = "btn-secondary"; // styled amber in inline styles
+                } else if (isSelected) {
+                    statusClass = "btn-secondary";
+                }
+                
+                let inlineStyle = "";
+                if (isReview) {
+                    inlineStyle = "border-color: var(--accent-warning); color: var(--accent-warning);";
+                } else if (isSelected && currentIndex !== idx) {
+                    inlineStyle = "border-color: var(--accent-success); color: var(--accent-success);";
+                }
+                
+                return `
+                    <button class="btn ${statusClass}" style="padding: 0.5rem; font-size: 0.9rem; justify-content: center; ${inlineStyle}" onclick="jumpToQuestion(${idx})">
+                        ${idx + 1}
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function jumpToQuestion(idx) {
+            currentIndex = idx;
+            renderQuestion();
+            renderMatrix();
+        }
+
+        function navigateNext() {
+            if (currentIndex < questions.length - 1) {
+                currentIndex++;
+                renderQuestion();
+                renderMatrix();
+            }
+        }
+
+        function navigatePrev() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                renderQuestion();
+                renderMatrix();
+            }
+        }
+
+        function toggleMarkReview() {
+            const q = questions[currentIndex];
+            if (reviewSet.has(q.id)) {
+                reviewSet.delete(q.id);
+            } else {
+                reviewSet.add(q.id);
+            }
+            renderQuestion();
+            renderMatrix();
+        }
+
+        // Auto Save Trigger (Immediate API Post)
+        let saveTimeout = null;
+        function triggerAutoSave() {
+            document.getElementById("save-status").innerText = "Saving...";
+            document.getElementById("save-status").style.color = "var(--text-secondary)";
+            
+            if (saveTimeout) clearTimeout(saveTimeout);
+            
+            saveTimeout = setTimeout(async () => {
+                const q = questions[currentIndex];
+                const res = await API.post(`/attempts/${currentAttemptId}/answer`, {
+                    session_token: currentSessionToken,
+                    question_id: q.id,
+                    selected_answers: selectedAnswersMap[q.id],
+                    text_answer: textAnswersMap[q.id]
+                });
+                
+                if (res.success) {
+                    document.getElementById("save-status").innerText = "✓ Autosaved";
+                    document.getElementById("save-status").style.color = "var(--accent-success)";
+                } else {
+                    document.getElementById("save-status").innerText = "⚠ Save Connection Error";
+                    document.getElementById("save-status").style.color = "var(--accent-danger)";
+                }
+            }, 1000);
+        }
+
+        // Setup browser focus/fullscreen security locks
+        function setupSecuritySandbox() {
+            SandboxEnforcer.init(currentAttemptId, currentSessionToken, showWarningModal, triggerTermination);
+        }
+
+        // Setup MediaPipe webcam streams
+        async function setupWebcamProctoring() {
+            const video = document.getElementById("webcam-feed");
+            const canvas = document.getElementById("proctor-canvas");
+            
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 400, height: 300 } });
+                video.srcObject = stream;
+                
+                AIProctorEngine.init(video, canvas, currentAttemptId, currentSessionToken, showWarningModal, triggerTermination);
+                AIProctorEngine.start();
+            } catch (e) {
+                console.error("Webcam init error:", e);
+                // Report Camera failure event
+                SandboxEnforcer.reportInfrac("CAMERA_FAILURE");
+            }
+        }
+
+        // Heartbeat thread (executes every 5 seconds)
+        function startHeartbeat() {
+            heartbeatTimer = setInterval(async () => {
+                const isFullscreen = !!document.fullscreenElement;
+                const visibility = document.visibilityState;
+
+                const res = await API.post("/exam/heartbeat", {
+                    attempt_id: currentAttemptId,
+                    session_token: currentSessionToken,
+                    fullscreen_active: isFullscreen,
+                    visibility_state: visibility
+                });
+
+                if (res.success) {
+                    timeRemaining = res.time_remaining_seconds;
+                    
+                    if (res.status === "MALPRACTICE_CANCELLED") {
+                        triggerTermination(res.message);
+                        return;
+                    }
+                    
+                    if (res.action === "TERMINATE") {
+                        triggerTermination(res.message);
+                    } else if (res.action === "WARNING") {
+                        showWarningModal(res.message, res.violation_log_id);
+                    }
+                } else if (res.error_code === "SESSION_EXPIRED") {
+                    triggerTermination("Your examination session has expired.");
+                }
+            }, 5000);
+        }
+
+        // Local UI Countdown Clock
+        function startLocalTimer() {
+            examTimer = setInterval(() => {
+                if (timeRemaining <= 0) return;
+                
+                timeRemaining--;
+                
+                const minutes = Math.floor(timeRemaining / 60);
+                const seconds = timeRemaining % 60;
+                
+                document.getElementById("timer-display").innerText = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (timeRemaining <= 300) { // Under 5 minutes remaining, color timer crimson
+                    document.getElementById("timer-display").style.color = "var(--accent-danger)";
+                }
+            }, 1000);
+        }
+
+        function showWarningModal(message, logId) {
+            document.getElementById("warning-message").innerText = message;
+            document.getElementById("warning-modal").classList.add("active");
+            
+            // Turn status indicator amber
+            document.getElementById("proctor-dot").className = "status-dot danger";
+            document.getElementById("proctor-text").innerText = "Warning Triggered";
+        }
+
+        function dismissWarningModal() {
+            document.getElementById("warning-modal").classList.remove("active");
+            document.getElementById("proctor-dot").className = "status-dot";
+            document.getElementById("proctor-text").innerText = "Proctoring Active";
+            // Clear proctoring event cooldowns so lingering violations are caught immediately
+            if (typeof AIProctorEngine !== "undefined") {
+                AIProctorEngine.lastEventTimes = {};
+            }
+        }
+
+        function triggerTermination(message) {
+            clearInterval(heartbeatTimer);
+            clearInterval(examTimer);
+            if (aiCamera) AIProctorEngine.stop();
+            SandboxEnforcer.destroy();
+            SystemPreCheck.releaseMedia();
+            
+            document.getElementById("termination-message").innerText = message;
+            document.getElementById("termination-modal").classList.add("active");
+            
+            // Disable interactions
+            document.querySelectorAll("button").forEach(btn => btn.disabled = true);
+            document.getElementById("btn-enter-fullscreen").disabled = true;
+        }
+
+        function redirectToDashboard() {
+            localStorage.removeItem("attempt_id");
+            localStorage.removeItem("session_token");
+            window.location.href = "dashboard.html";
+        }
+
+        async function confirmSubmit() {
+            if (confirm("Are you sure you want to submit your examination answers?")) {
+                clearInterval(heartbeatTimer);
+                clearInterval(examTimer);
+                SandboxEnforcer.destroy();
+                SystemPreCheck.releaseMedia();
+                
+                const res = await API.post(`/attempts/${currentAttemptId}/submit`, {
+                    session_token: currentSessionToken
+                });
+
+                if (res.success) {
+                    alert("Examination submitted successfully. Loading results...");
+                    localStorage.setItem("last_evaluated_attempt_id", currentAttemptId);
+                    window.location.href = "result.html";
+                } else {
+                    alert(res.message || "Failed to submit exam.");
+                }
+            }
+        }
+    </script>
+</body>
+</html>

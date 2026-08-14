@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Exam System - Manage Questions</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="#" class="nav-brand">🛡️ SECURE EXAM (ADMIN)</a>
+        <div class="nav-links">
+            <a href="dashboard.html" class="nav-link">Dashboard</a>
+            <a href="exams.html" class="nav-link">Manage Exams</a>
+            <a href="violations.html" class="nav-link">Violations</a>
+            <span id="user-display" style="color: var(--text-secondary); font-size: 0.95rem; font-weight: 500;"></span>
+            <a href="#" class="nav-link" onclick="handleLogout()">Sign Out</a>
+        </div>
+    </nav>
+
+    <div class="container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+        <!-- Left: Question bank view -->
+        <div class="glass-panel">
+            <h3 style="margin-bottom: 1rem;" id="questions-header">Exam Questions</h3>
+            <div id="questions-list" style="display: flex; flex-direction: column; gap: 1rem; max-height: 70vh; overflow-y: auto; padding-right: 0.5rem;">
+                <p style="color: var(--text-secondary);">Select an exam to view questions.</p>
+            </div>
+        </div>
+
+        <!-- Right: Manual Add & Bulk CSV upload -->
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <!-- Bulk Upload -->
+            <div class="glass-panel" style="border-color: var(--accent-secondary);">
+                <h3 style="margin-bottom: 1rem;">Bulk Import via CSV</h3>
+                <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.4; margin-bottom: 1.5rem;">
+                    Import questions rapidly using a template CSV. Headers must contain: <br>
+                    <code>question</code>, <code>option_a</code>, <code>option_b</code>, <code>option_c</code>, <code>option_d</code>, <code>correct_answer</code>, <code>marks</code>
+                </p>
+                
+                <form id="upload-csv-form">
+                    <div class="form-group">
+                        <label class="form-label" for="csv-file">Select CSV File</label>
+                        <input class="form-control" type="file" id="csv-file" accept=".csv" required>
+                    </div>
+                    <button class="btn btn-primary" type="submit" style="width: 100%;">Upload & Parse Questions</button>
+                </form>
+            </div>
+
+            <!-- Manual Add -->
+            <div class="glass-panel">
+                <h3 style="margin-bottom: 1.5rem;">Add Question Manually</h3>
+                
+                <form id="manual-question-form">
+                    <div class="form-group">
+                        <label class="form-label" for="question-text">Question Text</label>
+                        <textarea class="form-control" id="question-text" rows="3" placeholder="What is the time complexity of binary search?" required></textarea>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label" for="question-type">Question Type</label>
+                            <select class="form-control" id="question-type" style="background: rgba(15, 17, 28, 0.8);">
+                                <option value="MCQ">Multiple Choice (MCQ)</option>
+                                <option value="TF">True/False</option>
+                                <option value="SHORT_ANSWER">Short Text Answer</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="marks">Marks Allocation</label>
+                            <input class="form-control" type="number" id="marks" value="1.0" step="0.5" required>
+                        </div>
+                    </div>
+
+                    <!-- MCQ Options inputs (hidden if short answer) -->
+                    <div id="mcq-options-panel">
+                        <h4 style="margin-bottom: 1rem; font-size: 0.95rem; color: var(--accent-primary);">Options Configuration</h4>
+                        <div class="form-group" style="margin-bottom: 0.75rem;">
+                            <input class="form-control" type="text" id="opt-a" placeholder="Option A description">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0.75rem;">
+                            <input class="form-control" type="text" id="opt-b" placeholder="Option B description">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0.75rem;">
+                            <input class="form-control" type="text" id="opt-c" placeholder="Option C description">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 1.5rem;">
+                            <input class="form-control" type="text" id="opt-d" placeholder="Option D description">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="correct-answer">Correct Answer Key</label>
+                        <input class="form-control" type="text" id="correct-answer" placeholder="A (or True / response text)" required>
+                    </div>
+
+                    <button class="btn btn-primary" type="submit" style="width: 100%;">Save Question</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script>
+        checkAuth("admin");
+        document.getElementById("user-display").innerText = `Admin: ${currentUser.first_name}`;
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const examId = urlParams.get("exam_id");
+
+        if (!examId) {
+            window.location.href = "exams.html";
+        }
+
+        async function loadExamQuestions() {
+            // Load exam title first
+            const examRes = await API.get(`/exams/${examId}`);
+            if (examRes.success) {
+                document.getElementById("questions-header").innerText = `Questions: ${examRes.exam.title}`;
+            }
+
+            const res = await API.get(`/exams/${examId}/questions`);
+            const list = document.getElementById("questions-list");
+            if (res.success) {
+                if (res.questions.length > 0) {
+                    list.innerHTML = res.questions.map((q, idx) => `
+                        <div class="glass-panel" style="padding: 1.25rem; background: rgba(255, 255, 255, 0.01);">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--text-secondary);">
+                                <strong>Question ${idx + 1} (${q.question_type})</strong>
+                                <span>Marks: ${q.marks}</span>
+                            </div>
+                            <p style="margin-bottom: 1rem; font-weight: 500;">${q.question_text}</p>
+                            
+                            ${q.question_type === 'MCQ' ? `
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem; font-size: 0.85rem;">
+                                    ${q.options.map(opt => `<div><strong>${opt.option_letter}.</strong> ${opt.option_text}</div>`).join('')}
+                                </div>
+                            ` : ''}
+                            
+                            <div style="border-top: 1px solid var(--border-glass); padding-top: 0.75rem; font-size: 0.85rem; display: flex; justify-content: space-between;">
+                                <span>Correct Answer: <strong style="color: var(--accent-success);">${q.correct_answer}</strong></span>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    list.innerHTML = `<p style="color: var(--text-secondary);">No questions added to this examination yet.</p>`;
+                }
+            }
+        }
+
+        // Toggle options inputs based on question type selected
+        document.getElementById("question-type").addEventListener("change", function(e) {
+            const val = e.target.value;
+            const mcqPanel = document.getElementById("mcq-options-panel");
+            const correctAns = document.getElementById("correct-answer");
+            
+            if (val === "MCQ") {
+                mcqPanel.style.display = "block";
+                correctAns.placeholder = "A";
+                document.getElementById("opt-a").required = true;
+                document.getElementById("opt-b").required = true;
+            } else if (val === "TF") {
+                mcqPanel.style.display = "none";
+                correctAns.placeholder = "True";
+                clearRequiredOptions();
+            } else {
+                mcqPanel.style.display = "none";
+                correctAns.placeholder = "Exact match text";
+                clearRequiredOptions();
+            }
+        });
+
+        function clearRequiredOptions() {
+            document.getElementById("opt-a").required = false;
+            document.getElementById("opt-b").required = false;
+        }
+
+        document.getElementById("manual-question-form").addEventListener("submit", async function(e) {
+            e.preventDefault();
+            
+            const question_text = document.getElementById("question-text").value;
+            const question_type = document.getElementById("question-type").value;
+            const correct_answer = document.getElementById("correct-answer").value;
+            const marks = parseFloat(document.getElementById("marks").value);
+            
+            const options = [];
+            if (question_type === "MCQ") {
+                options.push(
+                    { letter: "A", text: document.getElementById("opt-a").value },
+                    { letter: "B", text: document.getElementById("opt-b").value }
+                );
+                
+                const valC = document.getElementById("opt-c").value;
+                const valD = document.getElementById("opt-d").value;
+                if (valC) options.push({ letter: "C", text: valC });
+                if (valD) options.push({ letter: "D", text: valD });
+            }
+
+            const res = await API.post(`/exams/${examId}/questions`, {
+                question_text,
+                question_type,
+                correct_answer,
+                marks,
+                options
+            });
+
+            if (res.success) {
+                alert("Question added successfully.");
+                document.getElementById("manual-question-form").reset();
+                document.getElementById("question-type").dispatchEvent(new Event("change"));
+                loadExamQuestions();
+            } else {
+                alert(res.message || "Failed to save question.");
+            }
+        });
+
+        // Bulk CSV Upload Form Submission
+        document.getElementById("upload-csv-form").addEventListener("submit", async function(e) {
+            e.preventDefault();
+            
+            const fileInput = document.getElementById("csv-file");
+            if (fileInput.files.length === 0) return;
+            
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+            
+            const res = await API.upload(`/exams/${examId}/questions/upload`, formData);
+            if (res.success) {
+                alert(res.message);
+                document.getElementById("upload-csv-form").reset();
+                loadExamQuestions();
+            } else {
+                alert(res.message || "Import failed.");
+            }
+        });
+
+        loadExamQuestions();
+    </script>
+</body>
+</html>

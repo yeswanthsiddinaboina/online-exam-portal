@@ -1,0 +1,781 @@
+[2026-08-13 10:46:15,618] INFO in evaluation (Line 78): Evaluated attempt 1: Score=2.0/2.0 (100.00%) Pass=True
+[2026-08-13 10:46:15,687] INFO in evaluation (Line 78): Evaluated attempt 1: Score=0.0/2.0 (0.00%) Pass=False
+[2026-08-13 10:46:17,236] INFO in auth (Line 130): User logged in: student@test.com
+[2026-08-13 10:46:19,526] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 1/3, Action: WARNING
+[2026-08-13 10:46:19,530] INFO in violation_engine (Line 56): Deduplicated event HEAD_TURN for attempt 1 (elapsed: 0.0s)
+[2026-08-13 10:46:20,794] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 1/2, Action: WARNING
+[2026-08-13 10:46:20,801] INFO in violation_engine (Line 56): Deduplicated event TAB_SWITCH for attempt 1 (elapsed: 0.0s)
+[2026-08-13 11:03:12,005] INFO in evaluation (Line 78): Evaluated attempt 1: Score=2.0/2.0 (100.00%) Pass=True
+[2026-08-13 11:03:12,029] INFO in evaluation (Line 78): Evaluated attempt 1: Score=0.0/2.0 (0.00%) Pass=False
+[2026-08-13 11:03:13,528] INFO in auth (Line 130): User logged in: student@test.com
+[2026-08-13 11:03:15,820] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 1/3, Action: WARNING
+[2026-08-13 11:03:15,825] INFO in violation_engine (Line 56): Deduplicated event HEAD_TURN for attempt 1 (elapsed: 0.0s)
+[2026-08-13 11:03:16,909] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 1/2, Action: WARNING
+[2026-08-13 11:03:16,919] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 2/2, Action: TERMINATE
+[2026-08-13 11:46:37,133] INFO in evaluation (Line 78): Evaluated attempt 1: Score=2.0/2.0 (100.00%) Pass=True
+[2026-08-13 11:46:37,148] INFO in evaluation (Line 78): Evaluated attempt 1: Score=0.0/2.0 (0.00%) Pass=False
+[2026-08-13 11:46:38,773] INFO in auth (Line 130): User logged in: student@test.com
+[2026-08-13 11:46:41,075] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 1/3, Action: WARNING
+[2026-08-13 11:46:41,080] INFO in violation_engine (Line 56): Deduplicated event HEAD_TURN for attempt 1 (elapsed: 0.0s)
+[2026-08-13 11:46:42,233] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 1/2, Action: WARNING
+[2026-08-13 11:46:42,248] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 2/2, Action: TERMINATE
+[2026-08-13 11:47:19,037] WARNING in app (Line 50): HTTPException: 404 - The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+[2026-08-13 11:47:19,125] WARNING in app (Line 50): HTTPException: 404 - The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+[2026-08-13 11:48:48,349] INFO in evaluation (Line 78): Evaluated attempt 1: Score=2.0/2.0 (100.00%) Pass=True
+[2026-08-13 11:48:48,365] INFO in evaluation (Line 78): Evaluated attempt 1: Score=0.0/2.0 (0.00%) Pass=False
+[2026-08-13 11:48:49,760] INFO in auth (Line 130): User logged in: student@test.com
+[2026-08-13 11:48:51,985] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 1/3, Action: WARNING
+[2026-08-13 11:48:51,992] INFO in violation_engine (Line 56): Deduplicated event HEAD_TURN for attempt 1 (elapsed: 0.0s)
+[2026-08-13 11:48:53,111] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 1/2, Action: WARNING
+[2026-08-13 11:48:53,127] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 2/2, Action: TERMINATE
+[2026-08-13 11:51:54,673] ERROR in app (Line 64): Unhandled Exception: (sqlite3.OperationalError) no such table: users
+[SQL: SELECT users.id AS users_id, users.email AS users_email, users.password_hash AS users_password_hash, users.first_name AS users_first_name, users.last_name AS users_last_name, users.role AS users_role, users.created_at AS users_created_at 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('yeswanth5922@gmail.com', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+Traceback (most recent call last):
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+sqlite3.OperationalError: no such table: users
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\secure-exam-system\backend\routes\auth.py", line 34, in register
+    existing_user = User.query.filter_by(email=email).first()
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\query.py", line 2766, in first
+    return self.limit(1)._iter().first()  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\query.py", line 2864, in _iter
+    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
+                                                  ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\session.py", line 2373, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\session.py", line 2271, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1421, in execute
+    return meth(
+           ^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\sql\elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1643, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1848, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1988, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 2365, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such table: users
+[SQL: SELECT users.id AS users_id, users.email AS users_email, users.password_hash AS users_password_hash, users.first_name AS users_first_name, users.last_name AS users_last_name, users.role AS users_role, users.created_at AS users_created_at 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('yeswanth5922@gmail.com', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+[2026-08-13 11:52:04,835] ERROR in app (Line 64): Unhandled Exception: (sqlite3.OperationalError) no such table: users
+[SQL: SELECT users.id AS users_id, users.email AS users_email, users.password_hash AS users_password_hash, users.first_name AS users_first_name, users.last_name AS users_last_name, users.role AS users_role, users.created_at AS users_created_at 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('yeswanth5922@gmail.com', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+Traceback (most recent call last):
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+sqlite3.OperationalError: no such table: users
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\secure-exam-system\backend\routes\auth.py", line 34, in register
+    existing_user = User.query.filter_by(email=email).first()
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\query.py", line 2766, in first
+    return self.limit(1)._iter().first()  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\query.py", line 2864, in _iter
+    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
+                                                  ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\session.py", line 2373, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\session.py", line 2271, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1421, in execute
+    return meth(
+           ^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\sql\elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1643, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1848, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1988, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 2365, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such table: users
+[SQL: SELECT users.id AS users_id, users.email AS users_email, users.password_hash AS users_password_hash, users.first_name AS users_first_name, users.last_name AS users_last_name, users.role AS users_role, users.created_at AS users_created_at 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('yeswanth5922@gmail.com', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+[2026-08-13 11:56:00,803] INFO in evaluation (Line 78): Evaluated attempt 1: Score=2.0/2.0 (100.00%) Pass=True
+[2026-08-13 11:56:00,820] INFO in evaluation (Line 78): Evaluated attempt 1: Score=0.0/2.0 (0.00%) Pass=False
+[2026-08-13 11:56:02,366] INFO in auth (Line 130): User logged in: student@test.com
+[2026-08-13 11:56:04,669] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 1/3, Action: WARNING
+[2026-08-13 11:56:04,673] INFO in violation_engine (Line 56): Deduplicated event HEAD_TURN for attempt 1 (elapsed: 0.0s)
+[2026-08-13 11:56:05,822] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 1/2, Action: WARNING
+[2026-08-13 11:56:05,831] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 2/2, Action: TERMINATE
+[2026-08-13 11:57:20,116] ERROR in app (Line 64): Unhandled Exception: (sqlite3.OperationalError) no such table: users
+[SQL: SELECT users.id AS users_id, users.email AS users_email, users.password_hash AS users_password_hash, users.first_name AS users_first_name, users.last_name AS users_last_name, users.role AS users_role, users.created_at AS users_created_at 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('yeswanth5922@gmail.com', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+Traceback (most recent call last):
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+sqlite3.OperationalError: no such table: users
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\secure-exam-system\backend\routes\auth.py", line 34, in register
+    existing_user = User.query.filter_by(email=email).first()
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\query.py", line 2766, in first
+    return self.limit(1)._iter().first()  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\query.py", line 2864, in _iter
+    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
+                                                  ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\session.py", line 2373, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\session.py", line 2271, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1421, in execute
+    return meth(
+           ^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\sql\elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1643, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1848, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1988, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 2365, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such table: users
+[SQL: SELECT users.id AS users_id, users.email AS users_email, users.password_hash AS users_password_hash, users.first_name AS users_first_name, users.last_name AS users_last_name, users.role AS users_role, users.created_at AS users_created_at 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('yeswanth5922@gmail.com', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+[2026-08-13 11:57:26,785] ERROR in app (Line 64): Unhandled Exception: (sqlite3.OperationalError) no such table: users
+[SQL: SELECT users.id AS users_id, users.email AS users_email, users.password_hash AS users_password_hash, users.first_name AS users_first_name, users.last_name AS users_last_name, users.role AS users_role, users.created_at AS users_created_at 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('yeswanth5922@gmail.com', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+Traceback (most recent call last):
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+sqlite3.OperationalError: no such table: users
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\secure-exam-system\backend\routes\auth.py", line 34, in register
+    existing_user = User.query.filter_by(email=email).first()
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\query.py", line 2766, in first
+    return self.limit(1)._iter().first()  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\query.py", line 2864, in _iter
+    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
+                                                  ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\session.py", line 2373, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\session.py", line 2271, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1421, in execute
+    return meth(
+           ^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\sql\elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1643, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1848, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1988, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 2365, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such table: users
+[SQL: SELECT users.id AS users_id, users.email AS users_email, users.password_hash AS users_password_hash, users.first_name AS users_first_name, users.last_name AS users_last_name, users.role AS users_role, users.created_at AS users_created_at 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('yeswanth5922@gmail.com', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+[2026-08-13 11:57:36,021] ERROR in app (Line 64): Unhandled Exception: (sqlite3.OperationalError) no such table: users
+[SQL: SELECT users.id AS users_id, users.email AS users_email, users.password_hash AS users_password_hash, users.first_name AS users_first_name, users.last_name AS users_last_name, users.role AS users_role, users.created_at AS users_created_at 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('yeswanth5922@gmail.com', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+Traceback (most recent call last):
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+sqlite3.OperationalError: no such table: users
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\secure-exam-system\backend\routes\auth.py", line 34, in register
+    existing_user = User.query.filter_by(email=email).first()
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\query.py", line 2766, in first
+    return self.limit(1)._iter().first()  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\query.py", line 2864, in _iter
+    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
+                                                  ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\session.py", line 2373, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\session.py", line 2271, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1421, in execute
+    return meth(
+           ^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\sql\elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1643, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1848, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1988, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 2365, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such table: users
+[SQL: SELECT users.id AS users_id, users.email AS users_email, users.password_hash AS users_password_hash, users.first_name AS users_first_name, users.last_name AS users_last_name, users.role AS users_role, users.created_at AS users_created_at 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('yeswanth5922@gmail.com', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+[2026-08-13 12:00:48,204] INFO in evaluation (Line 78): Evaluated attempt 1: Score=2.0/2.0 (100.00%) Pass=True
+[2026-08-13 12:00:48,237] INFO in evaluation (Line 78): Evaluated attempt 1: Score=0.0/2.0 (0.00%) Pass=False
+[2026-08-13 12:00:49,934] INFO in auth (Line 130): User logged in: student@test.com
+[2026-08-13 12:00:52,155] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 1/3, Action: WARNING
+[2026-08-13 12:00:52,162] INFO in violation_engine (Line 56): Deduplicated event HEAD_TURN for attempt 1 (elapsed: 0.0s)
+[2026-08-13 12:00:53,406] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 1/2, Action: WARNING
+[2026-08-13 12:00:53,429] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 2/2, Action: TERMINATE
+[2026-08-13 12:50:53,452] WARNING in app (Line 54): HTTPException: 404 - The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+[2026-08-13 12:51:09,757] ERROR in app (Line 64): Unhandled Exception: (sqlite3.OperationalError) no such table: users
+[SQL: SELECT users.id AS users_id, users.email AS users_email, users.password_hash AS users_password_hash, users.first_name AS users_first_name, users.last_name AS users_last_name, users.role AS users_role, users.created_at AS users_created_at 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('yeswanth5922@gmail.com', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+Traceback (most recent call last):
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+sqlite3.OperationalError: no such table: users
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\secure-exam-system\backend\routes\auth.py", line 34, in register
+    existing_user = User.query.filter_by(email=email).first()
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\query.py", line 2766, in first
+    return self.limit(1)._iter().first()  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\query.py", line 2864, in _iter
+    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
+                                                  ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\session.py", line 2373, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\session.py", line 2271, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1421, in execute
+    return meth(
+           ^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\sql\elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1643, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1848, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1988, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 2365, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\yeswa\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such table: users
+[SQL: SELECT users.id AS users_id, users.email AS users_email, users.password_hash AS users_password_hash, users.first_name AS users_first_name, users.last_name AS users_last_name, users.role AS users_role, users.created_at AS users_created_at 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('yeswanth5922@gmail.com', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+[2026-08-13 15:02:49,879] INFO in evaluation (Line 78): Evaluated attempt 1: Score=2.0/2.0 (100.00%) Pass=True
+[2026-08-13 15:02:49,888] INFO in evaluation (Line 78): Evaluated attempt 1: Score=0.0/2.0 (0.00%) Pass=False
+[2026-08-13 15:02:51,404] INFO in auth (Line 130): User logged in: student@test.com
+[2026-08-13 15:02:53,830] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 1/3, Action: WARNING
+[2026-08-13 15:02:53,833] INFO in violation_engine (Line 56): Deduplicated event HEAD_TURN for attempt 1 (elapsed: 0.0s)
+[2026-08-13 15:02:54,898] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 1/2, Action: WARNING
+[2026-08-13 15:02:54,910] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 2/2, Action: TERMINATE
+[2026-08-13 15:04:11,109] INFO in auth (Line 64): Registered user: yeswanth5922@gmail.com with role: admin
+[2026-08-13 15:04:28,546] INFO in auth (Line 130): User logged in: yeswanth5922@gmail.com
+[2026-08-13 15:05:39,780] INFO in exams (Line 110): Exam created by admin yeswanth5922@gmail.com: python (ID: 1)
+[2026-08-13 15:11:21,639] INFO in evaluation (Line 78): Evaluated attempt 1: Score=2.0/2.0 (100.00%) Pass=True
+[2026-08-13 15:11:21,650] INFO in evaluation (Line 78): Evaluated attempt 1: Score=0.0/2.0 (0.00%) Pass=False
+[2026-08-13 15:11:23,267] INFO in auth (Line 130): User logged in: student@test.com
+[2026-08-13 15:11:25,489] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 1/3, Action: WARNING
+[2026-08-13 15:11:25,497] INFO in violation_engine (Line 56): Deduplicated event HEAD_TURN for attempt 1 (elapsed: 0.0s)
+[2026-08-13 15:11:26,581] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 1/2, Action: WARNING
+[2026-08-13 15:11:26,591] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 2/2, Action: TERMINATE
+[2026-08-13 15:15:20,604] INFO in evaluation (Line 78): Evaluated attempt 1: Score=2.0/2.0 (100.00%) Pass=True
+[2026-08-13 15:15:20,618] INFO in evaluation (Line 78): Evaluated attempt 1: Score=0.0/2.0 (0.00%) Pass=False
+[2026-08-13 15:15:22,379] INFO in auth (Line 130): User logged in: student@test.com
+[2026-08-13 15:15:24,726] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 1/3, Action: WARNING
+[2026-08-13 15:15:24,731] INFO in violation_engine (Line 56): Deduplicated event HEAD_TURN for attempt 1 (elapsed: 0.0s)
+[2026-08-13 15:15:25,699] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 1/2, Action: WARNING
+[2026-08-13 15:15:25,712] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 2/2, Action: TERMINATE
+[2026-08-13 15:25:34,988] INFO in evaluation (Line 78): Evaluated attempt 1: Score=2.0/2.0 (100.00%) Pass=True
+[2026-08-13 15:25:35,001] INFO in evaluation (Line 78): Evaluated attempt 1: Score=0.0/2.0 (0.00%) Pass=False
+[2026-08-13 15:25:36,710] INFO in auth (Line 130): User logged in: student@test.com
+[2026-08-13 15:25:38,884] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 1/3, Action: WARNING
+[2026-08-13 15:25:38,889] INFO in violation_engine (Line 56): Deduplicated event HEAD_TURN for attempt 1 (elapsed: 0.0s)
+[2026-08-13 15:25:39,980] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 1/2, Action: WARNING
+[2026-08-13 15:25:39,993] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 2/2, Action: TERMINATE
+[2026-08-13 15:26:06,960] ERROR in questions (Line 209): CSV import failed: Missing required header 'option_a'. Received headers: ['question', 'question', 'options', 'correct_answer']
+[2026-08-13 15:27:00,517] INFO in evaluation (Line 78): Evaluated attempt 1: Score=2.0/2.0 (100.00%) Pass=True
+[2026-08-13 15:27:00,529] INFO in evaluation (Line 78): Evaluated attempt 1: Score=0.0/2.0 (0.00%) Pass=False
+[2026-08-13 15:27:02,076] INFO in auth (Line 130): User logged in: student@test.com
+[2026-08-13 15:27:04,328] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 1/3, Action: WARNING
+[2026-08-13 15:27:04,332] INFO in violation_engine (Line 56): Deduplicated event HEAD_TURN for attempt 1 (elapsed: 0.0s)
+[2026-08-13 15:27:05,311] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 1/2, Action: WARNING
+[2026-08-13 15:27:05,323] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 2/2, Action: TERMINATE
+[2026-08-13 15:27:23,975] INFO in questions (Line 324): Admin yeswanth5922@gmail.com uploaded 62 questions to exam 1
+[2026-08-13 15:29:59,568] WARNING in app (Line 54): HTTPException: 404 - The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+[2026-08-13 15:31:16,140] INFO in evaluation (Line 78): Evaluated attempt 1: Score=2.0/2.0 (100.00%) Pass=True
+[2026-08-13 15:31:16,153] INFO in evaluation (Line 78): Evaluated attempt 1: Score=0.0/2.0 (0.00%) Pass=False
+[2026-08-13 15:31:17,663] INFO in auth (Line 130): User logged in: student@test.com
+[2026-08-13 15:31:19,702] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 1/3, Action: WARNING
+[2026-08-13 15:31:19,706] INFO in violation_engine (Line 56): Deduplicated event HEAD_TURN for attempt 1 (elapsed: 0.0s)
+[2026-08-13 15:31:20,645] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 1/2, Action: WARNING
+[2026-08-13 15:31:20,653] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 2/2, Action: TERMINATE
+[2026-08-13 15:31:45,283] WARNING in app (Line 54): HTTPException: 404 - The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+[2026-08-13 15:31:57,889] WARNING in app (Line 54): HTTPException: 404 - The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+[2026-08-13 15:32:44,647] WARNING in app (Line 54): HTTPException: 404 - The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+[2026-08-13 15:32:44,656] WARNING in app (Line 54): HTTPException: 404 - The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+[2026-08-13 15:32:44,658] WARNING in app (Line 54): HTTPException: 404 - The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+[2026-08-13 15:32:44,663] WARNING in app (Line 54): HTTPException: 404 - The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+[2026-08-13 15:37:20,793] INFO in evaluation (Line 78): Evaluated attempt 1: Score=2.0/2.0 (100.00%) Pass=True
+[2026-08-13 15:37:20,798] INFO in evaluation (Line 78): Evaluated attempt 1: Score=0.0/2.0 (0.00%) Pass=False
+[2026-08-13 15:37:22,218] INFO in auth (Line 130): User logged in: student@test.com
+[2026-08-13 15:37:24,253] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 1/3, Action: WARNING
+[2026-08-13 15:37:24,256] INFO in violation_engine (Line 56): Deduplicated event HEAD_TURN for attempt 1 (elapsed: 0.0s)
+[2026-08-13 15:37:25,228] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 1/2, Action: WARNING
+[2026-08-13 15:37:25,239] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 2/2, Action: TERMINATE
+[2026-08-13 15:38:11,847] INFO in auth (Line 153): User logged out: yeswanth5922@gmail.com
+[2026-08-13 15:38:45,197] INFO in auth (Line 64): Registered user: john@gmail.com with role: student
+[2026-08-13 15:38:59,503] INFO in auth (Line 130): User logged in: john@gmail.com
+[2026-08-13 15:39:29,509] ERROR in proctoring (Line 259): Error during face verification: name 'Config' is not defined
+[2026-08-13 15:39:35,242] ERROR in proctoring (Line 259): Error during face verification: name 'Config' is not defined
+[2026-08-13 15:41:10,745] INFO in evaluation (Line 78): Evaluated attempt 1: Score=2.0/2.0 (100.00%) Pass=True
+[2026-08-13 15:41:10,754] INFO in evaluation (Line 78): Evaluated attempt 1: Score=0.0/2.0 (0.00%) Pass=False
+[2026-08-13 15:41:12,303] INFO in auth (Line 130): User logged in: student@test.com
+[2026-08-13 15:41:14,494] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 1/3, Action: WARNING
+[2026-08-13 15:41:14,501] INFO in violation_engine (Line 56): Deduplicated event HEAD_TURN for attempt 1 (elapsed: 0.0s)
+[2026-08-13 15:41:15,501] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 1/2, Action: WARNING
+[2026-08-13 15:41:15,512] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 2/2, Action: TERMINATE
+[2026-08-13 15:41:58,991] INFO in proctoring (Line 254): Student john@gmail.com passed face verification for exam 1
+[2026-08-13 15:41:59,026] INFO in session_manager (Line 52): Started attempt session 1 for student 3 on exam 1
+[2026-08-13 15:42:05,785] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: FACE_ABSENT, Count: 1/5, Action: WARNING
+[2026-08-13 15:42:05,882] INFO in evidence_service (Line 59): Evidence saved for attempt 1, event: FACE_ABSENT. File size: 7773 bytes.
+[2026-08-13 15:42:06,889] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 1/5, Action: WARNING
+[2026-08-13 15:42:06,999] INFO in evidence_service (Line 59): Evidence saved for attempt 1, event: HEAD_TURN. File size: 7809 bytes.
+[2026-08-13 15:42:17,819] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: MULTIPLE_PERSON, Count: 1/3, Action: WARNING
+[2026-08-13 15:42:17,909] INFO in evidence_service (Line 59): Evidence saved for attempt 1, event: MULTIPLE_PERSON. File size: 8642 bytes.
+[2026-08-13 15:42:22,575] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 2/5, Action: WARNING
+[2026-08-13 15:42:22,669] INFO in evidence_service (Line 59): Evidence saved for attempt 1, event: HEAD_TURN. File size: 7990 bytes.
+[2026-08-13 15:42:23,109] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: FACE_ABSENT, Count: 2/5, Action: WARNING
+[2026-08-13 15:42:23,191] INFO in evidence_service (Line 59): Evidence saved for attempt 1, event: FACE_ABSENT. File size: 7694 bytes.
+[2026-08-13 15:42:32,857] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 3/5, Action: WARNING
+[2026-08-13 15:42:32,972] INFO in evidence_service (Line 59): Evidence saved for attempt 1, event: HEAD_TURN. File size: 9138 bytes.
+[2026-08-13 15:42:36,329] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: MULTIPLE_PERSON, Count: 2/3, Action: WARNING
+[2026-08-13 15:42:36,450] INFO in evidence_service (Line 59): Evidence saved for attempt 1, event: MULTIPLE_PERSON. File size: 8199 bytes.
+[2026-08-13 15:42:40,979] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 1/3, Action: WARNING
+[2026-08-13 15:42:51,659] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: FACE_ABSENT, Count: 3/5, Action: WARNING
+[2026-08-13 15:42:51,769] INFO in evidence_service (Line 59): Evidence saved for attempt 1, event: FACE_ABSENT. File size: 7997 bytes.
+[2026-08-13 15:42:52,214] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 4/5, Action: WARNING
+[2026-08-13 15:42:52,315] INFO in evidence_service (Line 59): Evidence saved for attempt 1, event: HEAD_TURN. File size: 8037 bytes.
+[2026-08-13 15:42:56,272] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: MULTIPLE_PERSON, Count: 3/3, Action: TERMINATE
+[2026-08-13 15:45:50,916] INFO in evaluation (Line 78): Evaluated attempt 1: Score=2.0/2.0 (100.00%) Pass=True
+[2026-08-13 15:45:50,928] INFO in evaluation (Line 78): Evaluated attempt 1: Score=0.0/2.0 (0.00%) Pass=False
+[2026-08-13 15:45:52,345] INFO in auth (Line 130): User logged in: student@test.com
+[2026-08-13 15:45:54,486] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 1/3, Action: WARNING
+[2026-08-13 15:45:54,495] INFO in violation_engine (Line 56): Deduplicated event HEAD_TURN for attempt 1 (elapsed: 0.0s)
+[2026-08-13 15:45:55,423] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 1/2, Action: WARNING
+[2026-08-13 15:45:55,436] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 2/2, Action: TERMINATE
+[2026-08-13 15:50:43,607] INFO in evaluation (Line 78): Evaluated attempt 1: Score=2.0/2.0 (100.00%) Pass=True
+[2026-08-13 15:50:43,619] INFO in evaluation (Line 78): Evaluated attempt 1: Score=0.0/2.0 (0.00%) Pass=False
+[2026-08-13 15:50:45,218] INFO in auth (Line 130): User logged in: student@test.com
+[2026-08-13 15:50:47,560] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 1/3, Action: WARNING
+[2026-08-13 15:50:47,563] INFO in violation_engine (Line 56): Deduplicated event HEAD_TURN for attempt 1 (elapsed: 0.0s)
+[2026-08-13 15:50:48,662] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 1/2, Action: WARNING
+[2026-08-13 15:50:48,672] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 2/2, Action: TERMINATE
+[2026-08-13 15:51:26,260] INFO in proctoring (Line 254): Student john@gmail.com passed face verification for exam 1
+[2026-08-13 15:51:26,297] INFO in session_manager (Line 52): Started attempt session 2 for student 3 on exam 1
+[2026-08-13 15:52:07,287] INFO in violation_engine (Line 113): Violation logged: Attempt 2, Event: HEAD_TURN, Count: 1/5, Action: WARNING
+[2026-08-13 15:52:07,404] INFO in evidence_service (Line 59): Evidence saved for attempt 2, event: HEAD_TURN. File size: 7052 bytes.
+[2026-08-13 15:52:19,686] INFO in violation_engine (Line 113): Violation logged: Attempt 2, Event: MULTIPLE_PERSON, Count: 1/3, Action: WARNING
+[2026-08-13 15:52:19,834] INFO in evidence_service (Line 59): Evidence saved for attempt 2, event: MULTIPLE_PERSON. File size: 7936 bytes.
+[2026-08-13 15:52:20,314] INFO in violation_engine (Line 113): Violation logged: Attempt 2, Event: FACE_ABSENT, Count: 1/5, Action: WARNING
+[2026-08-13 15:52:20,415] INFO in evidence_service (Line 59): Evidence saved for attempt 2, event: FACE_ABSENT. File size: 7125 bytes.
+[2026-08-13 15:52:30,669] INFO in violation_engine (Line 113): Violation logged: Attempt 2, Event: FACE_ABSENT, Count: 2/5, Action: WARNING
+[2026-08-13 15:52:30,830] INFO in evidence_service (Line 59): Evidence saved for attempt 2, event: FACE_ABSENT. File size: 6933 bytes.
+[2026-08-13 15:52:42,784] INFO in violation_engine (Line 113): Violation logged: Attempt 2, Event: TAB_SWITCH, Count: 1/3, Action: WARNING
+[2026-08-13 15:52:42,809] INFO in evaluation (Line 78): Evaluated attempt 2: Score=0.0/62.0 (0.00%) Pass=False
+[2026-08-13 15:53:06,890] INFO in auth (Line 153): User logged out: john@gmail.com
+[2026-08-13 15:53:18,196] INFO in auth (Line 130): User logged in: yeswanth5922@gmail.com
+[2026-08-13 15:59:45,210] INFO in evaluation (Line 78): Evaluated attempt 1: Score=2.0/2.0 (100.00%) Pass=True
+[2026-08-13 15:59:45,216] INFO in evaluation (Line 78): Evaluated attempt 1: Score=0.0/2.0 (0.00%) Pass=False
+[2026-08-13 15:59:46,106] INFO in auth (Line 130): User logged in: student@test.com
+[2026-08-13 15:59:47,308] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 1/3, Action: WARNING
+[2026-08-13 15:59:47,311] INFO in violation_engine (Line 56): Deduplicated event HEAD_TURN for attempt 1 (elapsed: 0.0s)
+[2026-08-13 15:59:47,911] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 1/2, Action: WARNING
+[2026-08-13 15:59:47,916] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 2/2, Action: TERMINATE
+[2026-08-13 16:00:41,333] INFO in auth (Line 153): User logged out: yeswanth5922@gmail.com
+[2026-08-13 16:00:50,918] INFO in auth (Line 130): User logged in: john@gmail.com
+[2026-08-13 16:01:01,511] INFO in proctoring (Line 254): Student john@gmail.com passed face verification for exam 1
+[2026-08-13 16:01:01,543] INFO in session_manager (Line 52): Started attempt session 3 for student 3 on exam 1
+[2026-08-13 16:01:12,223] INFO in violation_engine (Line 113): Violation logged: Attempt 3, Event: HEAD_TURN, Count: 1/5, Action: WARNING
+[2026-08-13 16:01:12,332] INFO in evidence_service (Line 59): Evidence saved for attempt 3, event: HEAD_TURN. File size: 7343 bytes.
+[2026-08-13 16:01:23,640] INFO in violation_engine (Line 113): Violation logged: Attempt 3, Event: FACE_ABSENT, Count: 1/5, Action: WARNING
+[2026-08-13 16:01:23,756] INFO in evidence_service (Line 59): Evidence saved for attempt 3, event: FACE_ABSENT. File size: 6483 bytes.
+[2026-08-13 16:01:39,649] INFO in violation_engine (Line 113): Violation logged: Attempt 3, Event: FULLSCREEN_EXIT, Count: 1/3, Action: WARNING
+[2026-08-13 16:01:42,909] INFO in violation_engine (Line 113): Violation logged: Attempt 3, Event: TAB_SWITCH, Count: 1/3, Action: WARNING
+[2026-08-13 16:01:43,519] INFO in violation_engine (Line 56): Deduplicated event FULLSCREEN_EXIT for attempt 3 (elapsed: 3.9s)
+[2026-08-13 16:01:48,503] INFO in violation_engine (Line 56): Deduplicated event FULLSCREEN_EXIT for attempt 3 (elapsed: 8.9s)
+[2026-08-13 16:01:49,029] INFO in violation_engine (Line 56): Deduplicated event TAB_SWITCH for attempt 3 (elapsed: 6.1s)
+[2026-08-13 16:01:51,829] INFO in violation_engine (Line 56): Deduplicated event TAB_SWITCH for attempt 3 (elapsed: 8.9s)
+[2026-08-13 16:01:53,525] INFO in violation_engine (Line 113): Violation logged: Attempt 3, Event: FULLSCREEN_EXIT, Count: 2/3, Action: WARNING
+[2026-08-13 16:01:55,277] INFO in violation_engine (Line 113): Violation logged: Attempt 3, Event: TAB_SWITCH, Count: 2/3, Action: WARNING
+[2026-08-13 16:01:57,810] INFO in violation_engine (Line 56): Deduplicated event TAB_SWITCH for attempt 3 (elapsed: 2.5s)
+[2026-08-13 16:01:58,503] INFO in violation_engine (Line 56): Deduplicated event FULLSCREEN_EXIT for attempt 3 (elapsed: 5.0s)
+[2026-08-13 16:02:00,464] INFO in violation_engine (Line 56): Deduplicated event TAB_SWITCH for attempt 3 (elapsed: 5.2s)
+[2026-08-13 16:02:03,111] INFO in violation_engine (Line 56): Deduplicated event TAB_SWITCH for attempt 3 (elapsed: 7.8s)
+[2026-08-13 16:02:03,559] INFO in violation_engine (Line 113): Violation logged: Attempt 3, Event: FULLSCREEN_EXIT, Count: 3/3, Action: TERMINATE
+[2026-08-13 16:04:58,934] INFO in evaluation (Line 78): Evaluated attempt 1: Score=2.0/2.0 (100.00%) Pass=True
+[2026-08-13 16:04:58,941] INFO in evaluation (Line 78): Evaluated attempt 1: Score=0.0/2.0 (0.00%) Pass=False
+[2026-08-13 16:04:59,852] INFO in auth (Line 130): User logged in: student@test.com
+[2026-08-13 16:05:01,096] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 1/3, Action: WARNING
+[2026-08-13 16:05:01,099] INFO in violation_engine (Line 56): Deduplicated event HEAD_TURN for attempt 1 (elapsed: 0.0s)
+[2026-08-13 16:05:01,727] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 1/2, Action: WARNING
+[2026-08-13 16:05:01,734] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 2/2, Action: TERMINATE
+[2026-08-13 16:07:21,962] INFO in proctoring (Line 254): Student john@gmail.com passed face verification for exam 1
+[2026-08-13 16:07:21,992] INFO in session_manager (Line 52): Started attempt session 4 for student 3 on exam 1
+[2026-08-13 16:07:48,577] INFO in violation_engine (Line 113): Violation logged: Attempt 4, Event: HEAD_TURN, Count: 1/5, Action: WARNING
+[2026-08-13 16:07:48,675] INFO in evidence_service (Line 59): Evidence saved for attempt 4, event: HEAD_TURN. File size: 6720 bytes.
+[2026-08-13 16:07:53,416] INFO in violation_engine (Line 113): Violation logged: Attempt 4, Event: PHONE_DETECTED, Count: 1/2, Action: WARNING
+[2026-08-13 16:07:53,512] INFO in evidence_service (Line 59): Evidence saved for attempt 4, event: PHONE_DETECTED. File size: 7152 bytes.
+[2026-08-13 16:08:03,425] INFO in violation_engine (Line 113): Violation logged: Attempt 4, Event: HEAD_TURN, Count: 2/5, Action: WARNING
+[2026-08-13 16:08:03,526] INFO in evidence_service (Line 59): Evidence saved for attempt 4, event: HEAD_TURN. File size: 7204 bytes.
+[2026-08-13 16:08:13,773] INFO in violation_engine (Line 113): Violation logged: Attempt 4, Event: PHONE_DETECTED, Count: 2/2, Action: TERMINATE
+[2026-08-13 16:08:27,314] INFO in proctoring (Line 254): Student john@gmail.com passed face verification for exam 1
+[2026-08-13 16:08:27,360] INFO in session_manager (Line 52): Started attempt session 5 for student 3 on exam 1
+[2026-08-13 16:08:41,844] INFO in violation_engine (Line 113): Violation logged: Attempt 5, Event: FACE_ABSENT, Count: 1/5, Action: WARNING
+[2026-08-13 16:08:41,942] INFO in evidence_service (Line 59): Evidence saved for attempt 5, event: FACE_ABSENT. File size: 7046 bytes.
+[2026-08-13 16:08:43,037] INFO in violation_engine (Line 113): Violation logged: Attempt 5, Event: PHONE_DETECTED, Count: 1/2, Action: WARNING
+[2026-08-13 16:08:43,100] INFO in evidence_service (Line 59): Evidence saved for attempt 5, event: PHONE_DETECTED. File size: 7047 bytes.
+[2026-08-13 16:09:01,508] INFO in violation_engine (Line 113): Violation logged: Attempt 5, Event: HEAD_TURN, Count: 1/5, Action: WARNING
+[2026-08-13 16:09:01,614] INFO in evidence_service (Line 59): Evidence saved for attempt 5, event: HEAD_TURN. File size: 7651 bytes.
+[2026-08-13 16:09:05,844] INFO in violation_engine (Line 113): Violation logged: Attempt 5, Event: TAB_SWITCH, Count: 1/3, Action: WARNING
+[2026-08-13 16:09:06,163] INFO in violation_engine (Line 113): Violation logged: Attempt 5, Event: WINDOW_HIDDEN, Count: 1/3, Action: WARNING
+[2026-08-13 16:09:09,555] INFO in violation_engine (Line 56): Deduplicated event TAB_SWITCH for attempt 5 (elapsed: 3.7s)
+[2026-08-13 16:09:09,564] INFO in violation_engine (Line 56): Deduplicated event WINDOW_HIDDEN for attempt 5 (elapsed: 3.4s)
+[2026-08-13 16:09:14,018] INFO in violation_engine (Line 56): Deduplicated event TAB_SWITCH for attempt 5 (elapsed: 8.2s)
+[2026-08-13 16:09:14,173] INFO in violation_engine (Line 56): Deduplicated event WINDOW_HIDDEN for attempt 5 (elapsed: 8.0s)
+[2026-08-13 16:09:14,613] INFO in violation_engine (Line 56): Deduplicated event WINDOW_HIDDEN for attempt 5 (elapsed: 8.5s)
+[2026-08-13 16:09:16,554] INFO in violation_engine (Line 113): Violation logged: Attempt 5, Event: TAB_SWITCH, Count: 2/3, Action: WARNING
+[2026-08-13 16:09:16,698] INFO in violation_engine (Line 113): Violation logged: Attempt 5, Event: WINDOW_HIDDEN, Count: 2/3, Action: WARNING
+[2026-08-13 16:09:18,804] INFO in violation_engine (Line 56): Deduplicated event TAB_SWITCH for attempt 5 (elapsed: 2.3s)
+[2026-08-13 16:09:18,999] INFO in violation_engine (Line 56): Deduplicated event WINDOW_HIDDEN for attempt 5 (elapsed: 2.3s)
+[2026-08-13 16:09:19,613] INFO in violation_engine (Line 56): Deduplicated event WINDOW_HIDDEN for attempt 5 (elapsed: 2.9s)
+[2026-08-13 16:09:21,482] INFO in violation_engine (Line 56): Deduplicated event TAB_SWITCH for attempt 5 (elapsed: 4.9s)
+[2026-08-13 16:09:21,559] INFO in violation_engine (Line 56): Deduplicated event WINDOW_HIDDEN for attempt 5 (elapsed: 4.9s)
+[2026-08-13 16:09:23,899] INFO in violation_engine (Line 56): Deduplicated event TAB_SWITCH for attempt 5 (elapsed: 7.4s)
+[2026-08-13 16:09:24,053] INFO in violation_engine (Line 56): Deduplicated event WINDOW_HIDDEN for attempt 5 (elapsed: 7.4s)
+[2026-08-13 16:09:24,666] INFO in violation_engine (Line 56): Deduplicated event WINDOW_HIDDEN for attempt 5 (elapsed: 8.0s)
+[2026-08-13 16:09:27,463] INFO in violation_engine (Line 113): Violation logged: Attempt 5, Event: FULLSCREEN_EXIT, Count: 1/3, Action: WARNING
+[2026-08-13 16:09:29,352] INFO in violation_engine (Line 56): Deduplicated event FULLSCREEN_EXIT for attempt 5 (elapsed: 1.9s)
+[2026-08-13 16:09:32,718] INFO in violation_engine (Line 113): Violation logged: Attempt 5, Event: TAB_SWITCH, Count: 3/3, Action: TERMINATE
+[2026-08-13 16:09:32,729] INFO in violation_engine (Line 113): Violation logged: Attempt 5, Event: WINDOW_HIDDEN, Count: 3/3, Action: TERMINATE
+[2026-08-13 16:10:49,210] INFO in proctoring (Line 254): Student john@gmail.com passed face verification for exam 1
+[2026-08-13 16:10:49,241] INFO in session_manager (Line 52): Started attempt session 6 for student 3 on exam 1
+[2026-08-13 16:10:55,122] INFO in violation_engine (Line 113): Violation logged: Attempt 6, Event: FACE_ABSENT, Count: 1/5, Action: WARNING
+[2026-08-13 16:10:55,231] INFO in evidence_service (Line 59): Evidence saved for attempt 6, event: FACE_ABSENT. File size: 6529 bytes.
+[2026-08-13 16:10:56,331] INFO in violation_engine (Line 113): Violation logged: Attempt 6, Event: MULTIPLE_PERSON, Count: 1/3, Action: WARNING
+[2026-08-13 16:10:56,418] INFO in evidence_service (Line 59): Evidence saved for attempt 6, event: MULTIPLE_PERSON. File size: 6832 bytes.
+[2026-08-13 16:10:57,586] INFO in violation_engine (Line 113): Violation logged: Attempt 6, Event: HEAD_TURN, Count: 1/5, Action: WARNING
+[2026-08-13 16:10:57,644] INFO in evidence_service (Line 59): Evidence saved for attempt 6, event: HEAD_TURN. File size: 6929 bytes.
+[2026-08-13 16:11:09,167] INFO in violation_engine (Line 113): Violation logged: Attempt 6, Event: MULTIPLE_PERSON, Count: 2/3, Action: WARNING
+[2026-08-13 16:11:09,278] INFO in evidence_service (Line 59): Evidence saved for attempt 6, event: MULTIPLE_PERSON. File size: 6760 bytes.
+[2026-08-13 16:11:18,676] INFO in violation_engine (Line 113): Violation logged: Attempt 6, Event: HEAD_TURN, Count: 2/5, Action: WARNING
+[2026-08-13 16:11:18,790] INFO in evidence_service (Line 59): Evidence saved for attempt 6, event: HEAD_TURN. File size: 6541 bytes.
+[2026-08-13 16:11:22,945] INFO in violation_engine (Line 113): Violation logged: Attempt 6, Event: FACE_ABSENT, Count: 2/5, Action: WARNING
+[2026-08-13 16:11:23,054] INFO in evidence_service (Line 59): Evidence saved for attempt 6, event: FACE_ABSENT. File size: 6560 bytes.
+[2026-08-13 16:11:33,158] INFO in violation_engine (Line 113): Violation logged: Attempt 6, Event: MULTIPLE_PERSON, Count: 3/3, Action: TERMINATE
+[2026-08-13 16:11:54,238] INFO in proctoring (Line 254): Student john@gmail.com passed face verification for exam 1
+[2026-08-13 16:11:54,275] INFO in session_manager (Line 52): Started attempt session 7 for student 3 on exam 1
+[2026-08-13 16:11:57,355] INFO in violation_engine (Line 113): Violation logged: Attempt 7, Event: TAB_SWITCH, Count: 1/3, Action: WARNING
+[2026-08-13 16:11:58,195] INFO in violation_engine (Line 113): Violation logged: Attempt 7, Event: MULTIPLE_PERSON, Count: 1/3, Action: WARNING
+[2026-08-13 16:11:58,405] INFO in evidence_service (Line 59): Evidence saved for attempt 7, event: MULTIPLE_PERSON. File size: 7043 bytes.
+[2026-08-13 16:12:08,372] INFO in violation_engine (Line 113): Violation logged: Attempt 7, Event: MULTIPLE_PERSON, Count: 2/3, Action: WARNING
+[2026-08-13 16:12:08,465] INFO in evidence_service (Line 59): Evidence saved for attempt 7, event: MULTIPLE_PERSON. File size: 6541 bytes.
+[2026-08-13 16:12:18,673] INFO in violation_engine (Line 113): Violation logged: Attempt 7, Event: MULTIPLE_PERSON, Count: 3/3, Action: TERMINATE
+[2026-08-13 16:12:42,701] INFO in auth (Line 153): User logged out: john@gmail.com
+[2026-08-13 16:12:56,394] INFO in auth (Line 130): User logged in: yeswanth5922@gmail.com
+[2026-08-13 16:15:56,942] INFO in evaluation (Line 78): Evaluated attempt 1: Score=2.0/2.0 (100.00%) Pass=True
+[2026-08-13 16:15:56,947] INFO in evaluation (Line 78): Evaluated attempt 1: Score=0.0/2.0 (0.00%) Pass=False
+[2026-08-13 16:15:57,998] INFO in auth (Line 130): User logged in: student@test.com
+[2026-08-13 16:15:59,354] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 1/3, Action: WARNING
+[2026-08-13 16:15:59,357] INFO in violation_engine (Line 56): Deduplicated event HEAD_TURN for attempt 1 (elapsed: 0.0s)
+[2026-08-13 16:15:59,999] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 1/2, Action: WARNING
+[2026-08-13 16:16:00,004] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 2/2, Action: TERMINATE
+[2026-08-13 16:25:55,201] INFO in evaluation (Line 78): Evaluated attempt 1: Score=2.0/2.0 (100.00%) Pass=True
+[2026-08-13 16:25:55,206] INFO in evaluation (Line 78): Evaluated attempt 1: Score=0.0/2.0 (0.00%) Pass=False
+[2026-08-13 16:25:56,129] INFO in auth (Line 130): User logged in: student@test.com
+[2026-08-13 16:25:57,521] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 1/3, Action: WARNING
+[2026-08-13 16:25:57,522] INFO in violation_engine (Line 56): Deduplicated event HEAD_TURN for attempt 1 (elapsed: 0.0s)
+[2026-08-13 16:25:58,156] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 1/2, Action: WARNING
+[2026-08-13 16:25:58,163] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 2/2, Action: TERMINATE
+[2026-08-13 16:29:23,658] INFO in auth (Line 153): User logged out: yeswanth5922@gmail.com
+[2026-08-13 16:29:32,134] INFO in auth (Line 130): User logged in: john@gmail.com
+[2026-08-13 16:29:39,249] INFO in proctoring (Line 254): Student john@gmail.com passed face verification for exam 1
+[2026-08-13 16:29:39,287] INFO in session_manager (Line 52): Started attempt session 8 for student 3 on exam 1
+[2026-08-13 16:29:41,688] INFO in violation_engine (Line 113): Violation logged: Attempt 8, Event: FACE_ABSENT, Count: 1/5, Action: WARNING
+[2026-08-13 16:29:41,804] INFO in evidence_service (Line 59): Evidence saved for attempt 8, event: FACE_ABSENT. File size: 6890 bytes.
+[2026-08-13 16:29:55,420] INFO in violation_engine (Line 113): Violation logged: Attempt 8, Event: MULTIPLE_PERSON, Count: 1/3, Action: WARNING
+[2026-08-13 16:29:55,523] INFO in evidence_service (Line 59): Evidence saved for attempt 8, event: MULTIPLE_PERSON. File size: 7444 bytes.
+[2026-08-13 16:29:59,562] INFO in violation_engine (Line 113): Violation logged: Attempt 8, Event: MULTIPLE_PERSON, Count: 2/3, Action: WARNING
+[2026-08-13 16:29:59,669] INFO in evidence_service (Line 59): Evidence saved for attempt 8, event: MULTIPLE_PERSON. File size: 7293 bytes.
+[2026-08-13 16:30:01,290] INFO in violation_engine (Line 56): Deduplicated event MULTIPLE_PERSON for attempt 8 (elapsed: 1.7s)
+[2026-08-13 16:30:01,407] INFO in evidence_service (Line 59): Evidence saved for attempt 8, event: MULTIPLE_PERSON. File size: 7471 bytes.
+[2026-08-13 16:30:02,599] INFO in violation_engine (Line 113): Violation logged: Attempt 8, Event: MULTIPLE_PERSON, Count: 3/3, Action: TERMINATE
+[2026-08-13 16:30:13,182] INFO in proctoring (Line 254): Student john@gmail.com passed face verification for exam 1
+[2026-08-13 16:30:13,216] INFO in session_manager (Line 52): Started attempt session 9 for student 3 on exam 1
+[2026-08-13 16:30:19,629] INFO in violation_engine (Line 113): Violation logged: Attempt 9, Event: PHONE_DETECTED, Count: 1/2, Action: WARNING
+[2026-08-13 16:30:19,717] INFO in evidence_service (Line 59): Evidence saved for attempt 9, event: PHONE_DETECTED. File size: 8570 bytes.
+[2026-08-13 16:30:23,131] INFO in violation_engine (Line 113): Violation logged: Attempt 9, Event: PHONE_DETECTED, Count: 2/2, Action: TERMINATE
+[2026-08-13 16:30:34,986] INFO in proctoring (Line 254): Student john@gmail.com passed face verification for exam 1
+[2026-08-13 16:30:35,018] INFO in session_manager (Line 52): Started attempt session 10 for student 3 on exam 1
+[2026-08-13 16:30:42,858] INFO in violation_engine (Line 113): Violation logged: Attempt 10, Event: PHONE_DETECTED, Count: 1/2, Action: WARNING
+[2026-08-13 16:30:42,948] INFO in evidence_service (Line 59): Evidence saved for attempt 10, event: PHONE_DETECTED. File size: 7860 bytes.
+[2026-08-13 16:30:56,058] INFO in violation_engine (Line 113): Violation logged: Attempt 10, Event: PHONE_DETECTED, Count: 2/2, Action: TERMINATE
+[2026-08-13 16:32:07,115] INFO in proctoring (Line 254): Student john@gmail.com passed face verification for exam 1
+[2026-08-13 16:32:07,151] INFO in session_manager (Line 52): Started attempt session 11 for student 3 on exam 1
+[2026-08-13 16:32:10,706] INFO in violation_engine (Line 113): Violation logged: Attempt 11, Event: MULTIPLE_PERSON, Count: 1/3, Action: WARNING
+[2026-08-13 16:32:10,808] INFO in evidence_service (Line 59): Evidence saved for attempt 11, event: MULTIPLE_PERSON. File size: 7599 bytes.
+[2026-08-13 16:32:12,478] INFO in violation_engine (Line 113): Violation logged: Attempt 11, Event: FACE_ABSENT, Count: 1/5, Action: WARNING
+[2026-08-13 16:32:12,575] INFO in evidence_service (Line 59): Evidence saved for attempt 11, event: FACE_ABSENT. File size: 7514 bytes.
+[2026-08-13 16:32:14,332] INFO in violation_engine (Line 113): Violation logged: Attempt 11, Event: MULTIPLE_PERSON, Count: 2/3, Action: WARNING
+[2026-08-13 16:32:14,447] INFO in evidence_service (Line 59): Evidence saved for attempt 11, event: MULTIPLE_PERSON. File size: 7430 bytes.
+[2026-08-13 16:32:22,127] INFO in violation_engine (Line 113): Violation logged: Attempt 11, Event: MULTIPLE_PERSON, Count: 3/3, Action: TERMINATE
+[2026-08-13 16:33:05,570] INFO in evaluation (Line 78): Evaluated attempt 1: Score=2.0/2.0 (100.00%) Pass=True
+[2026-08-13 16:33:05,576] INFO in evaluation (Line 78): Evaluated attempt 1: Score=0.0/2.0 (0.00%) Pass=False
+[2026-08-13 16:33:06,488] INFO in auth (Line 130): User logged in: student@test.com
+[2026-08-13 16:33:07,722] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 1/3, Action: WARNING
+[2026-08-13 16:33:07,725] INFO in violation_engine (Line 56): Deduplicated event HEAD_TURN for attempt 1 (elapsed: 0.0s)
+[2026-08-13 16:33:08,384] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 1/2, Action: WARNING
+[2026-08-13 16:33:08,389] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 2/2, Action: TERMINATE
+[2026-08-13 16:33:56,441] INFO in auth (Line 153): User logged out: john@gmail.com
+[2026-08-13 16:34:07,516] INFO in auth (Line 130): User logged in: yeswanth5922@gmail.com
+[2026-08-13 16:34:54,370] INFO in auth (Line 153): User logged out: yeswanth5922@gmail.com
+[2026-08-13 16:35:01,818] INFO in auth (Line 130): User logged in: john@gmail.com
+[2026-08-13 16:35:24,681] INFO in proctoring (Line 254): Student john@gmail.com passed face verification for exam 1
+[2026-08-13 16:35:24,774] INFO in session_manager (Line 52): Started attempt session 12 for student 3 on exam 1
+[2026-08-13 16:36:03,020] INFO in violation_engine (Line 113): Violation logged: Attempt 12, Event: FACE_ABSENT, Count: 1/5, Action: WARNING
+[2026-08-13 16:36:03,168] INFO in evidence_service (Line 59): Evidence saved for attempt 12, event: FACE_ABSENT. File size: 7731 bytes.
+[2026-08-13 16:36:05,339] INFO in violation_engine (Line 113): Violation logged: Attempt 12, Event: HEAD_TURN, Count: 1/5, Action: WARNING
+[2026-08-13 16:36:05,457] INFO in evidence_service (Line 59): Evidence saved for attempt 12, event: HEAD_TURN. File size: 7411 bytes.
+[2026-08-13 16:36:10,943] INFO in violation_engine (Line 113): Violation logged: Attempt 12, Event: HEAD_TURN, Count: 2/5, Action: WARNING
+[2026-08-13 16:36:11,089] INFO in evidence_service (Line 59): Evidence saved for attempt 12, event: HEAD_TURN. File size: 7543 bytes.
+[2026-08-13 16:36:18,083] INFO in violation_engine (Line 113): Violation logged: Attempt 12, Event: MULTIPLE_PERSON, Count: 1/3, Action: WARNING
+[2026-08-13 16:36:18,198] INFO in evidence_service (Line 59): Evidence saved for attempt 12, event: MULTIPLE_PERSON. File size: 8329 bytes.
+[2026-08-13 16:36:22,876] INFO in violation_engine (Line 113): Violation logged: Attempt 12, Event: MULTIPLE_PERSON, Count: 2/3, Action: WARNING
+[2026-08-13 16:36:22,990] INFO in evidence_service (Line 59): Evidence saved for attempt 12, event: MULTIPLE_PERSON. File size: 8254 bytes.
+[2026-08-13 16:36:31,492] INFO in violation_engine (Line 113): Violation logged: Attempt 12, Event: TAB_SWITCH, Count: 1/3, Action: WARNING
+[2026-08-13 16:36:31,527] INFO in evaluation (Line 78): Evaluated attempt 12: Score=0.0/62.0 (0.00%) Pass=False
+[2026-08-13 16:36:43,428] INFO in auth (Line 153): User logged out: john@gmail.com
+[2026-08-13 16:36:52,264] INFO in auth (Line 130): User logged in: yeswanth5922@gmail.com
+[2026-08-13 16:39:00,450] INFO in evaluation (Line 78): Evaluated attempt 1: Score=2.0/2.0 (100.00%) Pass=True
+[2026-08-13 16:39:00,456] INFO in evaluation (Line 78): Evaluated attempt 1: Score=0.0/2.0 (0.00%) Pass=False
+[2026-08-13 16:39:01,456] INFO in auth (Line 130): User logged in: student@test.com
+[2026-08-13 16:39:02,775] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 1/3, Action: WARNING
+[2026-08-13 16:39:02,778] INFO in violation_engine (Line 56): Deduplicated event HEAD_TURN for attempt 1 (elapsed: 0.0s)
+[2026-08-13 16:39:03,553] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 1/2, Action: WARNING
+[2026-08-13 16:39:03,557] INFO in violation_engine (Line 113): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 2/2, Action: TERMINATE
+[2026-08-14 10:23:18,420] INFO in auth (Line 157): User logged in: yeswanth5922@gmail.com
+[2026-08-14 10:28:55,833] INFO in auth (Line 157): User logged in: john@gmail.com
+[2026-08-14 10:29:34,633] INFO in auth (Line 108): Automatically registered student user: john1@gmail.com
+[2026-08-14 10:29:34,643] INFO in auth (Line 157): User logged in: john1@gmail.com
+[2026-08-14 10:29:42,969] INFO in proctoring (Line 263): Student john1@gmail.com passed face verification for exam 1
+[2026-08-14 10:29:43,048] INFO in session_manager (Line 57): Started attempt session 13 for student 4 on exam 1
+[2026-08-14 10:29:50,877] INFO in violation_engine (Line 119): Violation logged: Attempt 13, Event: FACE_ABSENT, Count: 1/5, Action: WARNING
+[2026-08-14 10:29:51,057] INFO in evidence_service (Line 59): Evidence saved for attempt 13, event: FACE_ABSENT. File size: 8596 bytes.
+[2026-08-14 10:30:15,373] INFO in violation_engine (Line 119): Violation logged: Attempt 13, Event: TAB_SWITCH, Count: 1/3, Action: TERMINATE
+[2026-08-14 10:31:11,365] INFO in auth (Line 180): User logged out: john1@gmail.com
+[2026-08-14 10:31:35,517] INFO in auth (Line 108): Automatically registered student user: abhi@gmail.com
+[2026-08-14 10:31:35,524] INFO in auth (Line 157): User logged in: abhi@gmail.com
+[2026-08-14 10:31:43,800] INFO in proctoring (Line 263): Student abhi@gmail.com passed face verification for exam 1
+[2026-08-14 10:31:43,835] INFO in session_manager (Line 57): Started attempt session 14 for student 5 on exam 1
+[2026-08-14 10:31:49,544] INFO in violation_engine (Line 119): Violation logged: Attempt 14, Event: HEAD_TURN, Count: 1/5, Action: WARNING
+[2026-08-14 10:31:49,691] INFO in evidence_service (Line 59): Evidence saved for attempt 14, event: HEAD_TURN. File size: 7317 bytes.
+[2026-08-14 10:32:03,033] INFO in violation_engine (Line 119): Violation logged: Attempt 14, Event: PHONE_DETECTED, Count: 1/2, Action: WARNING
+[2026-08-14 10:32:03,123] INFO in evidence_service (Line 59): Evidence saved for attempt 14, event: PHONE_DETECTED. File size: 8051 bytes.
+[2026-08-14 10:32:33,010] INFO in violation_engine (Line 119): Violation logged: Attempt 14, Event: PHONE_DETECTED, Count: 2/2, Action: TERMINATE
+[2026-08-14 10:34:59,984] INFO in auth (Line 180): User logged out: abhi@gmail.com
+[2026-08-14 10:35:19,078] INFO in auth (Line 157): User logged in: john@gmail.com
+[2026-08-14 10:35:27,481] INFO in auth (Line 180): User logged out: john@gmail.com
+[2026-08-14 10:37:11,940] INFO in auth (Line 157): User logged in: abhi@gmail.com
+[2026-08-14 10:37:22,377] INFO in auth (Line 180): User logged out: abhi@gmail.com
+[2026-08-14 10:37:33,759] INFO in auth (Line 108): Automatically registered student user: test@gmail.com
+[2026-08-14 10:37:33,769] INFO in auth (Line 157): User logged in: test@gmail.com
+[2026-08-14 10:44:21,077] INFO in auth (Line 180): User logged out: test@gmail.com

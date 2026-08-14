@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Exam System - Manage Exams</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="#" class="nav-brand">🛡️ SECURE EXAM (ADMIN)</a>
+        <div class="nav-links">
+            <a href="dashboard.html" class="nav-link">Dashboard</a>
+            <a href="exams.html" class="nav-link active">Manage Exams</a>
+            <a href="violations.html" class="nav-link">Violations</a>
+            <a href="results.html" class="nav-link">Student Results</a>
+            <span id="user-display" style="color: var(--text-secondary); font-size: 0.95rem; font-weight: 500;"></span>
+            <a href="#" class="nav-link" onclick="handleLogout()">Sign Out</a>
+        </div>
+    </nav>
+
+    <div class="container" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 2rem;">
+        <!-- Left: Exams list -->
+        <div class="glass-panel">
+            <h3 style="margin-bottom: 1.5rem;">Created Examinations</h3>
+            <div id="exams-list" style="display: flex; flex-direction: column; gap: 1rem;">
+                <p style="color: var(--text-secondary);">Loading examinations...</p>
+            </div>
+        </div>
+
+        <!-- Right: Create/Edit Exam Form -->
+        <div class="glass-panel">
+            <h3 style="margin-bottom: 1.5rem;" id="form-title">Create New Examination</h3>
+            
+            <form id="exam-form">
+                <input type="hidden" id="edit-exam-id">
+                
+                <div class="form-group">
+                    <label class="form-label" for="title">Exam Title</label>
+                    <input class="form-control" type="text" id="title" placeholder="Midterm Computer Architecture" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="description">Description</label>
+                    <textarea class="form-control" id="description" rows="3" placeholder="Syllabus coverage..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="duration">Duration (Minutes)</label>
+                    <input class="form-control" type="number" id="duration" value="60" min="5" required>
+                </div>
+
+                <!-- Security configuration parameters accordion -->
+                <div style="border: 1px solid var(--border-glass); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+                    <h4 style="margin-bottom: 1rem; font-size: 0.95rem; color: var(--accent-secondary);">🛡️ Proctoring Security Policies</h4>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.85rem;">
+                        <div class="form-group" style="margin-bottom: 0.75rem;">
+                            <label class="form-label">Head Turn Limit</label>
+                            <input class="form-control" type="number" id="cfg-head-turn" value="5" min="1">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0.75rem;">
+                            <label class="form-label">Tab Switch Limit</label>
+                            <input class="form-control" type="number" id="cfg-tab" value="3" min="1">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0.75rem;">
+                            <label class="form-label">Multiple Person Limit</label>
+                            <input class="form-control" type="number" id="cfg-person" value="3" min="1">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0.75rem;">
+                            <label class="form-label">Mobile Phone Limit</label>
+                            <input class="form-control" type="number" id="cfg-phone" value="2" min="1">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0px;">
+                            <label class="form-label">Fullscreen Exit Limit</label>
+                            <input class="form-control" type="number" id="cfg-fullscreen" value="3" min="1">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0px;">
+                            <label class="form-label">Grace Period (Sec)</label>
+                            <input class="form-control" type="number" id="cfg-grace" value="30" min="5">
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 1rem;">
+                    <button class="btn btn-secondary" type="button" id="btn-cancel" onclick="resetForm()" style="display: none; flex-grow: 1;">Cancel</button>
+                    <button class="btn btn-primary" type="submit" style="flex-grow: 1;" id="btn-submit-exam">Create Exam</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script>
+        checkAuth("admin");
+        document.getElementById("user-display").innerText = `Admin: ${currentUser.first_name}`;
+
+        let examsCache = [];
+
+        async function loadExams() {
+            const res = await API.get("/exams");
+            if (res.success) {
+                examsCache = res.exams;
+                const list = document.getElementById("exams-list");
+                if (res.exams.length > 0) {
+                    list.innerHTML = res.exams.map(exam => `
+                        <div class="glass-panel" style="padding: 1.25rem; background: rgba(255, 255, 255, 0.01);">
+                            <h4 style="margin-bottom: 0.25rem;">${exam.title}</h4>
+                            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem;">
+                                Duration: ${exam.duration_minutes} mins | Questions: ${exam.questions ? exam.questions.length : 0}
+                            </p>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="btn btn-secondary" onclick="editExam(${exam.id})" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Edit</button>
+                                <a class="btn btn-secondary" href="questions.html?exam_id=${exam.id}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-color: var(--accent-secondary); color: var(--accent-secondary);">Questions</a>
+                                <button class="btn btn-secondary" onclick="copyExamLink(${exam.id})" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-color: var(--accent-primary); color: var(--accent-primary);">Copy Link</button>
+                                <button class="btn btn-danger" onclick="deleteExam(${exam.id})" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; margin-left: auto;">Delete</button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    list.innerHTML = `<p style="color: var(--text-secondary);">No examinations created yet.</p>`;
+                }
+            }
+        }
+
+        document.getElementById("exam-form").addEventListener("submit", async function(e) {
+            e.preventDefault();
+            
+            const examId = document.getElementById("edit-exam-id").value;
+            const title = document.getElementById("title").value;
+            const description = document.getElementById("description").value;
+            const duration = document.getElementById("duration").value;
+            
+            const securityConfig = {
+                head_turn_limit: parseInt(document.getElementById("cfg-head-turn").value),
+                tab_switch_limit: parseInt(document.getElementById("cfg-tab").value),
+                multiple_person_limit: parseInt(document.getElementById("cfg-person").value),
+                mobile_limit: parseInt(document.getElementById("cfg-phone").value),
+                fullscreen_exit_limit: parseInt(document.getElementById("cfg-fullscreen").value),
+                network_grace_period: parseInt(document.getElementById("cfg-grace").value)
+            };
+
+            let res;
+            if (examId) {
+                // Update Exam
+                res = await fetch(`${API_BASE}/exams/${examId}`, {
+                    method: "PUT",
+                    headers: getHeaders(),
+                    body: JSON.stringify({ title, description, duration_minutes: duration, security_config: securityConfig })
+                }).then(r => r.json());
+            } else {
+                // Create Exam
+                res = await API.post("/exams", { title, description, duration_minutes: duration, security_config: securityConfig });
+            }
+
+            if (res.success) {
+                alert(examId ? "Exam updated successfully" : "Exam created successfully");
+                resetForm();
+                loadExams();
+            } else {
+                alert(res.message || "Operation failed");
+            }
+        });
+
+        function editExam(id) {
+            const exam = examsCache.find(e => e.id === id);
+            if (!exam) return;
+            
+            document.getElementById("edit-exam-id").value = exam.id;
+            document.getElementById("title").value = exam.title;
+            document.getElementById("description").value = exam.description;
+            document.getElementById("duration").value = exam.duration_minutes;
+            
+            if (exam.security_config) {
+                const cfg = exam.security_config;
+                document.getElementById("cfg-head-turn").value = cfg.head_turn_limit;
+                document.getElementById("cfg-tab").value = cfg.tab_switch_limit;
+                document.getElementById("cfg-person").value = cfg.multiple_person_limit;
+                document.getElementById("cfg-phone").value = cfg.mobile_limit;
+                document.getElementById("cfg-fullscreen").value = cfg.fullscreen_exit_limit;
+                document.getElementById("cfg-grace").value = cfg.network_grace_period;
+            }
+
+            document.getElementById("form-title").innerText = "Edit Examination";
+            document.getElementById("btn-submit-exam").innerText = "Save Changes";
+            document.getElementById("btn-cancel").style.display = "block";
+        }
+
+        async function deleteExam(id) {
+            if (confirm("Are you sure you want to permanently delete this examination? All student attempts, scores, and violation traces will be cascade deleted!")) {
+                const res = await fetch(`${API_BASE}/exams/${id}`, {
+                    method: "DELETE",
+                    headers: getHeaders()
+                }).then(r => r.json());
+                
+                if (res.success) {
+                    alert("Exam deleted successfully.");
+                    loadExams();
+                } else {
+                    alert(res.message);
+                }
+            }
+        }
+
+        function resetForm() {
+            document.getElementById("edit-exam-id").value = "";
+            document.getElementById("exam-form").reset();
+            document.getElementById("form-title").innerText = "Create New Examination";
+            document.getElementById("btn-submit-exam").innerText = "Create Exam";
+            document.getElementById("btn-cancel").style.display = "none";
+        }
+
+        function copyExamLink(examId) {
+            const url = `${window.location.origin}/dashboard.html?exam_id=${examId}`;
+            navigator.clipboard.writeText(url).then(() => {
+                alert("Exam link copied to clipboard:\n" + url);
+            }).catch(err => {
+                console.error("Failed to copy exam link:", err);
+                alert("Failed to copy link. Direct URL is:\n" + url);
+            });
+        }
+
+        loadExams();
+    </script>
+</body>
+</html>

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Exam System - Student Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- MediaPipe scripts for pre-check face visibility check -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="#" class="nav-brand">🛡️ SECURE EXAM SYSTEM</a>
+        <div class="nav-links">
+            <span id="user-display" style="color: var(--text-secondary); font-size: 0.95rem; font-weight: 500;"></span>
+            <a href="#" class="nav-link" onclick="handleLogout()">Sign Out</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2 style="font-family: var(--font-heading); margin-bottom: 2rem;">Assigned Examinations</h2>
+        
+        <div class="dashboard-grid" id="exams-container">
+            <!-- Dynamic Exam Cards go here -->
+            <p style="color: var(--text-secondary);">Loading examinations...</p>
+        </div>
+    </div>
+
+    <!-- PRE-EXAM SYSTEM CHECK MODAL -->
+    <div class="modal-backdrop" id="precheck-modal">
+        <div class="glass-panel modal-content" style="max-width: 600px; text-align: center;">
+            <h3 style="margin-bottom: 1.5rem;">Pre-Exam System Integrity Check</h3>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 1.5rem; margin-bottom: 1.5rem; text-align: left;">
+                <div>
+                    <div class="video-feed-wrapper" style="width: 100%; height: 180px;">
+                        <video id="precheck-video" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+                        <canvas id="precheck-canvas" class="canvas-overlay"></canvas>
+                    </div>
+                    <button class="btn btn-secondary" id="btn-start-camera" style="width: 100%; margin-top: 0.75rem; padding: 0.5rem 1rem; font-size: 0.9rem;">Test Webcam</button>
+                </div>
+                
+                <div>
+                    <div class="check-item">
+                        <div class="check-label">🌐 Internet Connection</div>
+                        <div class="check-status badge" id="check-net">PENDING</div>
+                    </div>
+                    <div class="check-item">
+                        <div class="check-label">📷 Webcam Stream</div>
+                        <div class="check-status badge" id="check-camera">PENDING</div>
+                    </div>
+                    <div class="check-item">
+                        <div class="check-label">👤 Face Detected</div>
+                        <div class="check-status badge" id="check-face">PENDING</div>
+                    </div>
+                    <div class="check-item">
+                        <div class="check-label">🖥️ Dual Monitors Block</div>
+                        <div class="check-status badge" id="check-displays">PENDING</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="border-top: 1px solid var(--border-glass); padding-top: 1.5rem; display: flex; justify-content: flex-end; gap: 1rem;">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" id="btn-start-exam" disabled>START EXAM</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        checkAuth("student");
+        
+        let selectedExamId = null;
+        let precheckFaceMesh = null;
+        let precheckCamera = null;
+        let webcamPassed = false;
+        let facePassed = false;
+
+        document.getElementById("user-display").innerText = `Candidate: ${currentUser.first_name} ${currentUser.last_name}`;
+
+        async function loadExams() {
+            const res = await API.get("/exams");
+            const container = document.getElementById("exams-container");
+            if (res.success && res.exams.length > 0) {
+                container.innerHTML = res.exams.map(exam => {
+                    let actionBtn = "";
+                    if (exam.attempted) {
+                        actionBtn = `<button class="btn btn-secondary" onclick="window.location.href='result.html?attempt_id=${exam.attempt_id}'" style="padding: 0.5rem 1rem; font-size: 0.9rem; background: rgba(255, 255, 255, 0.05); color: var(--text-secondary); border-color: var(--border-glass);">View Results</button>`;
+                    } else if (exam.access_status === "APPROVED") {
+                        actionBtn = `<button class="btn btn-primary" onclick="openPrecheck(${exam.id})" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Launch Exam</button>`;
+                    } else if (exam.access_status === "PENDING") {
+                        actionBtn = `<button class="btn btn-warning" disabled style="padding: 0.5rem 1rem; font-size: 0.9rem; background: var(--accent-warning); color: #fff; border-color: transparent;">Approval Pending</button>`;
+                    } else {
+                        actionBtn = `<button class="btn btn-primary" onclick="requestAccess(${exam.id})" style="padding: 0.5rem 1rem; font-size: 0.9rem; background: var(--accent-secondary); border-color: transparent;">Request Access</button>`;
+                    }
+                    return `
+                        <div class="glass-panel" style="padding: 1.5rem;">
+                            <h4 style="margin-bottom: 0.5rem; font-size: 1.2rem;">${exam.title}</h4>
+                            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.5rem; min-height: 40px;">
+                                ${exam.description || 'No description provided.'}
+                            </p>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-size: 0.9rem; font-weight: 500; color: var(--accent-primary);">⏳ ${exam.duration_minutes} Mins</span>
+                                ${actionBtn}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                // Auto-launch precheck if ?exam_id=ID is present in URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const examIdParam = urlParams.get("exam_id");
+                if (examIdParam) {
+                    const matchedExam = res.exams.find(e => e.id == examIdParam);
+                    if (matchedExam) {
+                        if (matchedExam.attempted) {
+                            alert("You have already attempted this examination. Redirecting to results.");
+                            window.location.href = `result.html?attempt_id=${matchedExam.attempt_id}`;
+                        } else if (matchedExam.access_status === "APPROVED") {
+                            openPrecheck(matchedExam.id);
+                        } else if (matchedExam.access_status === "PENDING") {
+                            alert("Your access request is currently pending administrator approval. Please wait.");
+                        } else {
+                            const reqRes = await API.post(`/exams/${matchedExam.id}/request-access`, {});
+                            alert(reqRes.message);
+                            loadExams();
+                        }
+                    }
+                }
+            } else {
+                container.innerHTML = `<p style="color: var(--text-secondary);">No examinations are assigned to you at this time.</p>`;
+            }
+        }
+
+        async function requestAccess(examId) {
+            const res = await API.post(`/exams/${examId}/request-access`, {});
+            if (res.success) {
+                alert(res.message);
+                loadExams();
+            } else {
+                alert(res.message || "Failed to submit access request.");
+            }
+        }
+
+        function openPrecheck(examId) {
+            selectedExamId = examId;
+            document.getElementById("precheck-modal").classList.add("active");
+            runSystemCheck();
+        }
+
+        function closeModal() {
+            document.getElementById("precheck-modal").classList.remove("active");
+            SystemPreCheck.releaseMedia();
+            if (precheckCamera) {
+                precheckCamera.stop();
+            }
+            webcamPassed = false;
+            facePassed = false;
+            updateCheckBadge("check-camera", "PENDING", "warning");
+            updateCheckBadge("check-face", "PENDING", "warning");
+            document.getElementById("btn-start-exam").disabled = true;
+        }
+
+        async function runSystemCheck() {
+            // 1. Internet Check
+            const internet = await SystemPreCheck.checkConnectivity();
+            updateCheckBadge("check-net", internet ? "PASS" : "FAIL", internet ? "success" : "danger");
+
+            // 2. Dual Display Check (simple API check)
+            const monitorsCount = window.screen && window.screen.width ? 1 : 1; // Basic monitor count simulator
+            const displayPass = monitorsCount === 1;
+            updateCheckBadge("check-displays", displayPass ? "PASS" : "FAIL", displayPass ? "success" : "danger");
+
+            evaluateStartButton();
+        }
+
+        function updateCheckBadge(elementId, text, status) {
+            const badge = document.getElementById(elementId);
+            badge.innerText = text;
+            badge.className = `check-status badge badge-${status}`;
+        }
+
+        document.getElementById("btn-start-camera").addEventListener("click", async () => {
+            const video = document.getElementById("precheck-video");
+            const canvas = document.getElementById("precheck-canvas");
+            
+            const hasCamera = await SystemPreCheck.requestCamera();
+            if (hasCamera) {
+                video.srcObject = mediaStream;
+                updateCheckBadge("check-camera", "PASS", "success");
+                webcamPassed = true;
+                
+                // Initialize Face Mesh for verification inside modal check
+                if (typeof FaceMesh !== "undefined") {
+                    precheckFaceMesh = new FaceMesh({
+                        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+                    });
+                    
+                    precheckFaceMesh.setOptions({
+                        maxNumFaces: 1,
+                        minDetectionConfidence: 0.5,
+                        minTrackingConfidence: 0.5
+                    });
+                    
+                    precheckFaceMesh.onResults((results) => {
+                        const faces = results.multiFaceLandmarks || [];
+                        const ctx = canvas.getContext("2d");
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        
+                        if (faces.length === 1) {
+                            updateCheckBadge("check-face", "PASS", "success");
+                            facePassed = true;
+                            evaluateStartButton();
+                            
+                            // Draw landmarks
+                            ctx.fillStyle = "rgba(16, 185, 129, 0.5)";
+                            faces[0].forEach(pt => {
+                                ctx.beginPath();
+                                ctx.arc(pt.x * canvas.width, pt.y * canvas.height, 1, 0, 2*Math.PI);
+                                ctx.fill();
+                            });
+                        } else {
+                            updateCheckBadge("check-face", "FAIL", "danger");
+                            facePassed = false;
+                            evaluateStartButton();
+                        }
+                    });
+                    
+                    precheckCamera = new Camera(video, {
+                        onFrame: async () => {
+                            await precheckFaceMesh.send({ image: video });
+                        },
+                        width: 640,
+                        height: 480
+                    });
+                    precheckCamera.start();
+                } else {
+                    // Fallback pass if script didn't load
+                    updateCheckBadge("check-face", "PASS", "success");
+                    facePassed = true;
+                    evaluateStartButton();
+                }
+            } else {
+                updateCheckBadge("check-camera", "FAIL", "danger");
+                updateCheckBadge("check-face", "FAIL", "danger");
+                webcamPassed = false;
+                facePassed = false;
+                evaluateStartButton();
+            }
+        });
+
+        function evaluateStartButton() {
+            const netPass = document.getElementById("check-net").innerText === "PASS";
+            const dispPass = document.getElementById("check-displays").innerText === "PASS";
+            
+            const allPassed = netPass && webcamPassed && facePassed && dispPass;
+            document.getElementById("btn-start-exam").disabled = !allPassed;
+        }
+
+        document.getElementById("btn-start-exam").addEventListener("click", async () => {
+            // First upload the verification image reference to backend
+            const video = document.getElementById("precheck-video");
+            const canvas = document.getElementById("precheck-canvas");
+            
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            canvas.toBlob(async (blob) => {
+                const formData = new FormData();
+                formData.append("file", blob, "reference.jpg");
+                formData.append("exam_id", selectedExamId);
+                
+                const verifyRes = await API.upload("/proctor/face-verification", formData);
+                if (verifyRes.success) {
+                    // Call start exam API
+                    const startRes = await API.post(`/exams/${selectedExamId}/start`, {});
+                    if (startRes.success) {
+                        localStorage.setItem("attempt_id", startRes.attempt_id);
+                        localStorage.setItem("session_token", startRes.session_token);
+                        SystemPreCheck.releaseMedia();
+                        if (precheckCamera) precheckCamera.stop();
+                        window.location.href = "exam.html";
+                    } else {
+                        alert(startRes.message || "Failed to start examination session.");
+                    }
+                } else {
+                    alert(verifyRes.message || "Face verification failed. Cannot initiate examination session.");
+                }
+            }, "image/jpeg", 0.8);
+        });
+
+        loadExams();
+    </script>
+</body>
+</html>

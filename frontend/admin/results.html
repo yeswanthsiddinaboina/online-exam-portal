@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Exam System - Student Results</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .stats-card {
+            padding: 1.5rem;
+            text-align: center;
+        }
+        .stats-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            margin-top: 0.5rem;
+        }
+        .select-wrapper {
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        select {
+            padding: 0.6rem 1.2rem;
+            font-size: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-glass);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            font-family: inherit;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        select:focus {
+            border-color: var(--accent-primary);
+            box-shadow: var(--shadow-glow);
+        }
+        option {
+            background: #10b981;
+            color: #ffffff;
+        }
+        .scoreboard-row:hover {
+            background: rgba(16, 185, 129, 0.05) !important;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="#" class="nav-brand">🛡️ SECURE EXAM (ADMIN)</a>
+        <div class="nav-links">
+            <a href="dashboard.html" class="nav-link">Dashboard</a>
+            <a href="exams.html" class="nav-link">Manage Exams</a>
+            <a href="violations.html" class="nav-link">Violations</a>
+            <a href="results.html" class="nav-link active">Student Results</a>
+            <span id="user-display" style="color: var(--text-secondary); font-size: 0.95rem; font-weight: 500;"></span>
+            <a href="#" class="nav-link" onclick="handleLogout()">Sign Out</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2 style="font-family: var(--font-heading); margin-bottom: 2rem;">Student Results & Exam Statistics</h2>
+
+        <!-- Select Exam Dropdown -->
+        <div class="select-wrapper">
+            <label for="exam-selector" style="font-weight: 500; color: var(--text-secondary);">Select Examination:</label>
+            <select id="exam-selector" onchange="changeExam(this.value)">
+                <option value="">Loading exams...</option>
+            </select>
+        </div>
+
+        <!-- Exam Statistics Cards -->
+        <div class="stats-grid" id="stats-container" style="display: none;">
+            <div class="glass-panel stats-card">
+                <div style="font-size: 0.9rem; color: var(--text-secondary);">Total Attempts</div>
+                <div class="stats-value" id="stat-total">-</div>
+            </div>
+            <div class="glass-panel stats-card">
+                <div style="font-size: 0.9rem; color: var(--text-secondary);">Attending (Active)</div>
+                <div class="stats-value" id="stat-active" style="color: var(--accent-warning);">-</div>
+            </div>
+            <div class="glass-panel stats-card">
+                <div style="font-size: 0.9rem; color: var(--text-secondary);">Passed Attempts</div>
+                <div class="stats-value" id="stat-passed" style="color: var(--accent-success);">-</div>
+            </div>
+            <div class="glass-panel stats-card">
+                <div style="font-size: 0.9rem; color: var(--text-secondary);">Pass Rate</div>
+                <div class="stats-value" id="stat-rate">-</div>
+            </div>
+            <div class="glass-panel stats-card">
+                <div style="font-size: 0.9rem; color: var(--text-secondary);">Average Grade</div>
+                <div class="stats-value" id="stat-avg">-</div>
+            </div>
+            <div class="glass-panel stats-card">
+                <div style="font-size: 0.9rem; color: var(--text-secondary);">Highest Score</div>
+                <div class="stats-value" id="stat-highest" style="color: var(--accent-secondary);">-</div>
+            </div>
+        </div>
+
+        <!-- Pending Access Requests Section -->
+        <div class="glass-panel" id="access-requests-panel" style="margin-bottom: 2rem; display: none;">
+            <h3 style="font-family: var(--font-heading); margin-bottom: 1rem; color: var(--accent-warning);">🔓 Pending Access Requests</h3>
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Student Email</th>
+                            <th>Request Time</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="access-requests-body">
+                        <tr>
+                            <td colspan="3" style="color: var(--text-secondary);">No pending access requests.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Student Marks Table -->
+        <div class="glass-panel">
+            <h3 style="font-family: var(--font-heading); margin-bottom: 1rem;">Candidate Scoreboard</h3>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;">💡 Click on any completed student's row to review their detailed session answers and violations history.</p>
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Student Email</th>
+                            <th>Status</th>
+                            <th>Violations</th>
+                            <th>Raw Score</th>
+                            <th>Percentage</th>
+                            <th>Result</th>
+                            <th>Completed Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attempts-table-body">
+                        <tr>
+                            <td colspan="7" style="color: var(--text-secondary); text-align: center;">Select an exam to load scores.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Audit details modal -->
+    <div class="modal-overlay" id="audit-modal">
+        <div class="glass-panel modal-content" style="max-width: 900px; width: 90%; max-height: 85vh; overflow-y: auto; text-align: left; padding: 2rem; background: var(--bg-secondary); color: var(--text-primary);">
+            <h3 style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                <span>📋 Detailed Candidate Review</span>
+                <button class="btn btn-secondary" onclick="closeAuditModal()" style="padding: 0.3rem 0.7rem; font-size: 0.8rem;">Close</button>
+            </h3>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 2rem; margin-bottom: 1rem;">
+                <!-- Left: Attempt Overview & Violations -->
+                <div>
+                    <h4 style="border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; margin-bottom: 1rem; color: var(--accent-secondary);">Session Log</h4>
+                    <p style="margin-bottom: 0.5rem;"><strong>Email:</strong> <span id="audit-email">-</span></p>
+                    <p style="margin-bottom: 0.5rem;"><strong>Status:</strong> <span id="audit-status" class="badge">-</span></p>
+                    <p style="margin-bottom: 0.5rem;"><strong>Score:</strong> <span id="audit-score">-</span></p>
+                    <p style="margin-bottom: 1.5rem;"><strong>Timeline:</strong> <span id="audit-timeline">-</span></p>
+                    
+                    <h4 style="border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; margin-bottom: 1rem; color: var(--accent-danger);">Logged Violations</h4>
+                    <div style="max-height: 250px; overflow-y: auto;">
+                        <table class="table" style="font-size: 0.85rem;">
+                            <thead>
+                                <tr>
+                                    <th>Violation</th>
+                                    <th>Time</th>
+                                    <th>Evidence</th>
+                                </tr>
+                            </thead>
+                            <tbody id="audit-violations-body">
+                                <tr>
+                                    <td colspan="3" style="color: var(--text-muted); text-align: center;">No infractions logged.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Right: Questions Response Review -->
+                <div>
+                    <h4 style="border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; margin-bottom: 1rem; color: var(--accent-primary);">Question Responses</h4>
+                    <div style="max-height: 420px; overflow-y: auto; padding-right: 0.5rem;" id="audit-questions-container">
+                        <p style="color: var(--text-muted);">No responses submitted.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inner evidence picture popup modal -->
+    <div class="modal-overlay" id="audit-evidence-modal" style="z-index: 1050;">
+        <div class="glass-panel modal-content" style="max-width: 500px; text-align: center; background: var(--bg-secondary);">
+            <h3 style="margin-bottom: 1rem;">Evidence Snapshot</h3>
+            <div class="video-feed-wrapper" style="width: 100%; height: 320px; border-color: var(--accent-danger);">
+                <img id="audit-evidence-img" src="" alt="Evidence Frame" style="width: 100%; height: 100%; object-fit: contain; background: #000;">
+            </div>
+            <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="closeAuditEvidenceModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script>
+        checkAuth("admin");
+
+        document.getElementById("user-display").innerText = `Admin: ${currentUser.first_name}`;
+
+        async function loadReports(examId = null) {
+            const url = examId ? `/admin/reports?exam_id=${examId}` : "/admin/reports";
+            const res = await API.get(url);
+            
+            if (res.success) {
+                // Populate selector dropdown if not done
+                const selector = document.getElementById("exam-selector");
+                if (res.exams && res.exams.length > 0) {
+                    selector.innerHTML = res.exams.map(e => `
+                        <option value="${e.id}" ${e.id == res.selected_exam_id ? 'selected' : ''}>${e.title}</option>
+                    `).join('');
+                } else {
+                    selector.innerHTML = `<option value="">No exams created yet</option>`;
+                }
+
+                if (res.selected_exam_id) {
+                    // Update Stats Cards
+                    document.getElementById("stats-container").style.display = "grid";
+                    const s = res.statistics;
+                    document.getElementById("stat-total").innerText = s.total_students;
+                    document.getElementById("stat-active").innerText = s.attending_count;
+                    document.getElementById("stat-passed").innerText = s.submitted_count;
+                    document.getElementById("stat-rate").innerText = `${s.pass_rate}%`;
+                    document.getElementById("stat-avg").innerText = `${s.average_percentage}%`;
+                    document.getElementById("stat-highest").innerText = `${s.max_percentage}%`;
+
+                    // Update Pending Access requests
+                    const accessPanel = document.getElementById("access-requests-panel");
+                    const accessBody = document.getElementById("access-requests-body");
+                    if (res.pending_access && res.pending_access.length > 0) {
+                        accessPanel.style.display = "block";
+                        accessBody.innerHTML = res.pending_access.map(pa => `
+                            <tr>
+                                <td><strong>${pa.student_email}</strong></td>
+                                <td>${new Date(pa.requested_at).toLocaleString()}</td>
+                                <td>
+                                    <button class="btn btn-primary" onclick="approveStudentAccess(${pa.id})" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Approve Access</button>
+                                </td>
+                            </tr>
+                        `).join('');
+                    } else {
+                        accessPanel.style.display = "none";
+                        accessBody.innerHTML = `<tr><td colspan="3" style="color: var(--text-secondary); text-align: center;">No pending access requests.</td></tr>`;
+                    }
+
+                    // Update Student Scores Table
+                    const body = document.getElementById("attempts-table-body");
+                    if (res.attempts && res.attempts.length > 0) {
+                        body.innerHTML = res.attempts.map(a => {
+                            const isClickable = a.status !== 'IN_PROGRESS';
+                            const rowStyle = isClickable ? 'cursor: pointer; transition: background 0.2s;' : '';
+                            const clickHandler = isClickable ? `onclick="openAuditModal(${a.attempt_id})"` : '';
+                            return `
+                                <tr style="${rowStyle}" ${clickHandler} class="${isClickable ? 'scoreboard-row' : ''}">
+                                    <td><strong>${a.student_email}</strong></td>
+                                    <td>
+                                        <span class="badge badge-${
+                                            a.status === 'MALPRACTICE_CANCELLED' ? 'danger' :
+                                            (a.status === 'IN_PROGRESS' ? 'warning' : 'success')
+                                        }">${a.status.replace('_', ' ')}</span>
+                                    </td>
+                                    <td>
+                                        <span style="font-weight: 600; color: ${a.violations_count > 0 ? 'var(--accent-danger)' : 'var(--accent-success)'};">
+                                            ${a.violations_count} Infractions
+                                        </span>
+                                    </td>
+                                    <td>${a.status !== 'IN_PROGRESS' ? a.score_obtained.toFixed(1) : '-'}</td>
+                                    <td>${a.status !== 'IN_PROGRESS' ? `${a.percentage.toFixed(1)}%` : '-'}</td>
+                                    <td>
+                                        ${a.status === 'IN_PROGRESS' ? '<span style="color: var(--text-muted);">In Progress</span>' : 
+                                            `<span class="badge badge-${a.passed ? 'success' : 'danger'}">${a.passed ? 'PASSED' : 'FAILED'}</span>`
+                                        }
+                                    </td>
+                                    <td>${a.ended_at ? new Date(a.ended_at).toLocaleString() : 'Not Finished'}</td>
+                                </tr>
+                            `;
+                        }).join('');
+                    } else {
+                        body.innerHTML = `<tr><td colspan="7" style="color: var(--text-secondary); text-align: center;">No students have attempted this examination.</td></tr>`;
+                    }
+                }
+            } else {
+                alert("Failed to load statistics report.");
+            }
+        }
+
+        async function approveStudentAccess(accessId) {
+            if (confirm("Are you sure you want to approve this student to take the exam?")) {
+                const res = await API.post(`/admin/access/${accessId}/approve`, {});
+                if (res.success) {
+                    alert(res.message);
+                    const selector = document.getElementById("exam-selector");
+                    loadReports(selector.value);
+                } else {
+                    alert(res.message || "Failed to approve student access.");
+                }
+            }
+        }
+
+        async function openAuditModal(attemptId) {
+            const res = await API.get(`/results/${attemptId}`);
+            if (res.success) {
+                const r = res.result;
+                document.getElementById("audit-email").innerText = r.student_email || "Candidate";
+                
+                const badge = document.getElementById("audit-status");
+                badge.innerText = r.status.replace('_', ' ');
+                badge.className = `badge badge-${
+                    r.status === 'MALPRACTICE_CANCELLED' ? 'danger' :
+                    (r.status === 'IN_PROGRESS' ? 'warning' : 'success')
+                }`;
+                
+                document.getElementById("audit-score").innerText = `${r.score_obtained.toFixed(1)} / ${r.questions.reduce((a, b) => a + b.marks, 0).toFixed(1)} (${r.percentage.toFixed(1)}%)`;
+                
+                const startStr = r.started_at ? new Date(r.started_at).toLocaleTimeString() : 'N/A';
+                const endStr = r.ended_at ? new Date(r.ended_at).toLocaleTimeString() : 'N/A';
+                document.getElementById("audit-timeline").innerText = `${startStr} - ${endStr}`;
+                
+                // Render violations list
+                const vBody = document.getElementById("audit-violations-body");
+                if (r.violations && r.violations.length > 0) {
+                    vBody.innerHTML = r.violations.map(v => `
+                        <tr>
+                            <td><strong style="color: var(--accent-danger);">${v.event_type.replace('_', ' ')}</strong></td>
+                            <td>${new Date(v.timestamp).toLocaleTimeString()}</td>
+                            <td>
+                                ${v.evidence_id ? 
+                                    `<button class="btn btn-primary" onclick="viewAuditEvidence('${v.evidence_id}')" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">View</button>` : 
+                                    '<span style="color: var(--text-muted); font-size: 0.75rem;">No Frame</span>'
+                                }
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    vBody.innerHTML = `<tr><td colspan="3" style="color: var(--text-muted); text-align: center;">No infractions logged.</td></tr>`;
+                }
+
+                // Render questions review
+                const qContainer = document.getElementById("audit-questions-container");
+                qContainer.innerHTML = r.questions.map((q, idx) => {
+                    const isMcq = q.question_type === "MCQ" || q.question_type === "TF";
+                    const studentAnsStr = isMcq ? q.student_answer.selected_answers.join(", ") : q.student_answer.text_answer;
+                    const correctAnsStr = q.correct_answer;
+                    
+                    const isCorrect = isMcq ? 
+                        (q.student_answer.selected_answers.length === 1 && q.student_answer.selected_answers[0] === q.correct_answer) : 
+                        (q.student_answer.text_answer.trim().toLowerCase() === q.correct_answer.trim().toLowerCase());
+                    
+                    const borderCol = isCorrect ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)';
+                    
+                    return `
+                        <div class="glass-panel" style="margin-bottom: 1rem; padding: 1rem; border-color: ${borderCol};">
+                            <h5 style="margin-bottom: 0.5rem; color: var(--text-secondary);">Question ${idx + 1} (${q.marks} Marks)</h5>
+                            <p style="font-weight: 500; font-size: 0.95rem; margin-bottom: 0.75rem;">${q.question_text}</p>
+                            
+                            <div style="font-size: 0.85rem; border-top: 1px solid var(--border-glass); padding-top: 0.5rem;">
+                                <div><span style="color: var(--text-secondary);">Student Response:</span> <span style="font-weight: 700; color: ${isCorrect ? 'var(--accent-success)' : 'var(--accent-danger)'};">${studentAnsStr || '[No Answer]'}</span></div>
+                                <div><span style="color: var(--text-secondary);">Correct Response:</span> <span style="font-weight: 700; color: var(--accent-success);">${correctAnsStr}</span></div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                document.getElementById("audit-modal").classList.add("active");
+            } else {
+                alert("Failed to load student details.");
+            }
+        }
+
+        function closeAuditModal() {
+            document.getElementById("audit-modal").classList.remove("active");
+        }
+
+        function viewAuditEvidence(evidenceId) {
+            const token = currentToken;
+            const imgUrl = `http://127.0.0.1:5001/api/admin/evidence/${evidenceId}`;
+            
+            fetch(imgUrl, {
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            })
+            .then(res => res.blob())
+            .then(blob => {
+                const objectURL = URL.createObjectURL(blob);
+                document.getElementById("audit-evidence-img").src = objectURL;
+                document.getElementById("audit-evidence-modal").classList.add("active");
+            })
+            .catch(err => {
+                console.error("Failed to load audit evidence:", err);
+                alert("Could not load evidence frame.");
+            });
+        }
+
+        function closeAuditEvidenceModal() {
+            document.getElementById("audit-evidence-modal").classList.remove("active");
+            document.getElementById("audit-evidence-img").src = "";
+        }
+
+        function changeExam(val) {
+            if (val) {
+                loadReports(val);
+            }
+        }
+
+        // Initialize reports on page load
+        loadReports();
+    </script>
+</body>
+</html>

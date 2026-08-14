@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Exam System - Login</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container auth-wrapper">
+        <div class="glass-panel auth-card">
+            <div class="logo-header">
+                <div class="logo-icon">🛡️ SECURE EXAM</div>
+                <p style="color: var(--text-secondary);">Multi-Layer Secure Examination Environment</p>
+            </div>
+            
+            <!-- Auth Selection Tabs -->
+            <div id="auth-tabs-container" style="display: flex; gap: 10px; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem;">
+                <button id="tab-student" type="button" style="flex: 1; background: transparent; border: none; padding: 0.5rem; color: var(--text-primary); font-weight: 600; border-bottom: 2px solid var(--accent-primary); outline: none; cursor: pointer; font-size: 0.95rem;">Student Exam</button>
+                <button id="tab-admin" type="button" style="flex: 1; background: transparent; border: none; padding: 0.5rem; color: var(--text-secondary); font-weight: 500; border-bottom: 2px solid transparent; outline: none; cursor: pointer; font-size: 0.95rem;">Admin Portal</button>
+            </div>
+            
+            <form id="login-form">
+                <div class="form-group">
+                    <label class="form-label" for="email" id="email-label">Candidate Email</label>
+                    <input class="form-control" type="email" id="email" placeholder="student@university.edu" required>
+                </div>
+                
+                <div class="form-group" id="password-group" style="display: none;">
+                    <label class="form-label" for="password">Password</label>
+                    <input class="form-control" type="password" id="password" placeholder="••••••••">
+                </div>
+                
+                <button class="btn btn-primary" id="btn-submit" style="width: 100%; margin-top: 1rem;" type="submit">Enter Examination</button>
+            </form>
+            
+            <p id="register-link-container" style="margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-secondary); display: none;">
+                Don't have an admin account? <a href="register.html" style="color: var(--accent-primary); text-decoration: none; font-weight: 500;">Register Here</a>
+            </p>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        // Redirect if already authenticated
+        const adminToken = localStorage.getItem("admin_token");
+        const studentToken = localStorage.getItem("token");
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectUrl = urlParams.get("redirect");
+        
+        if (redirectUrl) {
+            const isTargetAdmin = decodeURIComponent(redirectUrl).includes("/admin/");
+            if (isTargetAdmin && adminToken) {
+                window.location.href = decodeURIComponent(redirectUrl);
+            } else if (!isTargetAdmin && studentToken) {
+                window.location.href = decodeURIComponent(redirectUrl);
+            }
+        } else {
+            if (adminToken) {
+                window.location.href = "admin/dashboard.html";
+            } else if (studentToken) {
+                window.location.href = "dashboard.html";
+            }
+        }
+
+        let activeRole = "student";
+
+        const tabStudent = document.getElementById("tab-student");
+        const tabAdmin = document.getElementById("tab-admin");
+        const passwordGroup = document.getElementById("password-group");
+        const passwordInput = document.getElementById("password");
+        const emailLabel = document.getElementById("email-label");
+        const btnSubmit = document.getElementById("btn-submit");
+        const registerContainer = document.getElementById("register-link-container");
+
+        function initializeView() {
+            if (redirectUrl) {
+                const isTargetAdmin = decodeURIComponent(redirectUrl).includes("/admin/");
+                document.getElementById("auth-tabs-container").style.display = "none";
+                if (isTargetAdmin) {
+                    activeRole = "admin";
+                    passwordGroup.style.display = "block";
+                    passwordInput.required = true;
+                    emailLabel.innerText = "Institutional Email";
+                    btnSubmit.innerText = "Sign In as Admin";
+                    registerContainer.style.display = "block";
+                } else {
+                    activeRole = "student";
+                    passwordGroup.style.display = "none";
+                    passwordInput.required = false;
+                    emailLabel.innerText = "Candidate Email";
+                    btnSubmit.innerText = "Enter Examination";
+                    registerContainer.style.display = "none";
+                }
+            }
+        }
+
+        tabStudent.addEventListener("click", () => {
+            activeRole = "student";
+            tabStudent.style.borderBottomColor = "var(--accent-primary)";
+            tabStudent.style.color = "var(--text-primary)";
+            tabStudent.style.fontWeight = "600";
+            
+            tabAdmin.style.borderBottomColor = "transparent";
+            tabAdmin.style.color = "var(--text-secondary)";
+            tabAdmin.style.fontWeight = "500";
+            
+            passwordGroup.style.display = "none";
+            passwordInput.required = false;
+            emailLabel.innerText = "Candidate Email";
+            btnSubmit.innerText = "Enter Examination";
+            registerContainer.style.display = "none";
+        });
+
+        tabAdmin.addEventListener("click", () => {
+            activeRole = "admin";
+            tabAdmin.style.borderBottomColor = "var(--accent-primary)";
+            tabAdmin.style.color = "var(--text-primary)";
+            tabAdmin.style.fontWeight = "600";
+            
+            tabStudent.style.borderBottomColor = "transparent";
+            tabStudent.style.color = "var(--text-secondary)";
+            tabStudent.style.fontWeight = "500";
+            
+            passwordGroup.style.display = "block";
+            passwordInput.required = true;
+            emailLabel.innerText = "Institutional Email";
+            btnSubmit.innerText = "Sign In as Admin";
+            registerContainer.style.display = "block";
+        });
+
+        document.getElementById("login-form").addEventListener("submit", function(e) {
+            e.preventDefault();
+            const email = document.getElementById("email").value;
+            const password = activeRole === "admin" ? passwordInput.value : "";
+            handleLogin(email, password);
+        });
+
+        // Initialize the login screen view state based on redirect URL
+        initializeView();
+    </script>
+</body>
+</html>

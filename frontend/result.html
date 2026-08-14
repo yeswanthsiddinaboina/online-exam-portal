@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Exam System - Result</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="#" class="nav-brand">🛡️ SECURE EXAM SYSTEM</a>
+        <div class="nav-links">
+            <a href="dashboard.html" class="nav-link">Dashboard</a>
+            <a href="#" class="nav-link" onclick="handleLogout()">Sign Out</a>
+        </div>
+    </nav>
+
+    <div class="container" style="max-width: 800px;">
+        <!-- Result Card -->
+        <div class="glass-panel" style="text-align: center; margin-bottom: 2rem;">
+            <h2 style="font-family: var(--font-heading); margin-bottom: 0.5rem;" id="res-exam-title">Examination Results</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 2rem;" id="res-date"></p>
+            
+            <div style="display: flex; justify-content: center; gap: 3rem; margin-bottom: 2rem;">
+                <div>
+                    <span style="font-size: 0.9rem; color: var(--text-secondary); text-transform: uppercase;">Score Obtained</span>
+                    <h1 style="font-size: 3rem; color: var(--accent-primary);" id="res-score">- / -</h1>
+                </div>
+                <div>
+                    <span style="font-size: 0.9rem; color: var(--text-secondary); text-transform: uppercase;">Percentage</span>
+                    <h1 style="font-size: 3rem; color: var(--accent-secondary);" id="res-percentage">-%</h1>
+                </div>
+            </div>
+
+            <div class="badge" style="font-size: 1rem; padding: 0.5rem 1.5rem;" id="res-status-badge">PENDING</div>
+        </div>
+
+        <!-- Violation Log Summary -->
+        <div class="glass-panel" id="violations-panel" style="display: none; margin-bottom: 2rem; border-color: rgba(245, 158, 11, 0.3);">
+            <h3 style="margin-bottom: 1rem; color: var(--accent-warning); display: flex; align-items: center; gap: 0.5rem;">⚠️ Security Warnings Summary</h3>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">
+                The following security policy signals were captured during your session. These have been submitted for administrator review.
+            </p>
+            <div class="table-container">
+                <table class="table" style="font-size: 0.85rem;">
+                    <thead>
+                        <tr>
+                            <th>Security Flag</th>
+                            <th>Timestamp</th>
+                            <th>Severity</th>
+                        </tr>
+                    </thead>
+                    <tbody id="violations-body">
+                        <!-- Dynamic violations rows -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Question review -->
+        <h3 style="margin-bottom: 1.5rem; font-family: var(--font-heading);">Answer Review</h3>
+        <div id="review-container">
+            <!-- Dynamic review questions list -->
+        </div>
+
+        <div style="display: flex; justify-content: center; margin-top: 2rem; margin-bottom: 3rem;">
+            <a href="dashboard.html" class="btn btn-primary">Return to Dashboard</a>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        checkAuth("student");
+
+        const attemptId = localStorage.getItem("last_evaluated_attempt_id");
+        if (!attemptId) {
+            window.location.href = "dashboard.html";
+        }
+
+        async function loadResultDetails() {
+            const res = await API.get(`/results/${attemptId}`);
+            if (res.success) {
+                const r = res.result;
+                const answersVisible = r.answers_visible !== false;
+                
+                document.getElementById("res-exam-title").innerText = r.exam_title;
+                
+                if (answersVisible) {
+                    document.getElementById("res-score").innerText = `${r.score_obtained.toFixed(1)} / ${r.questions.reduce((a, b) => a + b.marks, 0).toFixed(1)}`;
+                    document.getElementById("res-percentage").innerText = `${r.percentage.toFixed(1)}%`;
+                } else {
+                    document.getElementById("res-score").innerText = "Hidden until timer ends";
+                    document.getElementById("res-percentage").innerText = "Hidden until timer ends";
+                }
+                
+                const badge = document.getElementById("res-status-badge");
+                if (r.status === "MALPRACTICE_CANCELLED") {
+                    badge.innerText = "MALPRACTICE TERMINATED";
+                    badge.className = "badge badge-danger";
+                } else {
+                    if (answersVisible) {
+                        badge.innerText = r.passed ? "PASSED" : "FAILED";
+                        badge.className = `badge badge-${r.passed ? 'success' : 'danger'}`;
+                    } else {
+                        badge.innerText = "SUBMITTED";
+                        badge.className = "badge badge-warning";
+                    }
+                }
+
+                if (r.ended_at) {
+                    document.getElementById("res-date").innerText = `Completed on: ${new Date(r.ended_at).toLocaleString()}`;
+                }
+
+                // Render violations panel if any exist
+                if (r.violations && r.violations.length > 0) {
+                    document.getElementById("violations-panel").style.display = "block";
+                    const vBody = document.getElementById("violations-body");
+                    vBody.innerHTML = r.violations.map(v => `
+                        <tr>
+                            <td><strong style="color: var(--accent-danger);">${v.event_type.replace('_', ' ')}</strong></td>
+                            <td>${new Date(v.timestamp).toLocaleTimeString()}</td>
+                            <td><span class="badge badge-${v.severity === 3 ? 'danger' : 'warning'}">${v.action_taken}</span></td>
+                        </tr>
+                    `).join('');
+                }
+
+                // Render questions review
+                const container = document.getElementById("review-container");
+                
+                if (!answersVisible) {
+                    const banner = document.createElement("div");
+                    banner.className = "glass-panel alert-warning";
+                    banner.style.padding = "1rem";
+                    banner.style.marginBottom = "1.5rem";
+                    banner.style.display = "flex";
+                    banner.style.alignItems = "center";
+                    banner.style.gap = "10px";
+                    banner.innerHTML = `
+                        <span style="font-size: 1.5rem;">🔒</span>
+                        <div>
+                            <strong style="color: var(--accent-warning);">Answer Review Restricted</strong><br>
+                            <span style="font-size: 0.9rem; opacity: 0.85;">Correct answers and detailed scores are hidden until the exam duration has fully ended to maintain test integrity.</span>
+                        </div>
+                    `;
+                    container.parentNode.insertBefore(banner, container);
+                }
+
+                container.innerHTML = r.questions.map((q, idx) => {
+                    const isMcq = q.question_type === "MCQ" || q.question_type === "TF";
+                    const studentAnsStr = isMcq ? q.student_answer.selected_answers.join(", ") : q.student_answer.text_answer;
+                    const correctAnsStr = q.correct_answer;
+                    
+                    let isCorrect = false;
+                    let borderCol = "var(--border-glass)";
+                    let statusColor = "var(--text-primary)";
+                    
+                    if (answersVisible) {
+                        isCorrect = isMcq ? 
+                            (q.student_answer.selected_answers.length === 1 && q.student_answer.selected_answers[0] === q.correct_answer) : 
+                            (q.student_answer.text_answer.trim().toLowerCase() === q.correct_answer.trim().toLowerCase());
+                        borderCol = isCorrect ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)';
+                        statusColor = isCorrect ? 'var(--accent-success)' : 'var(--accent-danger)';
+                    } else {
+                        borderCol = "var(--border-glass)";
+                    }
+                    
+                    return `
+                        <div class="glass-panel" style="margin-bottom: 1.5rem; padding: 1.5rem; border-color: ${borderCol};">
+                            <h4 style="margin-bottom: 1rem; color: var(--text-secondary);">Question ${idx + 1} (${q.marks} Marks)</h4>
+                            <p style="font-weight: 500; font-size: 1.05rem; margin-bottom: 1.5rem;">${q.question_text}</p>
+                            
+                            ${isMcq ? `
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                                    ${q.options.map(opt => {
+                                        let borderStyle = "border-color: var(--border-glass);";
+                                        if (answersVisible) {
+                                            if (opt.option_letter === correctAnsStr) {
+                                                borderStyle = "border-color: var(--accent-success); background: rgba(16, 185, 129, 0.05);";
+                                            } else if (q.student_answer.selected_answers.includes(opt.option_letter) && opt.option_letter !== correctAnsStr) {
+                                                borderStyle = "border-color: var(--accent-danger); background: rgba(239, 68, 68, 0.05);";
+                                            }
+                                        } else {
+                                            if (q.student_answer.selected_answers.includes(opt.option_letter)) {
+                                                borderStyle = "border-color: var(--accent-primary); background: rgba(99, 102, 241, 0.05);";
+                                            }
+                                        }
+                                        return `
+                                            <div style="border: 1px solid; border-radius: 8px; padding: 0.75rem; font-size: 0.95rem; ${borderStyle}">
+                                                <strong>${opt.option_letter}.</strong> ${opt.option_text}
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            ` : ''}
+
+                            <div style="display: flex; gap: 2rem; border-top: 1px solid var(--border-glass); padding-top: 1rem; font-size: 0.95rem;">
+                                <div>
+                                    <span style="color: var(--text-secondary);">Your Response:</span>
+                                    <span style="font-weight: 700; color: ${statusColor};">${studentAnsStr || '[No Answer]'}</span>
+                                </div>
+                                <div>
+                                    <span style="color: var(--text-secondary);">Correct Response:</span>
+                                    <span style="font-weight: 700; color: var(--accent-success);">${answersVisible ? correctAnsStr : '[Hidden until exam duration ends]'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } else {
+                alert("Failed to load results review.");
+                window.location.href = "dashboard.html";
+            }
+        }
+
+        loadResultDetails();
+    </script>
+</body>
+</html>
