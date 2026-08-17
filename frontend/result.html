@@ -72,7 +72,11 @@
     <script>
         checkAuth("student");
 
-        const attemptId = localStorage.getItem("last_evaluated_attempt_id");
+        const urlParams = new URLSearchParams(window.location.search);
+        let attemptId = urlParams.get("attempt_id");
+        if (!attemptId) {
+            attemptId = localStorage.getItem("last_evaluated_attempt_id");
+        }
         if (!attemptId) {
             window.location.href = "dashboard.html";
         }
@@ -155,9 +159,23 @@
                     let statusColor = "var(--text-primary)";
                     
                     if (answersVisible) {
-                        isCorrect = isMcq ? 
-                            (q.student_answer.selected_answers.length === 1 && q.student_answer.selected_answers[0] === q.correct_answer) : 
-                            (q.student_answer.text_answer.trim().toLowerCase() === q.correct_answer.trim().toLowerCase());
+                        const extractOptionLetter = (str) => {
+                            if (!str) return "";
+                            const s = str.trim().toUpperCase();
+                            if (s.length >= 2 && /[A-Z]/.test(s[0]) && [')', '.', '-', ':', ' '].includes(s[1])) {
+                                return s[0];
+                            }
+                            return s;
+                        };
+                        if (isMcq) {
+                            const studentAns = q.student_answer.selected_answers.map(extractOptionLetter);
+                            const correctAns = q.correct_answer.split(",").map(extractOptionLetter);
+                            isCorrect = studentAns.length > 0 && 
+                                        studentAns.every(val => correctAns.includes(val)) && 
+                                        correctAns.every(val => studentAns.includes(val));
+                        } else {
+                            isCorrect = (q.student_answer.text_answer || "").trim().toLowerCase() === q.correct_answer.trim().toLowerCase();
+                        }
                         borderCol = isCorrect ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)';
                         statusColor = isCorrect ? 'var(--accent-success)' : 'var(--accent-danger)';
                     } else {

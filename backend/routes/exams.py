@@ -34,6 +34,8 @@ def get_all_exams():
             if d["attempted"]:
                 attempt_obj = next((a for a in attempts if a.exam_id == exam.id), None)
                 d["attempt_id"] = attempt_obj.id if attempt_obj else None
+                d["attempt_status"] = attempt_obj.status if attempt_obj else None
+                d["session_token"] = attempt_obj.session_token if attempt_obj else None
             
             # Access permission check
             access_obj = access_map.get(exam.id)

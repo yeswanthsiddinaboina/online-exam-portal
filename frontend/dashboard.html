@@ -27,43 +27,62 @@
         </div>
     </div>
 
-    <!-- PRE-EXAM SYSTEM CHECK MODAL -->
+    <!-- PRE-EXAM SYSTEM CHECK MODAL (Multi-Step Verification Wizard) -->
     <div class="modal-backdrop" id="precheck-modal">
-        <div class="glass-panel modal-content" style="max-width: 600px; text-align: center;">
-            <h3 style="margin-bottom: 1.5rem;">Pre-Exam System Integrity Check</h3>
+        <div class="glass-panel modal-content" style="max-width: 750px; width: 95%; text-align: center; padding: 2rem;">
+            <h3 style="margin-bottom: 1.5rem; color: var(--accent-primary);" id="precheck-title">📋 Exam Instructions & Face Setup</h3>
             
-            <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 1.5rem; margin-bottom: 1.5rem; text-align: left;">
-                <div>
-                    <div class="video-feed-wrapper" style="width: 100%; height: 180px;">
-                        <video id="precheck-video" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover;"></video>
-                        <canvas id="precheck-canvas" class="canvas-overlay"></canvas>
+            <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 2rem; margin-bottom: 1.5rem; text-align: left;">
+                <!-- Left Section: Multi-Step Instructions -->
+                <div style="display: flex; flex-direction: column; justify-content: space-between;">
+                    <!-- Step 1 Pane -->
+                    <div id="step-1-pane">
+                        <h4 style="margin-bottom: 0.75rem; color: var(--text-primary);">Step 1: Code of Conduct</h4>
+                        <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.75rem; line-height: 1.45;">Please read the proctoring rules before writing the exam:</p>
+                        <ul style="font-size: 0.85rem; color: var(--text-secondary); padding-left: 1.2rem; line-height: 1.6; display: flex; flex-direction: column; gap: 0.4rem;">
+                            <li>🚫 <strong>Immediate Termination</strong> occurs on tab switching or minimized windows.</li>
+                            <li>📷 <strong>Webcam stream</strong> must remain enabled at all times.</li>
+                            <li>👤 <strong>No secondary person</strong> is allowed in the camera frame.</li>
+                            <li>📱 <strong>No electronic devices</strong> (mobile phones, tablets) are permitted.</li>
+                        </ul>
+                        
+                        <label style="display: flex; gap: 8px; margin-top: 1.5rem; font-size: 0.9rem; align-items: flex-start; cursor: pointer; color: var(--text-primary); line-height: 1.35;">
+                            <input type="checkbox" id="chk-agree" style="width: 16px; height: 16px; margin-top: 2px; accent-color: var(--accent-primary);">
+                            <span>I have read the guidelines and agree to abide by the security rules.</span>
+                        </label>
                     </div>
-                    <button class="btn btn-secondary" id="btn-start-camera" style="width: 100%; margin-top: 0.75rem; padding: 0.5rem 1rem; font-size: 0.9rem;">Test Webcam</button>
+
+                    <!-- Step 2 Pane -->
+                    <div id="step-2-pane" style="display: none;">
+                        <h4 style="margin-bottom: 0.75rem; color: var(--text-primary);">Step 2: Identity Verification Test</h4>
+                        <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 1rem;">
+                            Look straight at the camera to run identity matching. The AI engine will verify that you match the reference face captured during Step 1.
+                        </p>
+                        <p style="font-size: 0.85rem; font-weight: 500; color: var(--accent-primary); line-height: 1.4;">
+                            💡 Position yourself in a well-lit area and avoid wearing hats or sunglasses.
+                        </p>
+                    </div>
+                    
+                    <!-- Progress Info -->
+                    <div id="precheck-status-log" style="margin-top: 1rem; font-size: 0.85rem; font-weight: 600; color: var(--accent-primary);">
+                        📷 Webcam stream is offline.
+                    </div>
                 </div>
                 
+                <!-- Right Section: Video Feed -->
                 <div>
-                    <div class="check-item">
-                        <div class="check-label">🌐 Internet Connection</div>
-                        <div class="check-status badge" id="check-net">PENDING</div>
+                    <div class="video-feed-wrapper" style="width: 100%; height: 220px; background: #e2e8f0; border-radius: 10px; overflow: hidden; position: relative;">
+                        <video id="precheck-video" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+                        <canvas id="precheck-canvas" class="canvas-overlay" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events: none;"></canvas>
                     </div>
-                    <div class="check-item">
-                        <div class="check-label">📷 Webcam Stream</div>
-                        <div class="check-status badge" id="check-camera">PENDING</div>
-                    </div>
-                    <div class="check-item">
-                        <div class="check-label">👤 Face Detected</div>
-                        <div class="check-status badge" id="check-face">PENDING</div>
-                    </div>
-                    <div class="check-item">
-                        <div class="check-label">🖥️ Dual Monitors Block</div>
-                        <div class="check-status badge" id="check-displays">PENDING</div>
-                    </div>
+                    <button class="btn btn-secondary" id="btn-start-camera" style="width: 100%; margin-top: 0.75rem; padding: 0.4rem 0.8rem; font-size: 0.85rem;">Test Webcam</button>
                 </div>
             </div>
 
             <div style="border-top: 1px solid var(--border-glass); padding-top: 1.5rem; display: flex; justify-content: flex-end; gap: 1rem;">
                 <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-                <button class="btn btn-primary" id="btn-start-exam" disabled>START EXAM</button>
+                <button class="btn btn-primary" id="btn-capture-ref" disabled>1. Agree & Take Reference Photo</button>
+                <button class="btn btn-primary" id="btn-verify-match" style="display: none; background: var(--accent-secondary); border-color: transparent;">2. Verify & Match Identity</button>
             </div>
         </div>
     </div>
@@ -87,7 +106,11 @@
                 container.innerHTML = res.exams.map(exam => {
                     let actionBtn = "";
                     if (exam.attempted) {
-                        actionBtn = `<button class="btn btn-secondary" onclick="window.location.href='result.html?attempt_id=${exam.attempt_id}'" style="padding: 0.5rem 1rem; font-size: 0.9rem; background: rgba(255, 255, 255, 0.05); color: var(--text-secondary); border-color: var(--border-glass);">View Results</button>`;
+                        if (exam.attempt_status === "IN_PROGRESS") {
+                            actionBtn = `<button class="btn btn-primary" onclick="resumeExam(${exam.id}, ${exam.attempt_id}, '${exam.session_token}')" style="padding: 0.5rem 1rem; font-size: 0.9rem; background: var(--accent-warning); border-color: transparent; color: #fff;">Resume Exam</button>`;
+                        } else {
+                            actionBtn = `<button class="btn btn-secondary" onclick="window.location.href='result.html?attempt_id=${exam.attempt_id}'" style="padding: 0.5rem 1rem; font-size: 0.9rem; background: rgba(255, 255, 255, 0.05); color: var(--text-secondary); border-color: var(--border-glass);">View Results</button>`;
+                        }
                     } else if (exam.access_status === "APPROVED") {
                         actionBtn = `<button class="btn btn-primary" onclick="openPrecheck(${exam.id})" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Launch Exam</button>`;
                     } else if (exam.access_status === "PENDING") {
@@ -134,6 +157,13 @@
             }
         }
 
+        function resumeExam(examId, attemptId, sessionToken) {
+            localStorage.setItem("selected_exam_id", examId);
+            localStorage.setItem("attempt_id", attemptId);
+            localStorage.setItem("session_token", sessionToken);
+            window.location.href = "exam.html";
+        }
+
         async function requestAccess(examId) {
             const res = await API.post(`/exams/${examId}/request-access`, {});
             if (res.success) {
@@ -146,8 +176,18 @@
 
         function openPrecheck(examId) {
             selectedExamId = examId;
+            localStorage.setItem("selected_exam_id", examId);
             document.getElementById("precheck-modal").classList.add("active");
-            runSystemCheck();
+            document.getElementById("precheck-status-log").innerText = "📷 Camera is offline. Please test your webcam.";
+            document.getElementById("btn-capture-ref").disabled = true;
+            document.getElementById("chk-agree").checked = false;
+            
+            // Show step 1 pane, hide step 2 pane
+            document.getElementById("step-1-pane").style.display = "block";
+            document.getElementById("step-2-pane").style.display = "none";
+            document.getElementById("btn-capture-ref").style.display = "inline-flex";
+            document.getElementById("btn-verify-match").style.display = "none";
+            document.getElementById("precheck-title").innerText = "📋 Exam Instructions & Face Setup";
         }
 
         function closeModal() {
@@ -158,41 +198,25 @@
             }
             webcamPassed = false;
             facePassed = false;
-            updateCheckBadge("check-camera", "PENDING", "warning");
-            updateCheckBadge("check-face", "PENDING", "warning");
-            document.getElementById("btn-start-exam").disabled = true;
         }
 
-        async function runSystemCheck() {
-            // 1. Internet Check
-            const internet = await SystemPreCheck.checkConnectivity();
-            updateCheckBadge("check-net", internet ? "PASS" : "FAIL", internet ? "success" : "danger");
-
-            // 2. Dual Display Check (simple API check)
-            const monitorsCount = window.screen && window.screen.width ? 1 : 1; // Basic monitor count simulator
-            const displayPass = monitorsCount === 1;
-            updateCheckBadge("check-displays", displayPass ? "PASS" : "FAIL", displayPass ? "success" : "danger");
-
-            evaluateStartButton();
-        }
-
-        function updateCheckBadge(elementId, text, status) {
-            const badge = document.getElementById(elementId);
-            badge.innerText = text;
-            badge.className = `check-status badge badge-${status}`;
-        }
+        // Agree checkbox handler
+        document.getElementById("chk-agree").addEventListener("change", (e) => {
+            document.getElementById("btn-capture-ref").disabled = !e.target.checked || !webcamPassed || !facePassed;
+        });
 
         document.getElementById("btn-start-camera").addEventListener("click", async () => {
             const video = document.getElementById("precheck-video");
             const canvas = document.getElementById("precheck-canvas");
+            const statusLog = document.getElementById("precheck-status-log");
+            
+            statusLog.innerText = "⏳ Initializing webcam and AI tracker...";
             
             const hasCamera = await SystemPreCheck.requestCamera();
             if (hasCamera) {
                 video.srcObject = mediaStream;
-                updateCheckBadge("check-camera", "PASS", "success");
                 webcamPassed = true;
                 
-                // Initialize Face Mesh for verification inside modal check
                 if (typeof FaceMesh !== "undefined") {
                     precheckFaceMesh = new FaceMesh({
                         locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
@@ -210,21 +234,26 @@
                         ctx.clearRect(0, 0, canvas.width, canvas.height);
                         
                         if (faces.length === 1) {
-                            updateCheckBadge("check-face", "PASS", "success");
+                            statusLog.innerText = "✅ Face detected! Ready for capture.";
+                            statusLog.style.color = "var(--accent-primary)";
                             facePassed = true;
-                            evaluateStartButton();
                             
-                            // Draw landmarks
-                            ctx.fillStyle = "rgba(16, 185, 129, 0.5)";
+                            // Enable Step 1 capture if checked
+                            const chkAgree = document.getElementById("chk-agree");
+                            document.getElementById("btn-capture-ref").disabled = !chkAgree.checked;
+                            
+                            // Draw landmarks feedback
+                            ctx.fillStyle = "rgba(16, 185, 129, 0.4)";
                             faces[0].forEach(pt => {
                                 ctx.beginPath();
                                 ctx.arc(pt.x * canvas.width, pt.y * canvas.height, 1, 0, 2*Math.PI);
                                 ctx.fill();
                             });
                         } else {
-                            updateCheckBadge("check-face", "FAIL", "danger");
+                            statusLog.innerText = "⚠️ Make sure exactly ONE face is visible in front of the camera.";
+                            statusLog.style.color = "var(--accent-warning)";
                             facePassed = false;
-                            evaluateStartButton();
+                            document.getElementById("btn-capture-ref").disabled = true;
                         }
                     });
                     
@@ -237,32 +266,27 @@
                     });
                     precheckCamera.start();
                 } else {
-                    // Fallback pass if script didn't load
-                    updateCheckBadge("check-face", "PASS", "success");
+                    statusLog.innerText = "✅ Camera online (AI face fallback active).";
                     facePassed = true;
-                    evaluateStartButton();
+                    const chkAgree = document.getElementById("chk-agree");
+                    document.getElementById("btn-capture-ref").disabled = !chkAgree.checked;
                 }
             } else {
-                updateCheckBadge("check-camera", "FAIL", "danger");
-                updateCheckBadge("check-face", "FAIL", "danger");
+                statusLog.innerText = "❌ Webcam access denied or unavailable.";
+                statusLog.style.color = "var(--accent-danger)";
                 webcamPassed = false;
                 facePassed = false;
-                evaluateStartButton();
+                document.getElementById("btn-capture-ref").disabled = true;
             }
         });
 
-        function evaluateStartButton() {
-            const netPass = document.getElementById("check-net").innerText === "PASS";
-            const dispPass = document.getElementById("check-displays").innerText === "PASS";
-            
-            const allPassed = netPass && webcamPassed && facePassed && dispPass;
-            document.getElementById("btn-start-exam").disabled = !allPassed;
-        }
-
-        document.getElementById("btn-start-exam").addEventListener("click", async () => {
-            // First upload the verification image reference to backend
+        // Step 1: Capture Reference Image
+        document.getElementById("btn-capture-ref").addEventListener("click", async () => {
             const video = document.getElementById("precheck-video");
             const canvas = document.getElementById("precheck-canvas");
+            const statusLog = document.getElementById("precheck-status-log");
+            
+            statusLog.innerText = "⏳ Saving reference snapshot...";
             
             canvas.width = video.videoWidth || 640;
             canvas.height = video.videoHeight || 480;
@@ -271,26 +295,75 @@
             
             canvas.toBlob(async (blob) => {
                 const formData = new FormData();
-                formData.append("file", blob, "reference.jpg");
+                formData.append("file", blob, "reference_temp.jpg");
                 formData.append("exam_id", selectedExamId);
                 
-                const verifyRes = await API.upload("/proctor/face-verification", formData);
+                const verifyRes = await API.upload("/proctor/verify-face/reference", formData);
                 if (verifyRes.success) {
-                    // Call start exam API
-                    const startRes = await API.post(`/exams/${selectedExamId}/start`, {});
-                    if (startRes.success) {
-                        localStorage.setItem("attempt_id", startRes.attempt_id);
-                        localStorage.setItem("session_token", startRes.session_token);
+                    statusLog.innerText = "✅ Reference captured! Proceeding to verification...";
+                    statusLog.style.color = "var(--accent-success)";
+                    
+                    // Switch to Step 2
+                    setTimeout(() => {
+                        document.getElementById("step-1-pane").style.display = "none";
+                        document.getElementById("step-2-pane").style.display = "block";
+                        document.getElementById("btn-capture-ref").style.display = "none";
+                        document.getElementById("btn-verify-match").style.display = "inline-flex";
+                        document.getElementById("precheck-title").innerText = "👤 Face Matching Verification";
+                        statusLog.innerText = "Please look straight at the camera and click verification match.";
+                        statusLog.style.color = "var(--accent-primary)";
+                    }, 1200);
+                } else {
+                    alert(verifyRes.message || "Failed to capture reference face.");
+                    statusLog.innerText = "❌ Capture failed. Please try again.";
+                    statusLog.style.color = "var(--accent-danger)";
+                }
+            }, "image/jpeg", 0.75);
+        });
+
+        // Step 2: Compare & Match Face
+        document.getElementById("btn-verify-match").addEventListener("click", async () => {
+            const video = document.getElementById("precheck-video");
+            const canvas = document.getElementById("precheck-canvas");
+            const statusLog = document.getElementById("precheck-status-log");
+            
+            statusLog.innerText = "⏳ Verifying identity & matching faces...";
+            
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            canvas.toBlob(async (blob) => {
+                const formData = new FormData();
+                formData.append("file", blob, "verify_temp.jpg");
+                formData.append("exam_id", selectedExamId);
+                
+                const matchRes = await API.upload("/proctor/verify-face/compare", formData);
+                if (matchRes.success) {
+                    statusLog.innerText = "🎉 Identity verified successfully! Redirecting to exam...";
+                    statusLog.style.color = "var(--accent-success)";
+                    
+                    // Save attempt credentials and redirect
+                    localStorage.setItem("attempt_id", matchRes.attempt_id);
+                    localStorage.setItem("session_token", matchRes.session_token);
+                    
+                    setTimeout(() => {
                         SystemPreCheck.releaseMedia();
                         if (precheckCamera) precheckCamera.stop();
                         window.location.href = "exam.html";
-                    } else {
-                        alert(startRes.message || "Failed to start examination session.");
-                    }
+                    }, 1500);
                 } else {
-                    alert(verifyRes.message || "Face verification failed. Cannot initiate examination session.");
+                    alert(matchRes.message || "Face comparison mismatch! Please ensure the same candidate is looking at the camera.");
+                    statusLog.innerText = "❌ Verification mismatch. Please try again.";
+                    statusLog.style.color = "var(--accent-danger)";
+                    
+                    // Automatically reset back to step 1
+                    setTimeout(() => {
+                        openPrecheck(selectedExamId);
+                    }, 1500);
                 }
-            }, "image/jpeg", 0.8);
+            }, "image/jpeg", 0.75);
         });
 
         loadExams();

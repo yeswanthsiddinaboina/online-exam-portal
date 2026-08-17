@@ -27,8 +27,8 @@ class ExamAttempt(db.Model):
             "student_id": self.student_id,
             "exam_id": self.exam_id,
             "status": self.status,
-            "started_at": self.started_at.isoformat() if self.started_at else None,
-            "ended_at": self.ended_at.isoformat() if self.ended_at else None,
-            "last_heartbeat": self.last_heartbeat.isoformat() if self.last_heartbeat else None,
+            "started_at": self.started_at.isoformat() + "Z" if self.started_at else None,
+            "ended_at": self.ended_at.isoformat() + "Z" if self.ended_at else None,
+            "last_heartbeat": self.last_heartbeat.isoformat() + "Z" if self.last_heartbeat else None,
             "session_token": self.session_token
         }

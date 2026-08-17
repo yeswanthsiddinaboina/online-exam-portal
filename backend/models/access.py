@@ -22,5 +22,5 @@ class ExamAccess(db.Model):
             "exam_id": self.exam_id,
             "exam_title": self.exam.title if self.exam else "Unknown",
             "approved": self.approved,
-            "requested_at": self.requested_at.isoformat() if self.requested_at else None
+            "requested_at": self.requested_at.isoformat() + "Z" if self.requested_at else None
         }

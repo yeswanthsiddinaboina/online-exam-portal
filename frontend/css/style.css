@@ -1,18 +1,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
 
 :root {
-    --bg-primary: #f2faf7; /* Soft sand seafoam white */
+    --bg-primary: #edf6f2; /* Light beach seafoam tint */
     --bg-secondary: #ffffff;
-    --bg-glass: rgba(255, 255, 255, 0.85); /* Frosted beach-glass */
-    --border-glass: rgba(16, 185, 129, 0.15); /* Soft light green border */
-    --accent-primary: #10b981; /* Light Green / Emerald */
+    --bg-glass: rgba(255, 255, 255, 0.9); /* Frosted white glass */
+    --border-glass: rgba(16, 185, 129, 0.2); /* Soft light green border */
+    --accent-primary: #10b981; /* Emerald green */
     --accent-primary-hover: #059669;
-    --accent-secondary: #0ea5e9; /* Ocean Sky Blue */
-    --accent-success: #059669;
-    --accent-warning: #ea580c; /* Warm sun gold */
-    --accent-danger: #e11d48; /* Coral Red */
-    --text-primary: #0f172a; /* Slate Dark Gray */
-    --text-secondary: #334155;
+    --accent-secondary: #0284c7; /* Sky Blue */
+    --accent-success: #10b981;
+    --accent-warning: #f59e0b; /* Amber Gold */
+    --accent-danger: #ef4444; /* Crimson Red */
+    --text-primary: #1e293b; /* Slate Dark Gray */
+    --text-secondary: #475569;
     --text-muted: #64748b;
     --font-heading: 'Outfit', 'Inter', sans-serif;
     --font-body: 'Inter', sans-serif;
@@ -79,7 +79,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .form-control {
     width: 100%;
-    background: rgba(15, 17, 28, 0.8);
+    background: rgba(255, 255, 255, 0.85);
     border: 1px solid var(--border-glass);
     border-radius: 8px;
     padding: 0.75rem 1rem;
@@ -92,8 +92,8 @@ h1, h2, h3, h4, h5, h6 {
 
 .form-control:focus {
     border-color: var(--accent-primary);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
-    background: rgba(15, 17, 28, 1);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+    background: rgba(255, 255, 255, 1);
 }
 
 /* Buttons */
@@ -198,7 +198,7 @@ h1, h2, h3, h4, h5, h6 {
     justify-content: space-between;
     align-items: center;
     padding: 1rem 2rem;
-    background: rgba(11, 12, 21, 0.8);
+    background: rgba(237, 246, 242, 0.85);
     backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border-glass);
     position: sticky;
@@ -241,7 +241,7 @@ h1, h2, h3, h4, h5, h6 {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(5, 6, 10, 0.8);
+    background: rgba(237, 246, 242, 0.8);
     backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
@@ -392,7 +392,7 @@ h1, h2, h3, h4, h5, h6 {
     overflow: hidden;
     aspect-ratio: 4/3;
     border: 1px solid var(--border-glass);
-    background: #000;
+    background: #e2e8f0;
 }
 
 #webcam-feed {
@@ -405,7 +405,8 @@ h1, h2, h3, h4, h5, h6 {
     position: absolute;
     bottom: 12px;
     left: 12px;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(255, 255, 255, 0.85);
+    color: var(--text-primary);
     padding: 0.25rem 0.75rem;
     border-radius: 8px;
     font-size: 0.75rem;

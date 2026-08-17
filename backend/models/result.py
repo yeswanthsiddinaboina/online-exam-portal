@@ -18,5 +18,5 @@ class Result(db.Model):
             "total_score": self.total_score,
             "percentage": self.percentage,
             "passed": self.passed,
-            "evaluated_at": self.evaluated_at.isoformat() if self.evaluated_at else None
+            "evaluated_at": self.evaluated_at.isoformat() + "Z" if self.evaluated_at else None
         }

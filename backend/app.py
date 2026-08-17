@@ -39,6 +39,13 @@ def create_app(config_class=Config):
     db.init_app(app)
     config_class.init_app(app)
 
+    with app.app_context():
+        try:
+            db.create_all()
+            logger.info("Database tables synchronized successfully.")
+        except Exception as db_err:
+            logger.error(f"Failed to synchronize database tables: {str(db_err)}")
+
     # Register blueprints with appropriate URL prefixes
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(exams_bp, url_prefix="/api/exams")
@@ -67,6 +74,13 @@ def create_app(config_class=Config):
             "error_code": "INTERNAL_SERVER_ERROR",
             "message": "An unexpected error occurred. Please contact the administrator."
         }), 500
+
+    @app.after_request
+    def add_header(response):
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
 
     @app.route("/", methods=["GET"])
     def index():

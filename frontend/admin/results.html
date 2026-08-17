@@ -107,7 +107,10 @@
 
         <!-- Pending Access Requests Section -->
         <div class="glass-panel" id="access-requests-panel" style="margin-bottom: 2rem; display: none;">
-            <h3 style="font-family: var(--font-heading); margin-bottom: 1rem; color: var(--accent-warning);">🔓 Pending Access Requests</h3>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                <h3 style="font-family: var(--font-heading); margin-bottom: 0; color: var(--accent-warning);">🔓 Pending Access Requests</h3>
+                <button class="btn btn-primary" id="btn-approve-all" onclick="approveAllStudentsAccess()" style="background: var(--accent-primary); border-color: transparent; padding: 0.4rem 1rem; font-size: 0.85rem;">Approve All Requests</button>
+            </div>
             <div class="table-container">
                 <table class="table">
                     <thead>
@@ -154,7 +157,7 @@
     </div>
 
     <!-- Student Audit details modal -->
-    <div class="modal-overlay" id="audit-modal">
+    <div class="modal-backdrop" id="audit-modal">
         <div class="glass-panel modal-content" style="max-width: 900px; width: 90%; max-height: 85vh; overflow-y: auto; text-align: left; padding: 2rem; background: var(--bg-secondary); color: var(--text-primary);">
             <h3 style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
                 <span>📋 Detailed Candidate Review</span>
@@ -169,6 +172,7 @@
                     <p style="margin-bottom: 0.5rem;"><strong>Status:</strong> <span id="audit-status" class="badge">-</span></p>
                     <p style="margin-bottom: 0.5rem;"><strong>Score:</strong> <span id="audit-score">-</span></p>
                     <p style="margin-bottom: 1.5rem;"><strong>Timeline:</strong> <span id="audit-timeline">-</span></p>
+                    <button class="btn btn-danger" id="btn-reconduct" onclick="reconductStudentExam()" style="width: 100%; margin-bottom: 1.5rem; padding: 0.5rem 1rem; font-size: 0.85rem; display: none;">🔄 Reconduct Exam (Reset attempt)</button>
                     
                     <h4 style="border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; margin-bottom: 1rem; color: var(--accent-danger);">Logged Violations</h4>
                     <div style="max-height: 250px; overflow-y: auto;">
@@ -201,11 +205,11 @@
     </div>
 
     <!-- Inner evidence picture popup modal -->
-    <div class="modal-overlay" id="audit-evidence-modal" style="z-index: 1050;">
+    <div class="modal-backdrop" id="audit-evidence-modal" style="z-index: 1050;">
         <div class="glass-panel modal-content" style="max-width: 500px; text-align: center; background: var(--bg-secondary);">
             <h3 style="margin-bottom: 1rem;">Evidence Snapshot</h3>
             <div class="video-feed-wrapper" style="width: 100%; height: 320px; border-color: var(--accent-danger);">
-                <img id="audit-evidence-img" src="" alt="Evidence Frame" style="width: 100%; height: 100%; object-fit: contain; background: #000;">
+                <img id="audit-evidence-img" src="" alt="Evidence Frame" style="width: 100%; height: 100%; object-fit: contain; background: var(--bg-primary);">
             </div>
             <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end;">
                 <button class="btn btn-secondary" onclick="closeAuditEvidenceModal()">Close</button>
@@ -268,11 +272,10 @@
                     const body = document.getElementById("attempts-table-body");
                     if (res.attempts && res.attempts.length > 0) {
                         body.innerHTML = res.attempts.map(a => {
-                            const isClickable = a.status !== 'IN_PROGRESS';
-                            const rowStyle = isClickable ? 'cursor: pointer; transition: background 0.2s;' : '';
-                            const clickHandler = isClickable ? `onclick="openAuditModal(${a.attempt_id})"` : '';
+                            const rowStyle = 'cursor: pointer; transition: background 0.2s;';
+                            const clickHandler = `onclick="openAuditModal(${a.attempt_id})"`;
                             return `
-                                <tr style="${rowStyle}" ${clickHandler} class="${isClickable ? 'scoreboard-row' : ''}">
+                                <tr style="${rowStyle}" ${clickHandler} class="scoreboard-row">
                                     <td><strong>${a.student_email}</strong></td>
                                     <td>
                                         <span class="badge badge-${
@@ -318,7 +321,26 @@
             }
         }
 
+        async function approveAllStudentsAccess() {
+            if (confirm("Are you sure you want to approve ALL pending students for this exam?")) {
+                const selector = document.getElementById("exam-selector");
+                const res = await API.post(`/admin/access/exam/${selector.value}/approve-all`, {});
+                if (res.success) {
+                    alert(res.message);
+                    loadReports(selector.value);
+                } else {
+                    alert(res.message || "Failed to approve all student access requests.");
+                }
+            }
+        }
+
+        let currentAuditAttemptId = null;
+
         async function openAuditModal(attemptId) {
+            currentAuditAttemptId = attemptId;
+            const btnReconduct = document.getElementById("btn-reconduct");
+            if (btnReconduct) btnReconduct.style.display = "block";
+            
             const res = await API.get(`/results/${attemptId}`);
             if (res.success) {
                 const r = res.result;
@@ -361,11 +383,29 @@
                 qContainer.innerHTML = r.questions.map((q, idx) => {
                     const isMcq = q.question_type === "MCQ" || q.question_type === "TF";
                     const studentAnsStr = isMcq ? q.student_answer.selected_answers.join(", ") : q.student_answer.text_answer;
-                    const correctAnsStr = q.correct_answer;
+                    const correctAnsStr = q.correct_answer || "[Hidden - Active Duration]";
                     
-                    const isCorrect = isMcq ? 
-                        (q.student_answer.selected_answers.length === 1 && q.student_answer.selected_answers[0] === q.correct_answer) : 
-                        (q.student_answer.text_answer.trim().toLowerCase() === q.correct_answer.trim().toLowerCase());
+                    const extractOptionLetter = (str) => {
+                        if (!str) return "";
+                        const s = str.trim().toUpperCase();
+                        if (s.length >= 2 && /[A-Z]/.test(s[0]) && [')', '.', '-', ':', ' '].includes(s[1])) {
+                            return s[0];
+                        }
+                        return s;
+                    };
+                    
+                    let isCorrect = false;
+                    if (q.correct_answer) {
+                        if (isMcq) {
+                            const studentAns = q.student_answer.selected_answers.map(extractOptionLetter);
+                            const correctAns = q.correct_answer.split(",").map(extractOptionLetter);
+                            isCorrect = studentAns.length > 0 && 
+                                        studentAns.every(val => correctAns.includes(val)) && 
+                                        correctAns.every(val => studentAns.includes(val));
+                        } else {
+                            isCorrect = (q.student_answer.text_answer || "").trim().toLowerCase() === q.correct_answer.trim().toLowerCase();
+                        }
+                    }
                     
                     const borderCol = isCorrect ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)';
                     
@@ -390,6 +430,22 @@
 
         function closeAuditModal() {
             document.getElementById("audit-modal").classList.remove("active");
+            currentAuditAttemptId = null;
+        }
+
+        async function reconductStudentExam() {
+            if (!currentAuditAttemptId) return;
+            if (confirm("⚠️ WARNING: Are you sure you want to reconduct this exam?\n\nThis will permanently delete the student's previous attempt, answers, score, and all proctoring logs. The candidate will be authorized to log in and write the exam again immediately.")) {
+                const res = await API.post(`/admin/attempts/${currentAuditAttemptId}/reconduct`, {});
+                if (res.success) {
+                    alert(res.message);
+                    closeAuditModal();
+                    const selector = document.getElementById("exam-selector");
+                    loadReports(selector.value);
+                } else {
+                    alert(res.message || "Failed to reset student attempt.");
+                }
+            }
         }
 
         function viewAuditEvidence(evidenceId) {

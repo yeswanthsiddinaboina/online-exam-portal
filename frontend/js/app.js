@@ -66,7 +66,9 @@ const API = {
 
     async get(endpoint) {
         try {
-            const res = await fetch(`${API_BASE}${endpoint}`, {
+            const separator = endpoint.includes("?") ? "&" : "?";
+            const url = `${API_BASE}${endpoint}${separator}_t=${Date.now()}`;
+            const res = await fetch(url, {
                 method: "GET",
                 headers: getHeaders()
             });

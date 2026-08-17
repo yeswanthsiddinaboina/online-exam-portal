@@ -29,19 +29,18 @@ class EvaluationService:
             is_correct = False
             
             if question.question_type == "MCQ" or question.question_type == "TF":
-                # For MCQs/TF, selected_answers is stored as a list
-                selected = ans.selected_answers or []
-                correct = question.correct_answer.strip()
+                def extract_letter(val):
+                    val_strip = val.strip().upper()
+                    if len(val_strip) >= 2 and val_strip[0].isalpha() and val_strip[1] in [')', '.', '-', ':', ' ']:
+                        return val_strip[0]
+                    return val_strip
+
+                selected = [extract_letter(s) for s in (ans.selected_answers or [])]
+                correct_str = question.correct_answer or ""
+                correct_list = [extract_letter(c) for c in correct_str.split(",") if c.strip()]
                 
-                # Check if correct matches exactly
-                # Handling single response format (e.g., ["A"]) or multiple (["A", "B"])
-                if len(selected) == 1 and selected[0] == correct:
+                if len(selected) > 0 and sorted(selected) == sorted(correct_list):
                     is_correct = True
-                elif len(selected) > 1:
-                    # Handles cases where correct answer might be comma-separated like "A,B"
-                    correct_list = [c.strip() for c in correct.split(",") if c.strip()]
-                    if sorted(selected) == sorted(correct_list):
-                        is_correct = True
             
             elif question.question_type == "SHORT_ANSWER":
                 # Text matching

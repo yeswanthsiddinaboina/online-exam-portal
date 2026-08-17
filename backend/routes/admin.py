@@ -197,8 +197,8 @@ def get_reports():
                 "pending_access": []
             }), 200
 
-        # Fetch attempts for selected exam
-        attempts = ExamAttempt.query.filter_by(exam_id=exam_id).all()
+        # Fetch attempts for selected exam (ordered by newest started first)
+        attempts = ExamAttempt.query.filter_by(exam_id=exam_id).order_by(ExamAttempt.started_at.desc()).all()
         
         # Calculate overall stats
         total_students = len(attempts)
@@ -232,8 +232,8 @@ def get_reports():
                 "percentage": percentage,
                 "passed": passed,
                 "violations_count": violations_count,
-                "started_at": a.started_at.isoformat() if a.started_at else None,
-                "ended_at": a.ended_at.isoformat() if a.ended_at else None
+                "started_at": a.started_at.isoformat() + "Z" if a.started_at else None,
+                "ended_at": a.ended_at.isoformat() + "Z" if a.ended_at else None
             })
 
         avg_score = round(sum(scores) / len(scores), 2) if scores else 0.0
@@ -258,7 +258,7 @@ def get_reports():
         pending_data = [{
             "id": pa.id,
             "student_email": pa.student.email if pa.student else "Unknown",
-            "requested_at": pa.requested_at.isoformat() if pa.requested_at else None
+            "requested_at": pa.requested_at.isoformat() + "Z" if pa.requested_at else None
         } for pa in pending_access]
 
         return jsonify({
@@ -308,4 +308,74 @@ def approve_access(access_id):
             "error_code": "APPROVE_ACCESS_FAILED",
             "message": "Failed to approve student access."
         }), 500
+
+
+@admin_bp.route("/access/exam/<int:exam_id>/approve-all", methods=["POST"])
+@token_required
+@role_required(["admin"])
+def approve_all_access(exam_id):
+    from backend.models import ExamAccess
+    try:
+        pending = ExamAccess.query.filter_by(exam_id=exam_id, approved=False).all()
+        for pa in pending:
+            pa.approved = True
+        db.session.commit()
+        logger.info(f"Admin approved all pending access requests for exam {exam_id} ({len(pending)} requests approved)")
+        return jsonify({
+            "success": True,
+            "message": f"Successfully approved access for all {len(pending)} pending students."
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Failed to approve all access: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error_code": "APPROVE_ALL_FAILED",
+            "message": "Failed to approve all student access requests."
+        }), 500
+
+
+@admin_bp.route("/attempts/<int:attempt_id>/reconduct", methods=["POST"])
+@token_required
+@role_required(["admin"])
+def reconduct_attempt(attempt_id):
+    from backend.models import ExamAttempt, ExamAccess
+    attempt = ExamAttempt.query.get(attempt_id)
+    if not attempt:
+        return jsonify({
+            "success": False,
+            "error_code": "ATTEMPT_NOT_FOUND",
+            "message": "Examination attempt session not found."
+        }), 404
+
+    student_id = attempt.student_id
+    exam_id = attempt.exam_id
+
+    try:
+        # Delete attempt (cascades database deletions to violations, answers, results)
+        db.session.delete(attempt)
+        
+        # Ensure access is granted for re-take
+        access = ExamAccess.query.filter_by(student_id=student_id, exam_id=exam_id).first()
+        if access:
+            access.approved = True
+        else:
+            new_access = ExamAccess(student_id=student_id, exam_id=exam_id, approved=True)
+            db.session.add(new_access)
+            
+        db.session.commit()
+        logger.info(f"Admin reset attempt {attempt_id} for student {student_id}. Permitted reconduct of exam {exam_id}.")
+        return jsonify({
+            "success": True,
+            "message": "Successfully cleared student attempt session. Candidate is authorized to reconduct the exam."
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Failed to reconduct exam: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error_code": "RECONDUCT_EXAM_FAILED",
+            "message": "Failed to clear student attempt session."
+        }), 500
+
 

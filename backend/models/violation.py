@@ -22,7 +22,7 @@ class ViolationLog(db.Model):
             "attempt_id": self.attempt_id,
             "event_type": self.event_type,
             "confidence": self.confidence,
-            "timestamp": self.timestamp.isoformat() if self.timestamp else None,
+            "timestamp": self.timestamp.isoformat() + "Z" if self.timestamp else None,
             "severity": self.severity,
             "count_incremented": self.count_incremented,
             "action_taken": self.action_taken,
