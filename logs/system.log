@@ -907,3 +907,12 @@ WHERE exam_access.exam_id = ? AND exam_access.approved = 0]
 [2026-08-17 09:56:48,603] INFO in auth (Line 157): User logged in: john12@gmail.com
 [2026-08-17 09:56:48,938] INFO in exams (Line 312): Student john12@gmail.com requested access for exam python
 [2026-08-17 09:57:19,355] INFO in admin (Line 323): Admin approved all pending access requests for exam 1 (1 requests approved)
+[2026-08-17 10:33:18,349] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-17 10:33:19,316] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-17 10:45:45,160] INFO in auth (Line 180): User logged out: john12@gmail.com
+[2026-08-17 10:45:48,408] INFO in auth (Line 180): User logged out: yeswanth5922@gmail.com
+[2026-08-17 10:46:06,495] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-17 10:46:07,412] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-17 10:55:18,198] INFO in auth (Line 157): User logged in: yeswanth5922@gmail.com
+[2026-08-17 10:57:18,181] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-17 10:57:18,959] INFO in app (Line 45): Database tables synchronized successfully.

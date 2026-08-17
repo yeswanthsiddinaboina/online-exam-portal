@@ -14,27 +14,21 @@
                 <p style="color: var(--text-secondary);">Multi-Layer Secure Examination Environment</p>
             </div>
             
-            <!-- Auth Selection Tabs -->
-            <div id="auth-tabs-container" style="display: flex; gap: 10px; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem;">
-                <button id="tab-student" type="button" style="flex: 1; background: transparent; border: none; padding: 0.5rem; color: var(--text-primary); font-weight: 600; border-bottom: 2px solid var(--accent-primary); outline: none; cursor: pointer; font-size: 0.95rem;">Student Exam</button>
-                <button id="tab-admin" type="button" style="flex: 1; background: transparent; border: none; padding: 0.5rem; color: var(--text-secondary); font-weight: 500; border-bottom: 2px solid transparent; outline: none; cursor: pointer; font-size: 0.95rem;">Admin Portal</button>
-            </div>
-            
             <form id="login-form">
                 <div class="form-group">
-                    <label class="form-label" for="email" id="email-label">Candidate Email</label>
-                    <input class="form-control" type="email" id="email" placeholder="student@university.edu" required>
+                    <label class="form-label" for="email" id="email-label">Institutional Email</label>
+                    <input class="form-control" type="email" id="email" placeholder="admin@university.edu" required>
                 </div>
                 
-                <div class="form-group" id="password-group" style="display: none;">
+                <div class="form-group" id="password-group" style="display: block;">
                     <label class="form-label" for="password">Password</label>
-                    <input class="form-control" type="password" id="password" placeholder="••••••••">
+                    <input class="form-control" type="password" id="password" placeholder="••••••••" required>
                 </div>
                 
-                <button class="btn btn-primary" id="btn-submit" style="width: 100%; margin-top: 1rem;" type="submit">Enter Examination</button>
+                <button class="btn btn-primary" id="btn-submit" style="width: 100%; margin-top: 1rem;" type="submit">Sign In as Admin</button>
             </form>
             
-            <p id="register-link-container" style="margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-secondary); display: none;">
+            <p id="register-link-container" style="margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-secondary); display: block;">
                 Don't have an admin account? <a href="register.html" style="color: var(--accent-primary); text-decoration: none; font-weight: 500;">Register Here</a>
             </p>
         </div>
@@ -63,10 +57,8 @@
             }
         }
 
-        let activeRole = "student";
-
-        const tabStudent = document.getElementById("tab-student");
-        const tabAdmin = document.getElementById("tab-admin");
+        let activeRole = "admin";
+        
         const passwordGroup = document.getElementById("password-group");
         const passwordInput = document.getElementById("password");
         const emailLabel = document.getElementById("email-label");
@@ -76,7 +68,6 @@
         function initializeView() {
             if (redirectUrl) {
                 const isTargetAdmin = decodeURIComponent(redirectUrl).includes("/admin/");
-                document.getElementById("auth-tabs-container").style.display = "none";
                 if (isTargetAdmin) {
                     activeRole = "admin";
                     passwordGroup.style.display = "block";
@@ -92,42 +83,16 @@
                     btnSubmit.innerText = "Enter Examination";
                     registerContainer.style.display = "none";
                 }
+            } else {
+                // Default direct access shows only the Admin login page
+                activeRole = "admin";
+                passwordGroup.style.display = "block";
+                passwordInput.required = true;
+                emailLabel.innerText = "Institutional Email";
+                btnSubmit.innerText = "Sign In as Admin";
+                registerContainer.style.display = "block";
             }
         }
-
-        tabStudent.addEventListener("click", () => {
-            activeRole = "student";
-            tabStudent.style.borderBottomColor = "var(--accent-primary)";
-            tabStudent.style.color = "var(--text-primary)";
-            tabStudent.style.fontWeight = "600";
-            
-            tabAdmin.style.borderBottomColor = "transparent";
-            tabAdmin.style.color = "var(--text-secondary)";
-            tabAdmin.style.fontWeight = "500";
-            
-            passwordGroup.style.display = "none";
-            passwordInput.required = false;
-            emailLabel.innerText = "Candidate Email";
-            btnSubmit.innerText = "Enter Examination";
-            registerContainer.style.display = "none";
-        });
-
-        tabAdmin.addEventListener("click", () => {
-            activeRole = "admin";
-            tabAdmin.style.borderBottomColor = "var(--accent-primary)";
-            tabAdmin.style.color = "var(--text-primary)";
-            tabAdmin.style.fontWeight = "600";
-            
-            tabStudent.style.borderBottomColor = "transparent";
-            tabStudent.style.color = "var(--text-secondary)";
-            tabStudent.style.fontWeight = "500";
-            
-            passwordGroup.style.display = "block";
-            passwordInput.required = true;
-            emailLabel.innerText = "Institutional Email";
-            btnSubmit.innerText = "Sign In as Admin";
-            registerContainer.style.display = "block";
-        });
 
         document.getElementById("login-form").addEventListener("submit", function(e) {
             e.preventDefault();
