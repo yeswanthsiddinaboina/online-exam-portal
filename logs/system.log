@@ -974,3 +974,7 @@ WHERE exam_access.exam_id = ? AND exam_access.approved = 0]
 [2026-08-17 17:12:08,274] INFO in violation_engine (Line 119): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 3/4, Action: WARNING
 [2026-08-17 17:12:08,416] INFO in evidence_service (Line 59): Evidence saved for attempt 1, event: HEAD_TURN. File size: 12036 bytes.
 [2026-08-17 17:12:15,122] INFO in violation_engine (Line 119): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 4/4, Action: TERMINATE
+[2026-08-18 09:53:53,450] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-18 09:53:54,185] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-18 10:17:23,093] WARNING in app (Line 61): HTTPException: 404 - The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+[2026-08-18 10:18:28,567] INFO in auth (Line 157): User logged in: yeswanth5922@gmail.com
