@@ -227,6 +227,8 @@ def get_reports():
             attempts_data.append({
                 "attempt_id": a.id,
                 "student_email": a.student.email if a.student else "Unknown",
+                "student_username": a.student.first_name if a.student else "Unknown",
+                "student_userid": a.student.last_name if a.student else "Unknown",
                 "status": a.status,
                 "score_obtained": score,
                 "percentage": percentage,
@@ -258,6 +260,8 @@ def get_reports():
         pending_data = [{
             "id": pa.id,
             "student_email": pa.student.email if pa.student else "Unknown",
+            "student_username": pa.student.first_name if pa.student else "Unknown",
+            "student_userid": pa.student.last_name if pa.student else "Unknown",
             "requested_at": pa.requested_at.isoformat() + "Z" if pa.requested_at else None
         } for pa in pending_access]
 

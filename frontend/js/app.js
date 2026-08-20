@@ -109,8 +109,8 @@ const API = {
 };
 
 // --- AUTHENTICATION ---
-async function handleLogin(email, password) {
-    const res = await API.post("/auth/login", { email, password });
+async function handleLogin(email, password, username = "", student_id = "") {
+    const res = await API.post("/auth/login", { email, password, username, student_id });
     if (res.success) {
         const targetTokenKey = res.role === "admin" ? "admin_token" : "token";
         const targetUserKey = res.role === "admin" ? "admin_user" : "user";
@@ -153,17 +153,22 @@ async function handleRegister(firstName, lastName, email, password, role) {
 }
 
 function handleLogout() {
-    API.post("/auth/logout", {}).then(() => {
-        const pageIsAdmin = window.location.pathname.includes("/admin/");
-        if (pageIsAdmin) {
-            localStorage.removeItem("admin_token");
-            localStorage.removeItem("admin_user");
-        } else {
-            localStorage.removeItem("token");
-            localStorage.removeItem("user");
-        }
-        window.location.href = "/login.html";
-    });
+    const pageIsAdmin = window.location.pathname.includes("/admin/");
+    if (pageIsAdmin) {
+        localStorage.removeItem("admin_token");
+        localStorage.removeItem("admin_user");
+    } else {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        localStorage.removeItem("attempt_id");
+        localStorage.removeItem("session_token");
+        localStorage.removeItem("selected_exam_id");
+    }
+    
+    // Notify the backend asynchronously to write audit logs
+    API.post("/auth/logout", {}).catch(e => console.warn("Async logout notify error:", e));
+    
+    window.location.href = "/login.html";
 }
 
 // --- SYSTEM CHECK MANAGER ---

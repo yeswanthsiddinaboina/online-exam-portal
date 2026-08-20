@@ -245,6 +245,9 @@ def face_verification():
     file = request.files["file"]
 
     try:
+        # Guarantee evidence directory exists on dynamic load
+        Config.EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
+        
         # Save reference face (simulated verification for pre-check approval)
         # In a real environment, we'd compare this file with the student's registration profile image.
         # Here we just save the image frame as reference evidence for proctors to audit.
@@ -281,7 +284,7 @@ def face_verification():
         return jsonify({
             "success": False,
             "error_code": "VERIFICATION_FAILED",
-            "message": "Face verification failed."
+            "message": f"Face verification failed: {str(e)}"
         }), 500
 
 
@@ -324,6 +327,9 @@ def save_temp_reference():
     file = request.files["file"]
 
     try:
+        # Guarantee evidence directory exists on dynamic load
+        Config.EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
+        
         # Save temp reference image
         dest_path = Config.EVIDENCE_DIR / f"temp_ref_{student.id}_{exam_id}.jpg"
         img = Image.open(file.stream)
@@ -373,7 +379,7 @@ def save_temp_reference():
         return jsonify({
             "success": False,
             "error_code": "SAVE_REFERENCE_FAILED",
-            "message": "Failed to save reference photo."
+            "message": f"Failed to save reference photo: {str(e)}"
         }), 500
 
 
@@ -416,6 +422,9 @@ def compare_faces_and_start():
     ver_path = Config.EVIDENCE_DIR / f"temp_ver_{student.id}_{exam_id}.jpg"
 
     try:
+        # Guarantee evidence directory exists on dynamic load
+        Config.EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
+        
         # Save verification frame
         img = Image.open(file.stream)
         if img.mode != "RGB":
@@ -510,6 +519,8 @@ def compare_faces_and_start():
         # Copy the temporary reference image as the permanent attempt reference
         final_filename = f"reference_{attempt_session.id}.jpg"
         final_path = Config.EVIDENCE_DIR / final_filename
+        if final_path.exists():
+            final_path.unlink()
         ref_path.rename(final_path)
 
         # Audit event
@@ -540,6 +551,6 @@ def compare_faces_and_start():
         return jsonify({
             "success": False,
             "error_code": "COMPARISON_FAILED",
-            "message": "Face verification system error."
+            "message": f"Face verification system error: {str(e)}"
         }), 500
 

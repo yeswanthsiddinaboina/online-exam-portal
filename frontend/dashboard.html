@@ -96,6 +96,7 @@
         let precheckCamera = null;
         let webcamPassed = false;
         let facePassed = false;
+        let hasProcessedAutoLaunch = false;
 
         document.getElementById("user-display").innerText = `Candidate: ${currentUser.first_name} ${currentUser.last_name}`;
 
@@ -132,15 +133,20 @@
                     `;
                 }).join('');
                 
-                // Auto-launch precheck if ?exam_id=ID is present in URL
+                // Auto-launch precheck if ?exam_id=ID is present in URL (only once on page load)
                 const urlParams = new URLSearchParams(window.location.search);
                 const examIdParam = urlParams.get("exam_id");
-                if (examIdParam) {
+                if (examIdParam && !hasProcessedAutoLaunch) {
+                    hasProcessedAutoLaunch = true;
                     const matchedExam = res.exams.find(e => e.id == examIdParam);
                     if (matchedExam) {
                         if (matchedExam.attempted) {
-                            alert("You have already attempted this examination. Redirecting to results.");
-                            window.location.href = `result.html?attempt_id=${matchedExam.attempt_id}`;
+                            if (matchedExam.attempt_status === "IN_PROGRESS") {
+                                resumeExam(matchedExam.id, matchedExam.attempt_id, matchedExam.session_token);
+                            } else {
+                                alert("You have already attempted this examination. Redirecting to results.");
+                                window.location.href = `result.html?attempt_id=${matchedExam.attempt_id}`;
+                            }
                         } else if (matchedExam.access_status === "APPROVED") {
                             openPrecheck(matchedExam.id);
                         } else if (matchedExam.access_status === "PENDING") {
@@ -322,11 +328,13 @@
         });
 
         // Step 2: Compare & Match Face
-        document.getElementById("btn-verify-match").addEventListener("click", async () => {
+        const btnVerifyMatch = document.getElementById("btn-verify-match");
+        btnVerifyMatch.addEventListener("click", async () => {
             const video = document.getElementById("precheck-video");
             const canvas = document.getElementById("precheck-canvas");
             const statusLog = document.getElementById("precheck-status-log");
             
+            btnVerifyMatch.disabled = true;
             statusLog.innerText = "⏳ Verifying identity & matching faces...";
             
             canvas.width = video.videoWidth || 640;
@@ -354,6 +362,7 @@
                         window.location.href = "exam.html";
                     }, 1500);
                 } else {
+                    btnVerifyMatch.disabled = false;
                     alert(matchRes.message || "Face comparison mismatch! Please ensure the same candidate is looking at the camera.");
                     statusLog.innerText = "❌ Verification mismatch. Please try again.";
                     statusLog.style.color = "var(--accent-danger)";
@@ -367,6 +376,9 @@
         });
 
         loadExams();
+
+        // Poll exams list every 5 seconds to update approval status in real-time without manual page refreshing
+        setInterval(loadExams, 5000);
     </script>
 </body>
 </html>

@@ -20,6 +20,17 @@
                     <input class="form-control" type="email" id="email" placeholder="admin@university.edu" required>
                 </div>
                 
+                <div class="form-group" id="student-details-group" style="display: none; margin-bottom: 1rem;">
+                    <div style="margin-bottom: 1rem;">
+                        <label class="form-label" for="username">Candidate Name</label>
+                        <input class="form-control" type="text" id="username" placeholder="John Doe">
+                    </div>
+                    <div>
+                        <label class="form-label" for="student-id">User ID (Roll/Emp No)</label>
+                        <input class="form-control" type="text" id="student-id" placeholder="CS2026101">
+                    </div>
+                </div>
+
                 <div class="form-group" id="password-group" style="display: block;">
                     <label class="form-label" for="password">Password</label>
                     <input class="form-control" type="password" id="password" placeholder="••••••••" required>
@@ -36,9 +47,8 @@
 
     <script src="js/app.js"></script>
     <script>
-        // Redirect if already authenticated
+        // Redirect if already authenticated (Admin only; Students must always see the login gate to prevent session leakage)
         const adminToken = localStorage.getItem("admin_token");
-        const studentToken = localStorage.getItem("token");
         const urlParams = new URLSearchParams(window.location.search);
         const redirectUrl = urlParams.get("redirect");
         
@@ -46,14 +56,10 @@
             const isTargetAdmin = decodeURIComponent(redirectUrl).includes("/admin/");
             if (isTargetAdmin && adminToken) {
                 window.location.href = decodeURIComponent(redirectUrl);
-            } else if (!isTargetAdmin && studentToken) {
-                window.location.href = decodeURIComponent(redirectUrl);
             }
         } else {
             if (adminToken) {
                 window.location.href = "admin/dashboard.html";
-            } else if (studentToken) {
-                window.location.href = "dashboard.html";
             }
         }
 
@@ -65,6 +71,10 @@
         const btnSubmit = document.getElementById("btn-submit");
         const registerContainer = document.getElementById("register-link-container");
 
+        const studentDetailsGroup = document.getElementById("student-details-group");
+        const usernameInput = document.getElementById("username");
+        const studentIdInput = document.getElementById("student-id");
+
         function initializeView() {
             if (redirectUrl) {
                 const isTargetAdmin = decodeURIComponent(redirectUrl).includes("/admin/");
@@ -72,6 +82,9 @@
                     activeRole = "admin";
                     passwordGroup.style.display = "block";
                     passwordInput.required = true;
+                    studentDetailsGroup.style.display = "none";
+                    usernameInput.required = false;
+                    studentIdInput.required = false;
                     emailLabel.innerText = "Institutional Email";
                     btnSubmit.innerText = "Sign In as Admin";
                     registerContainer.style.display = "block";
@@ -79,15 +92,28 @@
                     activeRole = "student";
                     passwordGroup.style.display = "none";
                     passwordInput.required = false;
+                    studentDetailsGroup.style.display = "block";
+                    usernameInput.required = true;
+                    studentIdInput.required = true;
                     emailLabel.innerText = "Candidate Email";
                     btnSubmit.innerText = "Enter Examination";
                     registerContainer.style.display = "none";
+                    
+                    // Prevent session mixups: clear old student credentials on login screen mount
+                    localStorage.removeItem("token");
+                    localStorage.removeItem("user");
+                    localStorage.removeItem("attempt_id");
+                    localStorage.removeItem("session_token");
+                    localStorage.removeItem("selected_exam_id");
                 }
             } else {
                 // Default direct access shows only the Admin login page
                 activeRole = "admin";
                 passwordGroup.style.display = "block";
                 passwordInput.required = true;
+                studentDetailsGroup.style.display = "none";
+                usernameInput.required = false;
+                studentIdInput.required = false;
                 emailLabel.innerText = "Institutional Email";
                 btnSubmit.innerText = "Sign In as Admin";
                 registerContainer.style.display = "block";
@@ -98,7 +124,9 @@
             e.preventDefault();
             const email = document.getElementById("email").value;
             const password = activeRole === "admin" ? passwordInput.value : "";
-            handleLogin(email, password);
+            const username = activeRole === "student" ? usernameInput.value : "";
+            const studentId = activeRole === "student" ? studentIdInput.value : "";
+            handleLogin(email, password, username, studentId);
         });
 
         // Initialize the login screen view state based on redirect URL

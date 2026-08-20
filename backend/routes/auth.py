@@ -81,6 +81,8 @@ def login():
     data = request.get_json() or {}
     email = data.get("email")
     password = data.get("password")
+    username = data.get("username")
+    student_id = data.get("student_id")
 
     if not email:
         return jsonify({
@@ -93,19 +95,24 @@ def login():
     
     # If student, allow login or register automatically
     if not user:
-        # Check if login is password-less (student) or password provided (we assume student unless admin email format)
-        # Create student user automatically
+        # Require username and student_id for initial registration
+        if not username or not student_id:
+            return jsonify({
+                "success": False,
+                "error_code": "REGISTRATION_FIELDS_REQUIRED",
+                "message": "User Name and User ID are required to register your student account."
+            }), 400
         try:
             user = User(
                 email=email,
-                first_name="Student",
-                last_name="User",
+                first_name=username,
+                last_name=student_id,
                 role="student"
             )
             user.set_password("dummy_password")
             db.session.add(user)
             db.session.commit()
-            logger.info(f"Automatically registered student user: {email}")
+            logger.info(f"Automatically registered student user: {email} ({username} - {student_id})")
         except Exception as ex:
             db.session.rollback()
             logger.error(f"Failed to auto-register student user: {str(ex)}")
@@ -114,6 +121,23 @@ def login():
                 "error_code": "AUTO_REGISTRATION_FAILED",
                 "message": "Failed to initialize student account."
             }), 500
+            
+    # For existing student users, update username/userid if provided to keep records fresh
+    elif user.role == "student":
+        try:
+            modified = False
+            if username and user.first_name != username:
+                user.first_name = username
+                modified = True
+            if student_id and user.last_name != student_id:
+                user.last_name = student_id
+                modified = True
+            if modified:
+                db.session.commit()
+                logger.info(f"Updated registration details for student: {email}")
+        except Exception as ex:
+            db.session.rollback()
+            logger.error(f"Failed to update student details: {str(ex)}")
             
     # For existing users, if they are admin, we MUST require and verify password
     if user.role == "admin":

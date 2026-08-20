@@ -21,7 +21,19 @@
             <p style="color: var(--text-secondary); margin-bottom: 2rem; font-size: 0.95rem; line-height: 1.5;">
                 This exam is proctored. You must enter and maintain fullscreen mode. Exiting fullscreen or navigating away from this window will trigger security violations.
             </p>
-            <button class="btn btn-primary" id="btn-enter-fullscreen" style="width: 100%;">Enter Fullscreen & Start Exam</button>
+            <button class="btn btn-primary" id="btn-enter-fullscreen" style="width: 100%;">Enter Fullscreen to Begin</button>
+        </div>
+    </div>
+
+    <!-- START EXAM COVER OVERLAY -->
+    <div id="start-exam-overlay" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #0b0c15; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; text-align: center; padding: 2rem;">
+        <div class="glass-panel" style="max-width: 480px;">
+            <div class="logo-icon" style="font-size: 3rem; margin-bottom: 1.5rem;">📝</div>
+            <h2 style="margin-bottom: 1rem; color: var(--accent-primary);">Ready to Begin?</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 2rem; font-size: 0.95rem; line-height: 1.5;">
+                You have authorized fullscreen. Your webcam proctoring, browser monitoring, and exam timer will start immediately once you click the button below. Make sure you are ready before proceeding.
+            </p>
+            <button class="btn btn-primary" id="btn-start-exam" style="width: 100%; background: var(--accent-primary); border-color: transparent;">Start Exam</button>
         </div>
     </div>
 
@@ -133,10 +145,16 @@
         document.getElementById("btn-enter-fullscreen").addEventListener("click", () => {
             document.documentElement.requestFullscreen().then(() => {
                 document.getElementById("fullscreen-lockout").style.display = "none";
-                initializeExam();
+                document.getElementById("start-exam-overlay").style.display = "flex";
             }).catch(err => {
                 alert("Fullscreen authorization failed. Please allow fullscreen permission.");
             });
+        });
+
+        // Start Exam Trigger
+        document.getElementById("btn-start-exam").addEventListener("click", () => {
+            document.getElementById("start-exam-overlay").style.display = "none";
+            initializeExam();
         });
 
         // Initialize exam session on screen lock

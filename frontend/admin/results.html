@@ -116,13 +116,15 @@
                     <thead>
                         <tr>
                             <th>Student Email</th>
+                            <th>Candidate Name</th>
+                            <th>User ID</th>
                             <th>Request Time</th>
                             <th>Action</th>
                         </tr>
                     </thead>
                     <tbody id="access-requests-body">
                         <tr>
-                            <td colspan="3" style="color: var(--text-secondary);">No pending access requests.</td>
+                            <td colspan="5" style="color: var(--text-secondary);">No pending access requests.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -138,6 +140,8 @@
                     <thead>
                         <tr>
                             <th>Student Email</th>
+                            <th>Candidate Name</th>
+                            <th>User ID</th>
                             <th>Status</th>
                             <th>Violations</th>
                             <th>Raw Score</th>
@@ -257,6 +261,8 @@
                         accessBody.innerHTML = res.pending_access.map(pa => `
                             <tr>
                                 <td><strong>${pa.student_email}</strong></td>
+                                <td>${pa.student_username || '-'}</td>
+                                <td>${pa.student_userid || '-'}</td>
                                 <td>${new Date(pa.requested_at).toLocaleString()}</td>
                                 <td>
                                     <button class="btn btn-primary" onclick="approveStudentAccess(${pa.id})" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Approve Access</button>
@@ -265,7 +271,7 @@
                         `).join('');
                     } else {
                         accessPanel.style.display = "none";
-                        accessBody.innerHTML = `<tr><td colspan="3" style="color: var(--text-secondary); text-align: center;">No pending access requests.</td></tr>`;
+                        accessBody.innerHTML = `<tr><td colspan="5" style="color: var(--text-secondary); text-align: center;">No pending access requests.</td></tr>`;
                     }
 
                     // Update Student Scores Table
@@ -277,6 +283,8 @@
                             return `
                                 <tr style="${rowStyle}" ${clickHandler} class="scoreboard-row">
                                     <td><strong>${a.student_email}</strong></td>
+                                    <td>${a.student_username || '-'}</td>
+                                    <td>${a.student_userid || '-'}</td>
                                     <td>
                                         <span class="badge badge-${
                                             a.status === 'MALPRACTICE_CANCELLED' ? 'danger' :
@@ -300,7 +308,7 @@
                             `;
                         }).join('');
                     } else {
-                        body.innerHTML = `<tr><td colspan="7" style="color: var(--text-secondary); text-align: center;">No students have attempted this examination.</td></tr>`;
+                        body.innerHTML = `<tr><td colspan="9" style="color: var(--text-secondary); text-align: center;">No students have attempted this examination.</td></tr>`;
                     }
                 }
             } else {

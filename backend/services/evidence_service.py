@@ -12,6 +12,9 @@ class EvidenceService:
     def save_evidence(attempt_id, event_type, file_stream, violation_log_id=None):
         """Processes, compresses, hashes, and stores a captured violation frame."""
         try:
+            # Guarantee evidence directory exists on dynamic load
+            Config.EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
+            
             # Generate clean filename
             timestamp_str = datetime.datetime.utcnow().strftime("%Y%m%d_%H%M%S")
             filename = f"evidence_{attempt_id}_{event_type.lower()}_{timestamp_str}.jpg"
