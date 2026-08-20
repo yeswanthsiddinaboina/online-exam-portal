@@ -16,18 +16,25 @@ def register():
     last_name = data.get("last_name")
     role = data.get("role", "student") # Defaults to student
 
+    if role == "admin":
+        return jsonify({
+            "success": False,
+            "error_code": "ADMIN_REGISTRATION_DISABLED",
+            "message": "Administrator registration is disabled on this platform."
+        }), 403
+
+    if role not in ["student"]:
+        return jsonify({
+            "success": False,
+            "error_code": "INVALID_ROLE",
+            "message": "Invalid user role specified."
+        }), 400
+
     if not all([email, password, first_name, last_name]):
         return jsonify({
             "success": False,
             "error_code": "INVALID_INPUT",
             "message": "All fields (email, password, first_name, last_name) are required."
-        }), 400
-
-    if role not in ["student", "admin"]:
-        return jsonify({
-            "success": False,
-            "error_code": "INVALID_ROLE",
-            "message": "Invalid user role specified."
         }), 400
 
     # Check if user already exists

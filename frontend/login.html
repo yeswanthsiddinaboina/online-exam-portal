@@ -38,10 +38,7 @@
                 
                 <button class="btn btn-primary" id="btn-submit" style="width: 100%; margin-top: 1rem;" type="submit">Sign In as Admin</button>
             </form>
-            
-            <p id="register-link-container" style="margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-secondary); display: block;">
-                Don't have an admin account? <a href="register.html" style="color: var(--accent-primary); text-decoration: none; font-weight: 500;">Register Here</a>
-            </p>
+
         </div>
     </div>
 
@@ -69,7 +66,6 @@
         const passwordInput = document.getElementById("password");
         const emailLabel = document.getElementById("email-label");
         const btnSubmit = document.getElementById("btn-submit");
-        const registerContainer = document.getElementById("register-link-container");
 
         const studentDetailsGroup = document.getElementById("student-details-group");
         const usernameInput = document.getElementById("username");
@@ -87,7 +83,6 @@
                     studentIdInput.required = false;
                     emailLabel.innerText = "Institutional Email";
                     btnSubmit.innerText = "Sign In as Admin";
-                    registerContainer.style.display = "block";
                 } else {
                     activeRole = "student";
                     passwordGroup.style.display = "none";
@@ -97,7 +92,6 @@
                     studentIdInput.required = true;
                     emailLabel.innerText = "Candidate Email";
                     btnSubmit.innerText = "Enter Examination";
-                    registerContainer.style.display = "none";
                     
                     // Prevent session mixups: clear old student credentials on login screen mount
                     localStorage.removeItem("token");
@@ -116,7 +110,6 @@
                 studentIdInput.required = false;
                 emailLabel.innerText = "Institutional Email";
                 btnSubmit.innerText = "Sign In as Admin";
-                registerContainer.style.display = "block";
             }
         }
 

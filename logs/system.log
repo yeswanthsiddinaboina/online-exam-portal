@@ -1652,3 +1652,57 @@ xlrd.biffh.XLRDError: Unsupported format, or corrupt file: Expected BOF record; 
 [2026-08-20 20:57:44,686] INFO in app (Line 45): Database tables synchronized successfully.
 [2026-08-20 20:57:45,653] INFO in app (Line 45): Database tables synchronized successfully.
 >>>>>>> 7935a6ed4bbf068de0d4e35669a77697a81d2f64
+[2026-08-20 22:44:08,748] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-20 22:44:09,534] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-20 22:44:26,685] WARNING in app (Line 61): HTTPException: 404 - The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+[2026-08-20 22:44:28,833] WARNING in app (Line 61): HTTPException: 404 - The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+[2026-08-20 22:46:23,817] INFO in auth (Line 64): Registered user: admin@gmail.com with role: admin
+[2026-08-20 22:46:40,242] INFO in auth (Line 181): User logged in: admin@gmail.com
+[2026-08-20 22:49:19,059] INFO in exams (Line 139): Exam created by admin admin@gmail.com: python test1 (ID: 1)
+[2026-08-20 22:49:54,425] INFO in auth (Line 115): Automatically registered student user: yeswanth5922@gmail.com (yeshu - HT26B01)
+[2026-08-20 22:49:54,441] INFO in auth (Line 181): User logged in: yeswanth5922@gmail.com
+[2026-08-20 22:49:54,674] INFO in exams (Line 312): Student yeswanth5922@gmail.com requested access for exam python test1
+[2026-08-20 22:50:07,915] INFO in admin (Line 302): Admin approved exam access for student yeswanth5922@gmail.com on exam python test1
+[2026-08-20 22:50:50,975] INFO in proctoring (Line 371): Temporary reference face saved for student yeswanth5922@gmail.com on exam 1
+[2026-08-20 22:50:50,975] INFO in proctoring (Line 371): Temporary reference face saved for student yeswanth5922@gmail.com on exam 1
+[2026-08-20 22:50:55,315] INFO in session_manager (Line 63): Started attempt session 1 for student 2 on exam 1
+[2026-08-20 22:50:55,361] INFO in proctoring (Line 541): Student yeswanth5922@gmail.com matched face successfully (distance=0.1328) and started attempt 1
+[2026-08-20 22:51:36,499] INFO in violation_engine (Line 156): Violation logged: Attempt 1, Event: MULTIPLE_PERSON, Count: 1/1, Action: WARNING, Warnings=1
+[2026-08-20 22:51:36,623] INFO in evidence_service (Line 62): Evidence saved for attempt 1, event: MULTIPLE_PERSON. File size: 8329 bytes.
+[2026-08-20 22:51:37,115] INFO in violation_engine (Line 156): Violation logged: Attempt 1, Event: FACE_ABSENT, Count: 1/5, Action: WARNING, Warnings=2
+[2026-08-20 22:51:37,198] INFO in evidence_service (Line 62): Evidence saved for attempt 1, event: FACE_ABSENT. File size: 6724 bytes.
+[2026-08-20 22:51:37,734] INFO in violation_engine (Line 156): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 1/1, Action: WARNING, Warnings=3
+[2026-08-20 22:51:37,840] INFO in evidence_service (Line 62): Evidence saved for attempt 1, event: HEAD_TURN. File size: 6879 bytes.
+[2026-08-20 22:51:43,017] INFO in violation_engine (Line 156): Violation logged: Attempt 1, Event: MULTIPLE_PERSON, Count: 2/1, Action: TERMINATE, Warnings=4
+[2026-08-20 22:51:58,668] INFO in auth (Line 204): User logged out: yeswanth5922@gmail.com
+[2026-08-20 22:54:30,229] INFO in auth (Line 181): User logged in: yeswanth5922@gmail.com
+[2026-08-20 22:54:57,685] INFO in admin (Line 371): Admin reset attempt 1 for student 2. Permitted reconduct of exam 1.
+[2026-08-20 22:55:33,373] INFO in proctoring (Line 371): Temporary reference face saved for student yeswanth5922@gmail.com on exam 1
+[2026-08-20 22:55:37,820] INFO in session_manager (Line 63): Started attempt session 1 for student 2 on exam 1
+[2026-08-20 22:55:37,896] INFO in proctoring (Line 541): Student yeswanth5922@gmail.com matched face successfully (distance=0.0207) and started attempt 1
+[2026-08-20 22:56:04,660] INFO in evaluation (Line 77): Evaluated attempt 1: Score=1.0/62.0 (1.61%) Pass=False
+[2026-08-20 22:56:04,677] INFO in violation_engine (Line 156): Violation logged: Attempt 1, Event: TAB_SWITCH, Count: 1/2, Action: WARNING, Warnings=1
+[2026-08-20 22:56:38,874] INFO in admin (Line 371): Admin reset attempt 1 for student 2. Permitted reconduct of exam 1.
+[2026-08-20 22:57:01,159] INFO in proctoring (Line 371): Temporary reference face saved for student yeswanth5922@gmail.com on exam 1
+[2026-08-20 22:57:05,219] INFO in session_manager (Line 63): Started attempt session 1 for student 2 on exam 1
+[2026-08-20 22:57:05,265] INFO in proctoring (Line 541): Student yeswanth5922@gmail.com matched face successfully (distance=0.0520) and started attempt 1
+[2026-08-20 22:57:49,575] INFO in violation_engine (Line 156): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 1/1, Action: WARNING, Warnings=1
+[2026-08-20 22:57:49,681] INFO in evidence_service (Line 62): Evidence saved for attempt 1, event: HEAD_TURN. File size: 6519 bytes.
+[2026-08-20 22:57:52,029] INFO in violation_engine (Line 156): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 2/1, Action: WARNING, Warnings=2
+[2026-08-20 22:57:52,140] INFO in evidence_service (Line 62): Evidence saved for attempt 1, event: HEAD_TURN. File size: 5535 bytes.
+[2026-08-20 22:58:01,580] INFO in violation_engine (Line 156): Violation logged: Attempt 1, Event: FACE_ABSENT, Count: 1/5, Action: WARNING, Warnings=3
+[2026-08-20 22:58:01,693] INFO in evidence_service (Line 62): Evidence saved for attempt 1, event: FACE_ABSENT. File size: 7180 bytes.
+[2026-08-20 22:59:07,927] INFO in violation_engine (Line 156): Violation logged: Attempt 1, Event: PHONE_DETECTED, Count: 1/2, Action: WARNING, Warnings=4
+[2026-08-20 22:59:08,001] INFO in evidence_service (Line 62): Evidence saved for attempt 1, event: PHONE_DETECTED. File size: 7746 bytes.
+[2026-08-20 22:59:13,074] INFO in violation_engine (Line 156): Violation logged: Attempt 1, Event: PHONE_DETECTED, Count: 2/2, Action: WARNING, Warnings=5
+[2026-08-20 22:59:13,210] INFO in evidence_service (Line 62): Evidence saved for attempt 1, event: PHONE_DETECTED. File size: 9107 bytes.
+[2026-08-20 23:00:18,075] INFO in violation_engine (Line 156): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 3/1, Action: TERMINATE, Warnings=6
+[2026-08-20 23:01:08,968] INFO in auth (Line 204): User logged out: yeswanth5922@gmail.com
+[2026-08-20 23:18:56,135] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-20 23:18:56,635] INFO in app (Line 63): Aligned existing default admin account password to Admin@123
+[2026-08-20 23:19:17,185] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-20 23:19:17,674] INFO in app (Line 63): Aligned existing default admin account password to Admin@123
+[2026-08-20 23:19:32,182] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-20 23:19:32,672] INFO in app (Line 63): Aligned existing default admin account password to Admin@123
+[2026-08-20 23:22:06,001] INFO in auth (Line 211): User logged out: admin@gmail.com
+[2026-08-20 23:22:21,327] INFO in auth (Line 188): User logged in: admin@gmail.com

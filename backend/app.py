@@ -43,7 +43,34 @@ def create_app(config_class=Config):
         try:
             db.create_all()
             logger.info("Database tables synchronized successfully.")
+            
+            # Enforce single admin user policy with fixed credentials
+            from backend.models.user import User
+            admin_user = User.query.filter_by(email="admin@gmail.com").first()
+            if not admin_user:
+                admin_user = User(
+                    email="admin@gmail.com",
+                    first_name="Admin",
+                    last_name="System",
+                    role="admin"
+                )
+                admin_user.set_password("Admin@123")
+                db.session.add(admin_user)
+                logger.info("Pre-seeded the default admin account: admin@gmail.com")
+            else:
+                # Guarantee the password is reset/forced to Admin@123
+                admin_user.set_password("Admin@123")
+                logger.info("Aligned existing default admin account password to Admin@123")
+            
+            # Remove any other admin accounts to enforce single-admin constraint
+            other_admins = User.query.filter(User.role == "admin", User.email != "admin@gmail.com").all()
+            for oa in other_admins:
+                db.session.delete(oa)
+                logger.info(f"Removed redundant admin account: {oa.email}")
+                
+            db.session.commit()
         except Exception as db_err:
+            db.session.rollback()
             logger.error(f"Failed to synchronize database tables: {str(db_err)}")
 
     # Register blueprints with appropriate URL prefixes
