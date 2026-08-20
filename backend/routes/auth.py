@@ -10,7 +10,7 @@ auth_bp = Blueprint("auth", __name__)
 @auth_bp.route("/register", methods=["POST"])
 def register():
     data = request.get_json() or {}
-    email = data.get("email")
+    email = data.get("email").strip().lower() if data.get("email") else None
     password = data.get("password")
     first_name = data.get("first_name")
     last_name = data.get("last_name")
@@ -86,7 +86,7 @@ def register():
 @auth_bp.route("/login", methods=["POST"])
 def login():
     data = request.get_json() or {}
-    email = data.get("email")
+    email = data.get("email").strip().lower() if data.get("email") else None
     password = data.get("password")
     username = data.get("username")
     student_id = data.get("student_id")
