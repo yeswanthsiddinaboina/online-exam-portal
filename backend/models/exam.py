@@ -25,6 +25,7 @@ class Exam(db.Model):
             "duration_minutes": self.duration_minutes,
             "created_by": self.created_by,
             "is_active": self.is_active,
+            "question_count": len(self.questions),
             "created_at": self.created_at.isoformat() if self.created_at else None
         }
         if include_config and self.security_config:

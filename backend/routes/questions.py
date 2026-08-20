@@ -1,5 +1,9 @@
 import io
 import csv
+import json
+import re
+import zipfile
+from pathlib import Path
 from flask import Blueprint, request, jsonify
 from backend.models import db, Exam, Question, QuestionOption, AuditLog
 from backend.utils.security import token_required, role_required
@@ -7,6 +11,253 @@ from backend.utils.logger import get_logger
 
 logger = get_logger()
 questions_bp = Blueprint("questions", __name__)
+
+SUPPORTED_UPLOAD_TYPES = (".csv", ".xlsx", ".xls")
+
+
+class QuestionFileError(ValueError):
+    def __init__(self, message, error_code="QUESTION_FILE_INVALID", details=None):
+        super().__init__(message)
+        self.error_code = error_code
+        self.details = details or {}
+
+
+def _normalise_header(header):
+    """Map common human-readable column names to the import schema."""
+    key = re.sub(r"[^a-z0-9]+", "_", str(header or "").strip().lower()).strip("_")
+    compact = key.replace("_", "")
+    aliases = {
+        "question": "question", "questiontext": "question", "prompt": "question", "text": "question",
+        "answer": "correct_answer", "correct": "correct_answer", "correctanswer": "correct_answer",
+        "correctoption": "correct_answer", "answerkey": "correct_answer", "key": "correct_answer",
+        "marks": "marks", "mark": "marks", "points": "marks", "point": "marks", "score": "marks",
+        "negativemarks": "negative_marks", "negativemark": "negative_marks", "negativepoints": "negative_marks",
+        "questiontype": "question_type", "type": "question_type", "options": "options", "choices": "options"
+    }
+    if compact in aliases:
+        return aliases[compact]
+    option_match = re.match(r"^(?:option|opt|choice|answer|ans)_?([a-d1-4])$", key)
+    if option_match:
+        value = option_match.group(1)
+        return f"option_{chr(65 + int(value) - 1) if value.isdigit() else value.upper()}" if value.isdigit() else f"option_{value}"
+    return key
+
+
+def _normalise_row(row):
+    return {_normalise_header(key): value for key, value in row.items() if _normalise_header(key)}
+
+
+def _validate_import_headers(headers, filename):
+    headers = set(headers)
+    missing = []
+    if "question" not in headers:
+        missing.append("question/question_text")
+    if "correct_answer" not in headers:
+        missing.append("correct_answer/answer")
+    has_options = "options" in headers or any(f"option_{letter}" in headers for letter in "abcd")
+    if missing or not has_options:
+        if not has_options:
+            missing.append("options or option_a..option_d")
+        raise QuestionFileError(
+            f"{filename} is missing required columns: {', '.join(missing)}.",
+            "INVALID_FILE_HEADERS",
+            {"received_headers": sorted(headers), "required_columns": ["question", "correct_answer", "options"]}
+        )
+
+
+def _parse_delimited(raw, filename):
+    try:
+        text = raw.decode("utf-8-sig")
+    except UnicodeDecodeError as error:
+        raise QuestionFileError(f"{filename} is not valid UTF-8 CSV data.", "INVALID_FILE_ENCODING") from error
+    if not text.strip():
+        raise QuestionFileError(f"{filename} is empty.", "EMPTY_FILE")
+    try:
+        dialect = csv.Sniffer().sniff(text[:4096], delimiters=",;|\t")
+    except csv.Error:
+        dialect = csv.excel
+    rows = list(csv.DictReader(io.StringIO(text, newline=""), dialect=dialect))
+    if not rows or not rows[0]:
+        raise QuestionFileError(f"{filename} does not contain a header row.", "INVALID_FILE_HEADERS")
+    normalized_rows = [_normalise_row(row) for row in rows]
+    _validate_import_headers(normalized_rows[0].keys(), filename)
+    return normalized_rows
+
+
+def _normalise_question(data):
+    """Convert supported import shapes into the question API shape."""
+    options = data.get("options", [])
+    if isinstance(options, str):
+        try:
+            options = json.loads(options)
+        except (TypeError, ValueError):
+            options = [part.strip() for part in options.replace("|", ";").split(";") if part.strip()]
+    if isinstance(options, dict):
+        options = [{"letter": key, "text": value} for key, value in options.items()]
+    if not isinstance(options, list):
+        options = []
+    if options and isinstance(options[0], str):
+        options = [{"letter": chr(65 + index), "text": value} for index, value in enumerate(options[:4])]
+
+    for index, letter in enumerate(("A", "B", "C", "D")):
+        value = data.get(f"option_{letter.lower()}") or data.get(f"option{letter}")
+        if value and not any(str(option.get("letter", "")).upper() == letter for option in options if isinstance(option, dict)):
+            options.append({"letter": letter, "text": str(value).strip()})
+
+    try:
+        marks = float(data.get("marks", data.get("points", 1)) or 1)
+        negative_marks = float(data.get("negative_marks", 0) or 0)
+    except (TypeError, ValueError) as error:
+        raise QuestionFileError(
+            "Marks and negative marks must be numeric.",
+            "INVALID_MARKS",
+            {"marks": data.get("marks"), "negative_marks": data.get("negative_marks")}
+        ) from error
+
+    normalized = {
+        "id": data.get("id"),
+        "question_text": str(data.get("question_text", data.get("question", ""))).strip(),
+        "question_type": str(data.get("question_type", "MCQ")).strip().upper(),
+        "correct_answer": str(data.get("correct_answer", data.get("answer", ""))).strip().upper(),
+        "marks": marks,
+        "negative_marks": negative_marks,
+        "options": [
+            {"letter": str(option.get("letter", option.get("option_letter", ""))).strip().upper(),
+             "text": str(option.get("text", option.get("option_text", ""))).strip()}
+            for option in options if isinstance(option, dict) and option.get("text", option.get("option_text"))
+        ]
+    }
+    return normalized
+
+
+def _parse_upload(file):
+    filename = Path(file.filename or "").name
+    extension = Path(filename).suffix.lower()
+    if extension not in SUPPORTED_UPLOAD_TYPES:
+        raise QuestionFileError(
+            f"Unsupported file type '{extension or 'unknown'}'. Upload a CSV, XLSX, or XLS file.",
+            "UNSUPPORTED_FILE_TYPE",
+            {"filename": filename, "supported_types": list(SUPPORTED_UPLOAD_TYPES)}
+        )
+    raw = file.read()
+    if extension == ".csv":
+        return [_normalise_question(row) for row in _parse_delimited(raw, filename)]
+    if extension in (".xlsx", ".xls"):
+        try:
+            if extension == ".xls":
+                import xlrd
+                workbook = xlrd.open_workbook(file_contents=raw)
+                sheet = workbook.sheet_by_index(0)
+                rows = [sheet.row_values(index) for index in range(sheet.nrows)]
+            else:
+                from openpyxl import load_workbook
+                rows = list(load_workbook(io.BytesIO(raw), read_only=True, data_only=True).active.values)
+        except ImportError as error:
+            package = "xlrd" if extension == ".xls" else "openpyxl"
+            raise QuestionFileError(f"Excel uploads require the {package} package.", "MISSING_EXCEL_DEPENDENCY") from error
+        except (xlrd.XLRDError if extension == ".xls" else zipfile.BadZipFile) as error:
+            raise QuestionFileError(f"{filename} is not a valid {extension[1:].upper()} workbook.", "INVALID_EXCEL_FILE") from error
+        except (OSError, ValueError, KeyError, IndexError) as error:
+            raise QuestionFileError(f"Could not read {filename}: {error}", "EXCEL_READ_FAILED") from error
+        if not rows or not rows[0]:
+            raise QuestionFileError(f"{filename} does not contain a header row.", "INVALID_FILE_HEADERS")
+        headers = [_normalise_header(value) for value in rows[0]]
+        _validate_import_headers(headers, filename)
+        return [_normalise_question(_normalise_row(dict(zip(headers, row)))) for row in rows[1:] if any(value not in (None, "") for value in row)]
+
+
+def _validate_questions(questions):
+    if not isinstance(questions, list) or not questions:
+        raise ValueError("At least one question is required")
+    parsed = [_normalise_question(question) for question in questions]
+    for question in parsed:
+        if not question["question_text"] or not question["correct_answer"]:
+            raise ValueError("Every question needs question text and a correct answer")
+        if question["question_type"] == "MCQ" and len(question["options"]) < 2:
+            raise ValueError("Every multiple-choice question needs at least two options")
+    return parsed
+
+
+def _add_question_record(exam_id, data):
+    question = Question(exam_id=exam_id, question_text=data["question_text"], question_type=data["question_type"],
+                        marks=data["marks"], negative_marks=data["negative_marks"], correct_answer=data["correct_answer"])
+    db.session.add(question)
+    db.session.flush()
+    for option in data["options"]:
+        db.session.add(QuestionOption(question_id=question.id, option_letter=option["letter"], option_text=option["text"]))
+    return question
+
+
+@questions_bp.route("/parse-questions-file", methods=["POST"])
+@token_required
+@role_required(["admin"])
+def parse_questions_file():
+    uploaded_file = request.files.get("file")
+    if not uploaded_file or not uploaded_file.filename:
+        return jsonify({"success": False, "error_code": "NO_FILE", "message": "A question file is required."}), 400
+    try:
+        questions = _validate_questions(_parse_upload(uploaded_file))
+        return jsonify({
+            "success": True,
+            "message": f"Parsed {len(questions)} questions. Review them before saving.",
+            "questions": questions
+        }), 200
+    except QuestionFileError as error:
+        return jsonify({
+            "success": False,
+            "error_code": error.error_code,
+            "message": str(error),
+            "details": error.details
+        }), 400
+    except (ValueError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        logger.warning("Question file parsing failed: %s", error)
+        return jsonify({
+            "success": False,
+            "error_code": "QUESTION_FILE_INVALID",
+            "message": f"Could not parse the uploaded question file: {error}",
+            "details": {"exception": type(error).__name__}
+        }), 400
+    except Exception as error:
+        logger.exception("Unexpected question file parsing failure")
+        return jsonify({
+            "success": False,
+            "error_code": "QUESTION_FILE_PROCESSING_FAILED",
+            "message": "The question file could not be processed.",
+            "details": {"exception": type(error).__name__}
+        }), 400
+
+
+@questions_bp.route("/exams/<int:exam_id>/save-questions", methods=["POST"])
+@token_required
+@role_required(["admin"])
+def save_questions(exam_id):
+    user = request.current_user
+    if not Exam.query.get(exam_id):
+        return jsonify({"success": False, "error_code": "EXAM_NOT_FOUND", "message": "Exam not found."}), 404
+    try:
+        questions = _validate_questions((request.get_json() or {}).get("questions"))
+        Question.query.filter_by(exam_id=exam_id).delete(synchronize_session=False)
+        for question_data in questions:
+            _add_question_record(exam_id, question_data)
+        audit = AuditLog(user_id=user.id, action="QUESTIONS_REVIEWED_AND_SAVED", ip_address=request.remote_addr,
+                         user_agent=request.headers.get("User-Agent"))
+        audit.details = {"exam_id": exam_id, "questions_count": len(questions)}
+        db.session.add(audit)
+        db.session.commit()
+        saved = Question.query.filter_by(exam_id=exam_id).all()
+        return jsonify({
+            "success": True,
+            "message": "Questions saved to the exam.",
+            "question_count": len(saved),
+            "questions": [question.to_dict(include_correct=True) for question in saved]
+        }), 200
+    except (ValueError, TypeError) as error:
+        db.session.rollback()
+        return jsonify({"success": False, "error_code": "INVALID_QUESTIONS", "message": str(error)}), 400
+    except Exception as error:
+        db.session.rollback()
+        logger.error(f"Error saving questions for exam {exam_id}: {error}")
+        return jsonify({"success": False, "error_code": "QUESTION_SAVE_FAILED", "message": "Failed to save questions."}), 500
 
 @questions_bp.route("/exams/<int:exam_id>/questions", methods=["GET"])
 @token_required
@@ -122,7 +373,7 @@ def add_question(exam_id):
             "message": "An error occurred while creating the question."
         }), 500
 
-@questions_bp.route("/exams/<int:exam_id>/questions/upload", methods=["POST"])
+@questions_bp.route("/exams/<int:exam_id>/questions/legacy-upload", methods=["POST"])
 @token_required
 @role_required(["admin"])
 def upload_questions_csv(exam_id):
@@ -336,3 +587,95 @@ def upload_questions_csv(exam_id):
             "error_code": "CSV_PARSING_FAILED",
             "message": "An error occurred while parsing and saving the questions from the CSV file."
         }), 500
+
+
+@questions_bp.route("/exams/<int:exam_id>/questions/upload", methods=["POST"])
+@token_required
+@role_required(["admin"])
+def preview_questions_upload(exam_id):
+    if not Exam.query.get(exam_id):
+        return jsonify({"success": False, "error_code": "EXAM_NOT_FOUND", "message": "Exam not found."}), 404
+    uploaded_file = request.files.get("file")
+    if not uploaded_file or not uploaded_file.filename:
+        return jsonify({"success": False, "error_code": "NO_FILE", "message": "A question file is required."}), 400
+    try:
+        questions = _validate_questions(_parse_upload(uploaded_file))
+        return jsonify({"success": True, "message": f"Parsed {len(questions)} questions. Review before saving.", "questions": questions}), 200
+    except (ValueError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        return jsonify({"success": False, "error_code": "QUESTION_FILE_INVALID", "message": str(error)}), 400
+
+
+@questions_bp.route("/exams/<int:exam_id>/questions/bulk", methods=["PUT"])
+@token_required
+@role_required(["admin"])
+def save_questions_bulk(exam_id):
+    user = request.current_user
+    exam = Exam.query.get(exam_id)
+    if not exam:
+        return jsonify({"success": False, "error_code": "EXAM_NOT_FOUND", "message": "Exam not found."}), 404
+    try:
+        questions = _validate_questions((request.get_json() or {}).get("questions"))
+        existing = {question.id: question for question in Question.query.filter_by(exam_id=exam_id).all()}
+        retained_ids = set()
+        for data in questions:
+            question_id = data.get("id")
+            question = existing.get(question_id) if question_id else None
+            if question:
+                retained_ids.add(question.id)
+                question.question_text = data["question_text"]
+                question.question_type = data["question_type"]
+                question.marks = data["marks"]
+                question.negative_marks = data["negative_marks"]
+                question.correct_answer = data["correct_answer"]
+                question.options.clear()
+            else:
+                question = _add_question_record(exam_id, data)
+                retained_ids.add(question.id)
+                continue
+            for option in data["options"]:
+                db.session.add(QuestionOption(question_id=question.id, option_letter=option["letter"], option_text=option["text"]))
+        for question_id, question in existing.items():
+            if question_id not in retained_ids:
+                db.session.delete(question)
+        audit = AuditLog(user_id=user.id, action="QUESTIONS_REVIEWED_AND_SAVED", ip_address=request.remote_addr,
+                         user_agent=request.headers.get("User-Agent"))
+        audit.details = {"exam_id": exam_id, "questions_count": len(questions)}
+        db.session.add(audit)
+        db.session.commit()
+        saved = Question.query.filter_by(exam_id=exam_id).all()
+        return jsonify({"success": True, "message": "Questions saved to the exam.", "questions": [q.to_dict(True) for q in saved]}), 200
+    except (ValueError, TypeError) as error:
+        db.session.rollback()
+        return jsonify({"success": False, "error_code": "INVALID_QUESTIONS", "message": str(error)}), 400
+    except Exception as error:
+        db.session.rollback()
+        logger.error(f"Error saving reviewed questions: {error}")
+        return jsonify({"success": False, "error_code": "QUESTION_SAVE_FAILED", "message": "Failed to save reviewed questions."}), 500
+
+
+@questions_bp.route("/exams/<int:exam_id>/questions/<int:question_id>", methods=["PUT", "DELETE"])
+@token_required
+@role_required(["admin"])
+def manage_question(exam_id, question_id):
+    question = Question.query.filter_by(id=question_id, exam_id=exam_id).first()
+    if not question:
+        return jsonify({"success": False, "error_code": "QUESTION_NOT_FOUND", "message": "Question not found."}), 404
+    if request.method == "DELETE":
+        db.session.delete(question)
+        db.session.commit()
+        return jsonify({"success": True, "message": "Question deleted."}), 200
+    try:
+        data = _validate_questions([request.get_json() or {}])[0]
+        question.question_text = data["question_text"]
+        question.question_type = data["question_type"]
+        question.marks = data["marks"]
+        question.negative_marks = data["negative_marks"]
+        question.correct_answer = data["correct_answer"]
+        question.options.clear()
+        for option in data["options"]:
+            db.session.add(QuestionOption(question_id=question.id, option_letter=option["letter"], option_text=option["text"]))
+        db.session.commit()
+        return jsonify({"success": True, "question": question.to_dict(True)}), 200
+    except (ValueError, TypeError) as error:
+        db.session.rollback()
+        return jsonify({"success": False, "error_code": "INVALID_QUESTION", "message": str(error)}), 400

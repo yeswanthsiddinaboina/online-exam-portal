@@ -2,6 +2,7 @@ import unittest
 import sys
 import os
 import json
+import io
 from pathlib import Path
 import datetime
 
@@ -26,6 +27,25 @@ class TestingConfig:
         pass
 
 class SecureExamSystemTests(unittest.TestCase):
+    def test_invalid_external_evidence_dir_falls_back_to_project_local_path(self):
+        """Invalid env paths like D:/... should not break startup on machines without that drive."""
+        project_root = Path(__file__).resolve().parent.parent
+        original = os.environ.get("EVIDENCE_DIR")
+        os.environ["EVIDENCE_DIR"] = "D:/secure-exam-system/evidence"
+
+        import importlib
+        import backend.config as config_module
+
+        reloaded = importlib.reload(config_module)
+        self.assertEqual(reloaded.Config.EVIDENCE_DIR, project_root / "evidence")
+
+        if original is None:
+            os.environ.pop("EVIDENCE_DIR", None)
+        else:
+            os.environ["EVIDENCE_DIR"] = original
+
+        importlib.reload(config_module)
+
     def setUp(self):
         # Configure app for testing with an in-memory SQLite database
         self.app = create_app(TestingConfig)
@@ -171,6 +191,48 @@ class SecureExamSystemTests(unittest.TestCase):
         self.assertEqual(res2["violation_count"], 1) # count remains 1
         self.assertEqual(res2["message"], "Duplicate event within cooldown. Action repeated.")
 
+    def test_strict_warning_policy_terminates_on_breach(self):
+        """Mobile cap is 2 warnings, face cap is 3 warnings, and termination occurs on the breach threshold."""
+        self.sec_cfg.cooldown_seconds = 0
+        self.sec_cfg.mobile_limit = 2
+        self.sec_cfg.head_turn_limit = 3
+        self.sec_cfg.multiple_person_limit = 3
+        db.session.commit()
+
+        attempt = ExamAttempt(
+            student_id=self.student.id,
+            exam_id=self.exam.id,
+            status="IN_PROGRESS",
+            started_at=datetime.datetime.utcnow()
+        )
+        db.session.add(attempt)
+        db.session.commit()
+
+        r1 = ViolationEngine.process_event(attempt.id, "PHONE_DETECTED", 0.99)
+        r2 = ViolationEngine.process_event(attempt.id, "PHONE_DETECTED", 0.99)
+        r3 = ViolationEngine.process_event(attempt.id, "PHONE_DETECTED", 0.99)
+        self.assertEqual(r1["action"], "WARNING")
+        self.assertEqual(r2["action"], "WARNING")
+        self.assertEqual(r3["action"], "TERMINATE")
+
+        attempt2 = ExamAttempt(
+            student_id=self.student.id,
+            exam_id=self.exam.id,
+            status="IN_PROGRESS",
+            started_at=datetime.datetime.utcnow()
+        )
+        db.session.add(attempt2)
+        db.session.commit()
+
+        f1 = ViolationEngine.process_event(attempt2.id, "HEAD_TURN", 0.99)
+        f2 = ViolationEngine.process_event(attempt2.id, "HEAD_TURN", 0.99)
+        f3 = ViolationEngine.process_event(attempt2.id, "HEAD_TURN", 0.99)
+        f4 = ViolationEngine.process_event(attempt2.id, "HEAD_TURN", 0.99)
+        self.assertEqual(f1["action"], "WARNING")
+        self.assertEqual(f2["action"], "WARNING")
+        self.assertEqual(f3["action"], "WARNING")
+        self.assertEqual(f4["action"], "TERMINATE")
+
     # --- INTEGRATION & SECURITY TESTS ---
     def test_unauthorized_api_access(self):
         """Verifies that endpoints block requests without valid JWT authorization headers."""
@@ -199,6 +261,115 @@ class SecureExamSystemTests(unittest.TestCase):
         
         data = json.loads(response.data)
         self.assertEqual(data["error_code"], "FORBIDDEN")
+
+    def test_question_upload_previews_before_save(self):
+        login_res = self.client.post("/api/auth/login", data=json.dumps({
+            "email": "admin@test.com",
+            "password": "AdminPass123!"
+        }), content_type="application/json")
+        token = json.loads(login_res.data)["token"]
+        headers = {"Authorization": f"Bearer {token}"}
+        csv_data = "question,option_a,option_b,correct_answer,marks\nWhat is 3 + 3?,5,6,B,2\n"
+
+        preview = self.client.post(
+            f"/api/exams/{self.exam.id}/questions/upload",
+            data={"file": (io.BytesIO(csv_data.encode()), "questions.csv")},
+            headers=headers,
+            content_type="multipart/form-data"
+        )
+        self.assertEqual(preview.status_code, 200)
+        self.assertEqual(len(preview.json["questions"]), 1)
+        self.assertEqual(Question.query.filter_by(exam_id=self.exam.id).count(), 1)
+
+        reviewed = preview.json["questions"]
+        reviewed[0]["question_text"] = "What is 4 + 4?"
+        saved = self.client.put(
+            f"/api/exams/{self.exam.id}/questions/bulk",
+            data=json.dumps({"questions": reviewed}),
+            headers={**headers, "Content-Type": "application/json"}
+        )
+        self.assertEqual(saved.status_code, 200)
+        self.assertEqual(Question.query.filter_by(exam_id=self.exam.id).count(), 1)
+        self.assertEqual(Question.query.filter_by(exam_id=self.exam.id).first().question_text, "What is 4 + 4?")
+
+    def test_exact_parse_save_endpoints_and_question_count(self):
+        login_res = self.client.post("/api/auth/login", data=json.dumps({
+            "email": "admin@test.com",
+            "password": "AdminPass123!"
+        }), content_type="application/json")
+        token = json.loads(login_res.data)["token"]
+        headers = {"Authorization": f"Bearer {token}"}
+        csv_data = "question,option_a,option_b,correct_answer,marks\nWhich is larger?,10,20,B,1\n"
+
+        parsed = self.client.post(
+            "/api/parse-questions-file",
+            data={"file": (io.BytesIO(csv_data.encode()), "questions.csv")},
+            headers=headers,
+            content_type="multipart/form-data"
+        )
+        self.assertEqual(parsed.status_code, 200)
+        self.assertEqual(Question.query.filter_by(exam_id=self.exam.id).count(), 1)
+
+        saved = self.client.post(
+            f"/api/exams/{self.exam.id}/save-questions",
+            data=json.dumps({"questions": parsed.json["questions"]}),
+            headers={**headers, "Content-Type": "application/json"}
+        )
+        self.assertEqual(saved.status_code, 200)
+        self.assertEqual(saved.json["question_count"], 1)
+
+        exams = self.client.get("/api/exams", headers=headers)
+        self.assertEqual(exams.status_code, 200)
+        exam_data = next(exam for exam in exams.json["exams"] if exam["id"] == self.exam.id)
+        self.assertEqual(exam_data["question_count"], 1)
+
+    def test_question_file_upload_supports_xlsx_and_detailed_errors(self):
+        from openpyxl import Workbook
+
+        login_res = self.client.post("/api/auth/login", data=json.dumps({
+            "email": "admin@test.com",
+            "password": "AdminPass123!"
+        }), content_type="application/json")
+        token = json.loads(login_res.data)["token"]
+        headers = {"Authorization": f"Bearer {token}"}
+
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet.append(["Question Text", "Option A", "Option B", "Correct Answer", "Points"])
+        sheet.append(["Pick the larger number", "10", "20", "B", 2])
+        workbook_data = io.BytesIO()
+        workbook.save(workbook_data)
+        workbook_data.seek(0)
+
+        parsed = self.client.post(
+            "/api/parse-questions-file",
+            data={"file": (workbook_data, "questions.xlsx")},
+            headers=headers,
+            content_type="multipart/form-data"
+        )
+        self.assertEqual(parsed.status_code, 200)
+        self.assertEqual(parsed.json["questions"][0]["question_text"], "Pick the larger number")
+        self.assertEqual(parsed.json["questions"][0]["options"][1]["text"], "20")
+
+        unsupported = self.client.post(
+            "/api/parse-questions-file",
+            data={"file": (io.BytesIO(b"question"), "questions.txt")},
+            headers=headers,
+            content_type="multipart/form-data"
+        )
+        self.assertEqual(unsupported.status_code, 400)
+        self.assertEqual(unsupported.json["error_code"], "UNSUPPORTED_FILE_TYPE")
+        self.assertIn("supported_types", unsupported.json["details"])
+
+        malformed = self.client.post(
+            "/api/parse-questions-file",
+            data={"file": (io.BytesIO(b"not an xlsx workbook"), "questions.xlsx")},
+            headers=headers,
+            content_type="multipart/form-data"
+        )
+        self.assertEqual(malformed.status_code, 400)
+        self.assertIn(malformed.json["error_code"], {"INVALID_EXCEL_FILE", "EXCEL_READ_FAILED"})
+        self.assertIn("message", malformed.json)
 
 if __name__ == "__main__":
     unittest.main()

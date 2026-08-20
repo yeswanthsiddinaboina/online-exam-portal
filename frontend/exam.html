@@ -40,7 +40,7 @@
         <!-- Main Workspace -->
         <main class="exam-layout">
             <!-- Left: Question Workspace -->
-            <section class="question-area glass-panel" style="padding: 2rem; display: flex; flex-direction: column; justify-content: space-between;">
+                    <section class="question-area glass-panel" style="padding: 2rem; display: flex; flex-direction: column; justify-content: space-between;">
                 <div>
                     <h4 id="question-number" style="color: var(--text-secondary); margin-bottom: 0.75rem; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.05em;">Question - of -</h4>
                     <p id="question-text" style="font-size: 1.15rem; line-height: 1.6; margin-bottom: 2rem; font-weight: 500;">Loading question content...</p>
@@ -94,9 +94,8 @@
             <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
             <h3 style="margin-bottom: 1rem; color: var(--accent-warning);">Security Warning</h3>
             <p id="warning-message" style="line-height: 1.6; margin-bottom: 1.5rem; color: var(--text-primary); font-size: 0.95rem;">
-                Warning: Examination policy violation detected. Please remain focused on the examination environment.
+                Warning: Examination policy violation detected. The system is automatically reviewing this alert and continuing analysis.
             </p>
-            <button class="btn btn-primary" onclick="dismissWarningModal()">Acknowledge</button>
         </div>
     </div>
 
@@ -420,17 +419,25 @@
         function showWarningModal(message, logId) {
             document.getElementById("warning-message").innerText = message;
             document.getElementById("warning-modal").classList.add("active");
-            
-            // Turn status indicator amber
+
             document.getElementById("proctor-dot").className = "status-dot danger";
             document.getElementById("proctor-text").innerText = "Warning Triggered";
+
+            clearTimeout(window.warningAutoHideTimer);
+            window.warningAutoHideTimer = setTimeout(() => {
+                document.getElementById("warning-modal").classList.remove("active");
+                document.getElementById("proctor-dot").className = "status-dot";
+                document.getElementById("proctor-text").innerText = "Proctoring Active";
+                if (typeof AIProctorEngine !== "undefined") {
+                    AIProctorEngine.lastEventTimes = {};
+                }
+            }, 2000);
         }
 
         function dismissWarningModal() {
             document.getElementById("warning-modal").classList.remove("active");
             document.getElementById("proctor-dot").className = "status-dot";
             document.getElementById("proctor-text").innerText = "Proctoring Active";
-            // Clear proctoring event cooldowns so lingering violations are caught immediately
             if (typeof AIProctorEngine !== "undefined") {
                 AIProctorEngine.lastEventTimes = {};
             }
