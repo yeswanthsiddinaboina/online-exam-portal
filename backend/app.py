@@ -56,6 +56,7 @@ def create_app(config_class=Config):
                 )
                 admin_user.set_password("Admin@123")
                 db.session.add(admin_user)
+                db.session.flush() # Generate ID for potential reassignments
                 logger.info("Pre-seeded the default admin account: admin@gmail.com")
             else:
                 # Guarantee the password is reset/forced to Admin@123
@@ -65,6 +66,13 @@ def create_app(config_class=Config):
             # Remove any other admin accounts to enforce single-admin constraint
             other_admins = User.query.filter(User.role == "admin", User.email != "admin@gmail.com").all()
             for oa in other_admins:
+                # Reassign any exams created by this redundant admin to the default admin account
+                from backend.models.exam import Exam
+                exams_created = Exam.query.filter_by(created_by=oa.id).all()
+                for exam in exams_created:
+                    exam.created_by = admin_user.id
+                    logger.info(f"Reassigned exam '{exam.title}' to the default admin account.")
+                    
                 db.session.delete(oa)
                 logger.info(f"Removed redundant admin account: {oa.email}")
                 
