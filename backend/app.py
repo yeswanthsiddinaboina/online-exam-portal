@@ -44,6 +44,23 @@ def create_app(config_class=Config):
             db.create_all()
             logger.info("Database tables synchronized successfully.")
             
+            # Self-healing migration: check if registration_status exists on users table
+            engine = db.engine
+            from sqlalchemy import inspect
+            inspector = inspect(engine)
+            columns = [c['name'] for c in inspector.get_columns('users')]
+            if 'registration_status' not in columns:
+                with engine.connect() as conn:
+                    conn.execute(db.text("ALTER TABLE users ADD COLUMN registration_status VARCHAR(20) DEFAULT 'APPROVED'"))
+                    conn.commit()
+                logger.info("Database migrated: added registration_status column to users table.")
+
+            if 'first_login_completed' not in columns:
+                with engine.connect() as conn:
+                    conn.execute(db.text("ALTER TABLE users ADD COLUMN first_login_completed BOOLEAN DEFAULT 0"))
+                    conn.commit()
+                logger.info("Database migrated: added first_login_completed column to users table.")
+
             # Enforce single admin user policy with fixed credentials
             from backend.models.user import User
             admin_user = User.query.filter_by(email="admin@gmail.com").first()
@@ -52,7 +69,8 @@ def create_app(config_class=Config):
                     email="admin@gmail.com",
                     first_name="Admin",
                     last_name="System",
-                    role="admin"
+                    role="admin",
+                    registration_status="APPROVED"
                 )
                 admin_user.set_password("Admin@123")
                 db.session.add(admin_user)

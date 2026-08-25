@@ -61,7 +61,8 @@
             <a href="exams.html" class="nav-link">Manage Exams</a>
             <a href="violations.html" class="nav-link">Violations</a>
             <a href="results.html" class="nav-link active">Student Results</a>
-            <span id="user-display" style="color: var(--text-secondary); font-size: 0.95rem; font-weight: 500;"></span>
+            <a href="registrations.html" class="nav-link">Registrations</a>
+            <span id="user-display" style="display: none;"></span>
             <a href="#" class="nav-link" onclick="handleLogout()">Sign Out</a>
         </div>
     </nav>
@@ -78,30 +79,22 @@
         </div>
 
         <!-- Exam Statistics Cards -->
-        <div class="stats-grid" id="stats-container" style="display: none;">
-            <div class="glass-panel stats-card">
-                <div style="font-size: 0.9rem; color: var(--text-secondary);">Total Attempts</div>
-                <div class="stats-value" id="stat-total">-</div>
+        <div class="dashboard-grid" id="stats-container" style="display: none;">
+            <div class="glass-panel metric-card" id="card-total" onclick="filterAttempts('ALL')" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;">
+                <div class="metric-title">Total Attempts</div>
+                <div class="metric-value" id="stat-total">-</div>
             </div>
-            <div class="glass-panel stats-card">
-                <div style="font-size: 0.9rem; color: var(--text-secondary);">Attending (Active)</div>
-                <div class="stats-value" id="stat-active" style="color: var(--accent-warning);">-</div>
+            <div class="glass-panel metric-card" id="card-active" onclick="filterAttempts('ACTIVE')" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;">
+                <div class="metric-title">Attending (Active)</div>
+                <div class="metric-value" id="stat-active" style="color: var(--accent-warning);">-</div>
             </div>
-            <div class="glass-panel stats-card">
-                <div style="font-size: 0.9rem; color: var(--text-secondary);">Passed Attempts</div>
-                <div class="stats-value" id="stat-passed" style="color: var(--accent-success);">-</div>
+            <div class="glass-panel metric-card" id="card-completed" onclick="filterAttempts('COMPLETED')" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;">
+                <div class="metric-title">Completed Attempts</div>
+                <div class="metric-value" id="stat-completed" style="color: var(--accent-success);">-</div>
             </div>
-            <div class="glass-panel stats-card">
-                <div style="font-size: 0.9rem; color: var(--text-secondary);">Pass Rate</div>
-                <div class="stats-value" id="stat-rate">-</div>
-            </div>
-            <div class="glass-panel stats-card">
-                <div style="font-size: 0.9rem; color: var(--text-secondary);">Average Grade</div>
-                <div class="stats-value" id="stat-avg">-</div>
-            </div>
-            <div class="glass-panel stats-card">
-                <div style="font-size: 0.9rem; color: var(--text-secondary);">Highest Score</div>
-                <div class="stats-value" id="stat-highest" style="color: var(--accent-secondary);">-</div>
+            <div class="glass-panel metric-card" id="card-terminated" onclick="filterAttempts('TERMINATED')" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;">
+                <div class="metric-title">Terminated Students</div>
+                <div class="metric-value" id="stat-terminated" style="color: var(--accent-danger);">-</div>
             </div>
         </div>
 
@@ -172,7 +165,9 @@
                 <!-- Left: Attempt Overview & Violations -->
                 <div>
                     <h4 style="border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; margin-bottom: 1rem; color: var(--accent-secondary);">Session Log</h4>
-                    <p style="margin-bottom: 0.5rem;"><strong>Email:</strong> <span id="audit-email">-</span></p>
+                    <p style="margin-bottom: 0.5rem;"><strong>Gmail ID:</strong> <span id="audit-email">-</span></p>
+                    <p style="margin-bottom: 0.5rem;"><strong>Candidate Name:</strong> <span id="audit-username">-</span></p>
+                    <p style="margin-bottom: 0.5rem;"><strong>User ID:</strong> <span id="audit-userid">-</span></p>
                     <p style="margin-bottom: 0.5rem;"><strong>Status:</strong> <span id="audit-status" class="badge">-</span></p>
                     <p style="margin-bottom: 0.5rem;"><strong>Score:</strong> <span id="audit-score">-</span></p>
                     <p style="margin-bottom: 1.5rem;"><strong>Timeline:</strong> <span id="audit-timeline">-</span></p>
@@ -227,6 +222,9 @@
 
         document.getElementById("user-display").innerText = `Admin: ${currentUser.first_name}`;
 
+        let attemptsCache = [];
+        let activeAttemptFilter = 'ALL';
+
         async function loadReports(examId = null) {
             const url = examId ? `/admin/reports?exam_id=${examId}` : "/admin/reports";
             const res = await API.get(url);
@@ -248,10 +246,8 @@
                     const s = res.statistics;
                     document.getElementById("stat-total").innerText = s.total_students;
                     document.getElementById("stat-active").innerText = s.attending_count;
-                    document.getElementById("stat-passed").innerText = s.submitted_count;
-                    document.getElementById("stat-rate").innerText = `${s.pass_rate}%`;
-                    document.getElementById("stat-avg").innerText = `${s.average_percentage}%`;
-                    document.getElementById("stat-highest").innerText = `${s.max_percentage}%`;
+                    document.getElementById("stat-completed").innerText = s.submitted_count;
+                    document.getElementById("stat-terminated").innerText = s.cancelled_count;
 
                     // Update Pending Access requests
                     const accessPanel = document.getElementById("access-requests-panel");
@@ -275,44 +271,83 @@
                     }
 
                     // Update Student Scores Table
-                    const body = document.getElementById("attempts-table-body");
-                    if (res.attempts && res.attempts.length > 0) {
-                        body.innerHTML = res.attempts.map(a => {
-                            const rowStyle = 'cursor: pointer; transition: background 0.2s;';
-                            const clickHandler = `onclick="openAuditModal(${a.attempt_id})"`;
-                            return `
-                                <tr style="${rowStyle}" ${clickHandler} class="scoreboard-row">
-                                    <td><strong>${a.student_email}</strong></td>
-                                    <td>${a.student_username || '-'}</td>
-                                    <td>${a.student_userid || '-'}</td>
-                                    <td>
-                                        <span class="badge badge-${
-                                            a.status === 'MALPRACTICE_CANCELLED' ? 'danger' :
-                                            (a.status === 'IN_PROGRESS' ? 'warning' : 'success')
-                                        }">${a.status.replace('_', ' ')}</span>
-                                    </td>
-                                    <td>
-                                        <span style="font-weight: 600; color: ${a.violations_count > 0 ? 'var(--accent-danger)' : 'var(--accent-success)'};">
-                                            ${a.violations_count} Infractions
-                                        </span>
-                                    </td>
-                                    <td>${a.status !== 'IN_PROGRESS' ? a.score_obtained.toFixed(1) : '-'}</td>
-                                    <td>${a.status !== 'IN_PROGRESS' ? `${a.percentage.toFixed(1)}%` : '-'}</td>
-                                    <td>
-                                        ${a.status === 'IN_PROGRESS' ? '<span style="color: var(--text-muted);">In Progress</span>' : 
-                                            `<span class="badge badge-${a.passed ? 'success' : 'danger'}">${a.passed ? 'PASSED' : 'FAILED'}</span>`
-                                        }
-                                    </td>
-                                    <td>${a.ended_at ? new Date(a.ended_at).toLocaleString() : 'Not Finished'}</td>
-                                </tr>
-                            `;
-                        }).join('');
-                    } else {
-                        body.innerHTML = `<tr><td colspan="9" style="color: var(--text-secondary); text-align: center;">No students have attempted this examination.</td></tr>`;
-                    }
+                    attemptsCache = res.attempts || [];
+                    applyAttemptsFilter();
                 }
             } else {
                 alert("Failed to load statistics report.");
+            }
+        }
+
+        function filterAttempts(filterType) {
+            activeAttemptFilter = filterType;
+            applyAttemptsFilter();
+        }
+
+        function applyAttemptsFilter() {
+            let filtered = attemptsCache;
+            if (activeAttemptFilter === 'ACTIVE') {
+                filtered = attemptsCache.filter(a => a.status === 'IN_PROGRESS');
+            } else if (activeAttemptFilter === 'COMPLETED') {
+                filtered = attemptsCache.filter(a => a.status === 'SUBMITTED' || a.status === 'AUTO_SUBMITTED');
+            } else if (activeAttemptFilter === 'TERMINATED') {
+                filtered = attemptsCache.filter(a => a.status === 'MALPRACTICE_CANCELLED');
+            }
+            
+            renderAttemptsTable(filtered);
+            
+            // Visual feedback on card borders
+            const cardIds = ['card-total', 'card-active', 'card-completed', 'card-terminated'];
+            const activeId = 'card-' + activeAttemptFilter.toLowerCase();
+            cardIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (id === activeId) {
+                        el.style.borderColor = 'var(--accent-primary)';
+                        el.style.background = 'rgba(16, 185, 129, 0.05)';
+                    } else {
+                        el.style.borderColor = 'var(--border-glass)';
+                        el.style.background = '';
+                    }
+                }
+            });
+        }
+
+        function renderAttemptsTable(attempts) {
+            const body = document.getElementById("attempts-table-body");
+            if (attempts && attempts.length > 0) {
+                body.innerHTML = attempts.map(a => {
+                    const rowStyle = 'cursor: pointer; transition: background 0.2s;';
+                    const clickHandler = `onclick="openAuditModal(${a.attempt_id})"`;
+                    return `
+                        <tr style="${rowStyle}" ${clickHandler} class="scoreboard-row">
+                            <td><strong>${a.student_email}</strong></td>
+                            <td>${a.student_username || '-'}</td>
+                            <td>${a.student_userid || '-'}</td>
+                            <td>
+                                <span class="badge badge-${
+                                    a.status === 'MALPRACTICE_CANCELLED' ? 'danger' :
+                                    (a.status === 'IN_PROGRESS' ? 'warning' : 'success')
+                                }">${a.status.replace('_', ' ')}</span>
+                            </td>
+                            <td>
+                                <span style="font-weight: 600; color: ${a.violations_count > 0 ? 'var(--accent-danger)' : 'var(--accent-success)'};">
+                                    ${a.violations_count} Infractions
+                                </span>
+                            </td>
+                            <td>${a.status !== 'IN_PROGRESS' ? a.score_obtained.toFixed(1) : '-'}</td>
+                            <td>${a.status !== 'IN_PROGRESS' ? `${a.percentage.toFixed(1)}%` : '-'}</td>
+                            <td>
+                                ${a.status === 'IN_PROGRESS' ? '<span style="color: var(--text-muted);">In Progress</span>' : 
+                                    `<span class="badge badge-${a.passed ? 'success' : 'danger'}">${a.passed ? 'PASSED' : 'FAILED'}</span>`
+                                }
+                            </td>
+                            <td>${a.ended_at ? new Date(a.ended_at).toLocaleString() : 'Not Finished'}</td>
+                        </tr>
+                    `;
+                }).join('');
+            } else {
+                body.innerHTML = `<tr><td colspan="9" style="color: var(--text-secondary); text-align: center;">No examination attempts match the selected filter.</td></tr>`;
             }
         }
 
@@ -352,7 +387,9 @@
             const res = await API.get(`/results/${attemptId}`);
             if (res.success) {
                 const r = res.result;
-                document.getElementById("audit-email").innerText = r.student_email || "Candidate";
+                document.getElementById("audit-email").innerText = r.student_email || "-";
+                document.getElementById("audit-username").innerText = r.student_username || "-";
+                document.getElementById("audit-userid").innerText = r.student_userid || "-";
                 
                 const badge = document.getElementById("audit-status");
                 badge.innerText = r.status.replace('_', ' ');

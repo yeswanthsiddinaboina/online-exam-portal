@@ -1706,3 +1706,215 @@ xlrd.biffh.XLRDError: Unsupported format, or corrupt file: Expected BOF record; 
 [2026-08-20 23:19:32,672] INFO in app (Line 63): Aligned existing default admin account password to Admin@123
 [2026-08-20 23:22:06,001] INFO in auth (Line 211): User logged out: admin@gmail.com
 [2026-08-20 23:22:21,327] INFO in auth (Line 188): User logged in: admin@gmail.com
+[2026-08-20 23:25:40,452] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-20 23:25:40,885] INFO in app (Line 63): Aligned existing default admin account password to Admin@123
+[2026-08-20 23:25:41,741] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-20 23:25:42,166] INFO in app (Line 63): Aligned existing default admin account password to Admin@123
+[2026-08-20 23:39:24,415] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-20 23:39:24,912] INFO in app (Line 63): Aligned existing default admin account password to Admin@123
+[2026-08-20 23:39:38,319] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-20 23:39:38,814] INFO in app (Line 63): Aligned existing default admin account password to Admin@123
+[2026-08-21 11:54:09,091] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-21 11:54:09,517] INFO in app (Line 63): Aligned existing default admin account password to Admin@123
+[2026-08-21 11:54:10,449] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-21 11:54:10,881] INFO in app (Line 63): Aligned existing default admin account password to Admin@123
+[2026-08-21 11:54:26,809] WARNING in app (Line 88): HTTPException: 404 - The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+[2026-08-21 11:56:17,611] INFO in auth (Line 188): User logged in: admin@gmail.com
+[2026-08-21 11:56:44,529] INFO in exams (Line 257): Exam deleted by admin admin@gmail.com: python test1 (ID: 1)
+[2026-08-21 11:57:56,239] INFO in exams (Line 139): Exam created by admin admin@gmail.com: python exam (ID: 1)
+[2026-08-21 12:11:46,995] INFO in auth (Line 122): Automatically registered student user: jithu@gmail.com (jithendra - HT26B0)
+[2026-08-21 12:11:47,011] INFO in auth (Line 188): User logged in: jithu@gmail.com
+[2026-08-21 12:11:47,231] INFO in exams (Line 312): Student jithu@gmail.com requested access for exam python exam
+[2026-08-21 12:12:42,081] INFO in admin (Line 302): Admin approved exam access for student jithu@gmail.com on exam python exam
+[2026-08-21 12:16:09,504] INFO in proctoring (Line 371): Temporary reference face saved for student jithu@gmail.com on exam 1
+[2026-08-21 12:16:40,115] WARNING in proctoring (Line 498): Face mismatch for student jithu@gmail.com on exam 1: distance=0.2525
+[2026-08-21 12:17:03,735] INFO in proctoring (Line 371): Temporary reference face saved for student jithu@gmail.com on exam 1
+[2026-08-21 12:17:08,888] INFO in session_manager (Line 63): Started attempt session 1 for student 3 on exam 1
+[2026-08-21 12:17:08,948] INFO in proctoring (Line 541): Student jithu@gmail.com matched face successfully (distance=0.0090) and started attempt 1
+[2026-08-21 12:17:36,006] INFO in violation_engine (Line 156): Violation logged: Attempt 1, Event: FACE_ABSENT, Count: 1/5, Action: WARNING, Warnings=1
+[2026-08-21 12:17:36,150] INFO in evidence_service (Line 62): Evidence saved for attempt 1, event: FACE_ABSENT. File size: 9699 bytes.
+[2026-08-21 12:17:37,777] INFO in violation_engine (Line 156): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 1/5, Action: WARNING, Warnings=2
+[2026-08-21 12:17:37,959] INFO in evidence_service (Line 62): Evidence saved for attempt 1, event: HEAD_TURN. File size: 9956 bytes.
+[2026-08-21 12:17:43,527] INFO in violation_engine (Line 156): Violation logged: Attempt 1, Event: PHONE_DETECTED, Count: 1/2, Action: WARNING, Warnings=3
+[2026-08-21 12:17:43,681] INFO in evidence_service (Line 62): Evidence saved for attempt 1, event: PHONE_DETECTED. File size: 12069 bytes.
+[2026-08-21 12:18:04,108] INFO in violation_engine (Line 156): Violation logged: Attempt 1, Event: PHONE_DETECTED, Count: 2/2, Action: WARNING, Warnings=4
+[2026-08-21 12:18:04,281] INFO in evidence_service (Line 62): Evidence saved for attempt 1, event: PHONE_DETECTED. File size: 12121 bytes.
+[2026-08-21 12:18:05,723] INFO in violation_engine (Line 156): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 2/5, Action: WARNING, Warnings=5
+[2026-08-21 12:18:05,883] INFO in evidence_service (Line 62): Evidence saved for attempt 1, event: HEAD_TURN. File size: 10173 bytes.
+[2026-08-21 12:18:50,914] INFO in violation_engine (Line 156): Violation logged: Attempt 1, Event: HEAD_TURN, Count: 3/5, Action: TERMINATE, Warnings=6
+[2026-08-21 12:44:13,993] INFO in exams (Line 139): Exam created by admin admin@gmail.com: python (ID: 2)
+[2026-08-21 12:44:59,551] INFO in auth (Line 211): User logged out: jithu@gmail.com
+[2026-08-21 12:45:47,515] INFO in auth (Line 188): User logged in: jithu@gmail.com
+[2026-08-21 12:45:47,643] INFO in exams (Line 312): Student jithu@gmail.com requested access for exam python
+[2026-08-21 12:47:32,921] INFO in auth (Line 211): User logged out: jithu@gmail.com
+[2026-08-21 12:47:38,880] INFO in auth (Line 211): User logged out: admin@gmail.com
+[2026-08-24 10:16:19,912] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-24 10:16:20,385] INFO in app (Line 63): Aligned existing default admin account password to Admin@123
+[2026-08-24 10:16:21,325] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-24 10:16:21,792] INFO in app (Line 63): Aligned existing default admin account password to Admin@123
+[2026-08-24 10:16:58,408] WARNING in app (Line 88): HTTPException: 404 - The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+[2026-08-24 10:17:11,890] INFO in auth (Line 188): User logged in: admin@gmail.com
+[2026-08-24 11:08:09,429] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-24 11:08:09,920] INFO in app (Line 64): Aligned existing default admin account password to Admin@123
+[2026-08-24 12:20:28,670] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-24 12:20:29,075] INFO in app (Line 64): Aligned existing default admin account password to Admin@123
+[2026-08-24 12:20:30,002] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-24 12:20:30,464] INFO in app (Line 64): Aligned existing default admin account password to Admin@123
+[2026-08-24 12:21:27,663] INFO in auth (Line 144): Updated registration details for student: yeswanth5922@gmail.com
+[2026-08-24 12:21:27,684] INFO in auth (Line 188): User logged in: yeswanth5922@gmail.com
+[2026-08-24 12:21:27,888] INFO in exams (Line 312): Student yeswanth5922@gmail.com requested access for exam python exam
+[2026-08-24 12:21:42,049] INFO in admin (Line 302): Admin approved exam access for student yeswanth5922@gmail.com on exam python exam
+[2026-08-24 12:22:12,285] INFO in proctoring (Line 371): Temporary reference face saved for student yeswanth5922@gmail.com on exam 1
+[2026-08-24 12:22:19,656] INFO in session_manager (Line 63): Started attempt session 2 for student 2 on exam 1
+[2026-08-24 12:22:19,774] INFO in proctoring (Line 541): Student yeswanth5922@gmail.com matched face successfully (distance=0.0407) and started attempt 2
+[2026-08-24 12:22:49,001] INFO in violation_engine (Line 156): Violation logged: Attempt 2, Event: PHONE_DETECTED, Count: 1/2, Action: WARNING, Warnings=1
+[2026-08-24 12:22:49,315] INFO in evidence_service (Line 62): Evidence saved for attempt 2, event: PHONE_DETECTED. File size: 9241 bytes.
+[2026-08-24 12:23:39,166] INFO in violation_engine (Line 156): Violation logged: Attempt 2, Event: MULTIPLE_PERSON, Count: 1/3, Action: WARNING, Warnings=2
+[2026-08-24 12:23:42,280] INFO in evidence_service (Line 62): Evidence saved for attempt 2, event: MULTIPLE_PERSON. File size: 9361 bytes.
+[2026-08-24 12:23:59,942] INFO in violation_engine (Line 156): Violation logged: Attempt 2, Event: HEAD_TURN, Count: 1/5, Action: WARNING, Warnings=3
+[2026-08-24 12:24:03,009] INFO in evidence_service (Line 62): Evidence saved for attempt 2, event: HEAD_TURN. File size: 7822 bytes.
+[2026-08-24 12:24:03,371] INFO in violation_engine (Line 156): Violation logged: Attempt 2, Event: FACE_ABSENT, Count: 1/5, Action: WARNING, Warnings=4
+[2026-08-24 12:24:06,685] INFO in evidence_service (Line 62): Evidence saved for attempt 2, event: FACE_ABSENT. File size: 7842 bytes.
+[2026-08-24 12:24:26,259] INFO in evaluation (Line 77): Evaluated attempt 2: Score=3.0/62.0 (4.84%) Pass=False
+[2026-08-24 12:24:26,275] INFO in violation_engine (Line 156): Violation logged: Attempt 2, Event: TAB_SWITCH, Count: 1/3, Action: WARNING, Warnings=5
+[2026-08-24 12:24:46,109] INFO in exams (Line 312): Student yeswanth5922@gmail.com requested access for exam python
+[2026-08-24 12:25:19,824] INFO in admin (Line 302): Admin approved exam access for student yeswanth5922@gmail.com on exam python
+[2026-08-24 12:25:32,119] INFO in proctoring (Line 371): Temporary reference face saved for student yeswanth5922@gmail.com on exam 2
+[2026-08-24 12:25:36,522] INFO in session_manager (Line 63): Started attempt session 3 for student 2 on exam 2
+[2026-08-24 12:25:36,606] INFO in proctoring (Line 541): Student yeswanth5922@gmail.com matched face successfully (distance=0.0347) and started attempt 3
+[2026-08-24 12:26:30,620] INFO in violation_engine (Line 156): Violation logged: Attempt 3, Event: HEAD_TURN, Count: 1/5, Action: WARNING, Warnings=1
+[2026-08-24 12:26:33,887] INFO in evidence_service (Line 62): Evidence saved for attempt 3, event: HEAD_TURN. File size: 8845 bytes.
+[2026-08-24 12:26:45,162] INFO in violation_engine (Line 156): Violation logged: Attempt 3, Event: HEAD_TURN, Count: 2/5, Action: WARNING, Warnings=2
+[2026-08-24 12:26:48,324] INFO in evidence_service (Line 62): Evidence saved for attempt 3, event: HEAD_TURN. File size: 7986 bytes.
+[2026-08-24 12:26:48,781] INFO in violation_engine (Line 156): Violation logged: Attempt 3, Event: FACE_ABSENT, Count: 1/5, Action: WARNING, Warnings=3
+[2026-08-24 12:26:55,626] INFO in evidence_service (Line 62): Evidence saved for attempt 3, event: FACE_ABSENT. File size: 8181 bytes.
+[2026-08-24 12:27:46,676] INFO in violation_engine (Line 156): Violation logged: Attempt 3, Event: PHONE_DETECTED, Count: 1/2, Action: WARNING, Warnings=4
+[2026-08-24 12:27:46,854] INFO in evidence_service (Line 62): Evidence saved for attempt 3, event: PHONE_DETECTED. File size: 8543 bytes.
+[2026-08-24 12:28:21,518] INFO in violation_engine (Line 156): Violation logged: Attempt 3, Event: TAB_SWITCH, Count: 1/3, Action: WARNING, Warnings=5
+[2026-08-24 12:28:21,587] INFO in evaluation (Line 77): Evaluated attempt 3: Score=3.0/62.0 (4.84%) Pass=False
+[2026-08-24 14:54:44,954] INFO in auth (Line 211): User logged out: yeswanth5922@gmail.com
+[2026-08-24 14:57:10,935] INFO in auth (Line 188): User logged in: yeswanth5922@gmail.com
+[2026-08-24 14:57:24,307] INFO in auth (Line 211): User logged out: yeswanth5922@gmail.com
+[2026-08-24 14:59:17,141] INFO in auth (Line 188): User logged in: yeswanth5922@gmail.com
+[2026-08-24 14:59:23,314] INFO in auth (Line 211): User logged out: yeswanth5922@gmail.com
+[2026-08-24 14:59:37,338] INFO in auth (Line 188): User logged in: yeswanth5922@gmail.com
+[2026-08-24 14:59:44,000] INFO in auth (Line 211): User logged out: yeswanth5922@gmail.com
+[2026-08-24 16:34:03,217] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-24 16:34:03,267] ERROR in app (Line 82): Failed to synchronize database tables: (sqlite3.OperationalError) no such column: users.registration_status
+[SQL: SELECT users.id AS users_id, users.email AS users_email, users.password_hash AS users_password_hash, users.first_name AS users_first_name, users.last_name AS users_last_name, users.role AS users_role, users.registration_status AS users_registration_status, users.created_at AS users_created_at 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('admin@gmail.com', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+[2026-08-24 16:34:10,646] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-24 16:34:10,696] ERROR in app (Line 82): Failed to synchronize database tables: (sqlite3.OperationalError) no such column: users.registration_status
+[SQL: SELECT users.id AS users_id, users.email AS users_email, users.password_hash AS users_password_hash, users.first_name AS users_first_name, users.last_name AS users_last_name, users.role AS users_role, users.registration_status AS users_registration_status, users.created_at AS users_created_at 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('admin@gmail.com', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+[2026-08-24 16:34:20,163] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-24 16:34:20,193] INFO in app (Line 56): Database migrated: added registration_status column to users table.
+[2026-08-24 16:34:20,669] INFO in app (Line 76): Aligned existing default admin account password to Admin@123
+[2026-08-24 16:34:47,135] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-24 16:34:47,559] INFO in app (Line 76): Aligned existing default admin account password to Admin@123
+[2026-08-24 16:34:55,925] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-24 16:34:56,398] INFO in app (Line 76): Aligned existing default admin account password to Admin@123
+[2026-08-24 16:35:05,739] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-24 16:35:06,220] INFO in app (Line 76): Aligned existing default admin account password to Admin@123
+[2026-08-24 16:38:57,094] INFO in auth (Line 226): User logged in: yeswanth5922@gmail.com (Role: student)
+[2026-08-24 16:41:51,335] INFO in auth (Line 249): User logged out: yeswanth5922@gmail.com
+[2026-08-24 16:42:28,652] INFO in auth (Line 133): Student registration request submitted: yeswanth@gmail.com (User ID: HT26B01)
+[2026-08-24 16:49:52,057] INFO in admin (Line 465): Admin approved student registration globally: yeswanth@gmail.com and auto-granted access to all exams.
+[2026-08-24 16:50:14,849] INFO in auth (Line 226): User logged in: yeswanth@gmail.com (Role: student)
+[2026-08-24 16:52:56,139] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-24 16:52:56,613] INFO in app (Line 76): Aligned existing default admin account password to Admin@123
+[2026-08-24 16:55:19,958] INFO in auth (Line 249): User logged out: yeswanth@gmail.com
+[2026-08-24 16:55:31,878] INFO in admin (Line 486): Admin rejected student registration globally: yeswanth@gmail.com
+[2026-08-24 16:55:43,644] INFO in admin (Line 452): Admin approved student registration globally: yeswanth@gmail.com
+[2026-08-24 16:55:57,538] INFO in auth (Line 226): User logged in: yeswanth@gmail.com (Role: student)
+[2026-08-24 16:56:23,638] INFO in auth (Line 249): User logged out: yeswanth@gmail.com
+[2026-08-24 16:56:45,889] INFO in auth (Line 133): Student registration request submitted: yeswanth123@gmail.com (User ID: HT26B02)
+[2026-08-24 16:56:58,330] INFO in admin (Line 452): Admin approved student registration globally: yeswanth123@gmail.com
+[2026-08-24 16:57:08,222] INFO in auth (Line 226): User logged in: yeswanth123@gmail.com (Role: student)
+[2026-08-24 16:57:11,071] INFO in exams (Line 312): Student yeswanth123@gmail.com requested access for exam python exam
+[2026-08-24 16:59:08,444] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-24 16:59:08,971] INFO in app (Line 76): Aligned existing default admin account password to Admin@123
+[2026-08-24 16:59:17,549] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-24 16:59:17,998] INFO in app (Line 76): Aligned existing default admin account password to Admin@123
+[2026-08-24 17:00:42,438] INFO in auth (Line 249): User logged out: yeswanth123@gmail.com
+[2026-08-24 17:02:34,374] INFO in admin (Line 521): Admin completely deleted student user account: yeswanth123@gmail.com
+[2026-08-24 17:12:23,031] INFO in auth (Line 226): User logged in: yeswanth@gmail.com (Role: student)
+[2026-08-24 17:12:34,384] INFO in admin (Line 521): Admin completely deleted student user account: yeswanth@gmail.com
+[2026-08-24 17:12:43,672] INFO in auth (Line 226): User logged in: yeswanth5922@gmail.com (Role: student)
+[2026-08-24 17:30:47,067] INFO in auth (Line 249): User logged out: yeswanth5922@gmail.com
+[2026-08-24 17:31:40,386] INFO in auth (Line 133): Student registration request submitted: yesh@gmail.com (User ID: HT26B01)
+[2026-08-24 17:32:03,839] INFO in admin (Line 452): Admin approved student registration globally: yesh@gmail.com
+[2026-08-24 17:32:08,952] INFO in admin (Line 521): Admin completely deleted student user account: yesh@gmail.com
+[2026-08-25 09:40:42,015] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-25 09:40:42,237] INFO in app (Line 76): Aligned existing default admin account password to Admin@123
+[2026-08-25 09:40:42,761] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-25 09:40:42,988] INFO in app (Line 76): Aligned existing default admin account password to Admin@123
+[2026-08-25 09:41:04,615] WARNING in app (Line 108): HTTPException: 404 - The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+[2026-08-25 09:41:21,128] INFO in auth (Line 226): User logged in: admin@gmail.com (Role: admin)
+[2026-08-25 10:05:36,685] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-25 10:05:36,907] INFO in app (Line 76): Aligned existing default admin account password to Admin@123
+[2026-08-25 10:23:41,094] INFO in auth (Line 133): Student registration request submitted: govardhan@gmail.com (User ID: HT26A06)
+[2026-08-25 10:24:21,289] INFO in admin (Line 521): Admin completely deleted student user account: govardhan@gmail.com
+[2026-08-25 10:25:35,385] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-25 10:25:35,610] INFO in app (Line 76): Aligned existing default admin account password to Admin@123
+[2026-08-25 10:25:47,529] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-25 10:25:47,759] INFO in app (Line 76): Aligned existing default admin account password to Admin@123
+[2026-08-25 10:40:51,790] INFO in auth (Line 173): Student registration request submitted: govardhan@gmail.com (User ID: HT26A06)
+[2026-08-25 10:41:12,447] INFO in admin (Line 486): Admin rejected student registration globally: govardhan@gmail.com
+[2026-08-25 10:42:13,299] INFO in auth (Line 124): Rejected student re-registered: govardhan@gmail.com (User ID: HT26A06)
+[2026-08-25 10:42:50,604] INFO in admin (Line 486): Admin rejected student registration globally: govardhan@gmail.com
+[2026-08-25 12:02:42,083] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-25 12:02:42,305] INFO in app (Line 76): Aligned existing default admin account password to Admin@123
+[2026-08-25 12:10:21,271] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-25 12:10:21,294] ERROR in app (Line 94): Failed to synchronize database tables: (sqlite3.OperationalError) no such column: users.first_login_completed
+[SQL: SELECT users.id AS users_id, users.email AS users_email, users.password_hash AS users_password_hash, users.first_name AS users_first_name, users.last_name AS users_last_name, users.role AS users_role, users.registration_status AS users_registration_status, users.first_login_completed AS users_first_login_completed, users.created_at AS users_created_at 
+FROM users 
+WHERE users.email = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('admin@gmail.com', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+[2026-08-25 12:10:30,110] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-25 12:10:30,131] INFO in app (Line 62): Database migrated: added first_login_completed column to users table.
+[2026-08-25 12:10:30,347] INFO in app (Line 82): Aligned existing default admin account password to Admin@123
+[2026-08-25 12:11:00,391] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-25 12:11:00,614] INFO in app (Line 82): Aligned existing default admin account password to Admin@123
+[2026-08-25 12:11:27,869] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-25 12:11:28,113] INFO in app (Line 82): Aligned existing default admin account password to Admin@123
+[2026-08-25 12:11:43,079] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-25 12:11:43,315] INFO in app (Line 82): Aligned existing default admin account password to Admin@123
+[2026-08-25 12:12:02,247] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-25 12:12:02,463] INFO in app (Line 82): Aligned existing default admin account password to Admin@123
+[2026-08-25 12:17:47,256] INFO in auth (Line 144): Student registration request submitted: yeswanth123@gmail.com
+[2026-08-25 12:18:00,388] INFO in admin (Line 475): Admin approved student registration globally: yeswanth123@gmail.com (User ID assigned: STU17TXS)
+[2026-08-25 12:18:12,028] INFO in auth (Line 234): User logged in: yeswanth123@gmail.com (Role: student)
+[2026-08-25 12:18:12,189] INFO in exams (Line 312): Student yeswanth123@gmail.com requested access for exam python exam
+[2026-08-25 12:18:22,709] INFO in auth (Line 270): First login welcome popup marked as completed for user: yeswanth123@gmail.com
+[2026-08-25 12:18:28,369] INFO in auth (Line 257): User logged out: yeswanth123@gmail.com
+[2026-08-25 12:18:43,850] INFO in auth (Line 234): User logged in: yeswanth123@gmail.com (Role: student)
+[2026-08-25 12:25:03,906] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-25 12:25:04,424] INFO in app (Line 82): Aligned existing default admin account password to Admin@123
+[2026-08-25 12:25:44,303] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-25 12:25:44,815] INFO in app (Line 82): Aligned existing default admin account password to Admin@123
+[2026-08-25 12:57:17,943] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-25 12:57:18,510] INFO in app (Line 82): Aligned existing default admin account password to Admin@123
+[2026-08-25 13:01:08,618] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-25 13:01:09,081] INFO in app (Line 82): Aligned existing default admin account password to Admin@123
+[2026-08-25 15:42:28,312] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-25 15:42:28,743] INFO in app (Line 82): Aligned existing default admin account password to Admin@123
+[2026-08-25 15:42:29,701] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-08-25 15:42:30,187] INFO in app (Line 82): Aligned existing default admin account password to Admin@123
+[2026-08-25 15:43:14,261] INFO in exams (Line 312): Student yeswanth123@gmail.com requested access for exam python
+[2026-08-25 15:43:29,858] INFO in admin (Line 300): Admin approved exam access for student yeswanth123@gmail.com on exam python
+[2026-08-25 16:32:31,123] INFO in auth (Line 234): User logged in: yeswanth5922@gmail.com (Role: student)
+[2026-08-25 16:32:35,891] INFO in auth (Line 270): First login welcome popup marked as completed for user: yeswanth5922@gmail.com
+[2026-08-25 16:32:42,901] INFO in auth (Line 257): User logged out: yeswanth5922@gmail.com
+[2026-08-25 16:32:45,976] INFO in auth (Line 234): User logged in: yeswanth5922@gmail.com (Role: student)
+[2026-08-25 16:32:54,976] INFO in auth (Line 234): User logged in: yeswanth123@gmail.com (Role: student)

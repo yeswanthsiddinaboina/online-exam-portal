@@ -9,36 +9,44 @@
 <body>
     <div class="container auth-wrapper">
         <div class="glass-panel auth-card">
-            <div class="logo-header">
-                <div class="logo-icon">🛡️ SECURE EXAM</div>
-                <p style="color: var(--text-secondary);">Multi-Layer Secure Examination Environment</p>
-            </div>
+            <h2 style="font-family: var(--font-heading); text-align: center; margin-bottom: 2.5rem;" id="login-title">Administrator Login</h2>
             
+            <!-- Unified Login Form -->
             <form id="login-form">
                 <div class="form-group">
                     <label class="form-label" for="email" id="email-label">Institutional Email</label>
-                    <input class="form-control" type="email" id="email" placeholder="admin@university.edu" required>
+                    <input class="form-control" type="text" id="email" placeholder="admin@gmail.com" required>
                 </div>
                 
-                <div class="form-group" id="student-details-group" style="display: none; margin-bottom: 1rem;">
-                    <div style="margin-bottom: 1rem;">
-                        <label class="form-label" for="username">Candidate Name</label>
-                        <input class="form-control" type="text" id="username" placeholder="John Doe">
-                    </div>
-                    <div>
-                        <label class="form-label" for="student-id">User ID (Roll/Emp No)</label>
-                        <input class="form-control" type="text" id="student-id" placeholder="CS2026101">
-                    </div>
-                </div>
-
-                <div class="form-group" id="password-group" style="display: block;">
+                <div class="form-group" id="password-group">
                     <label class="form-label" for="password">Password</label>
                     <input class="form-control" type="password" id="password" placeholder="••••••••" required>
                 </div>
                 
-                <button class="btn btn-primary" id="btn-submit" style="width: 100%; margin-top: 1rem;" type="submit">Sign In as Admin</button>
+                <button class="btn btn-primary" id="btn-submit" style="width: 100%; margin-top: 1.5rem;" type="submit">Sign In as Admin</button>
             </form>
 
+            <!-- Toggle Register Link -->
+            <p id="toggle-registration-link" style="margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-secondary); text-align: center; display: none;">
+                New candidate? <a href="#" onclick="toggleRegisterForm(true); return false;" style="color: var(--accent-primary); text-decoration: none; font-weight: 500;">Register Here</a>
+            </p>
+
+            <!-- Toggled Student Registration Form -->
+            <form id="register-form" style="display: none;">
+                <h2 style="font-family: var(--font-heading); text-align: center; margin-bottom: 1.5rem;">Candidate Registration</h2>
+                <div class="form-group">
+                    <label class="form-label" for="reg-name">Candidate Name</label>
+                    <input class="form-control" type="text" id="reg-name" placeholder="John Doe" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="reg-email">Gmail ID</label>
+                    <input class="form-control" type="email" id="reg-email" placeholder="student@gmail.com" required>
+                </div>
+                <button class="btn btn-primary" style="width: 100%; margin-top: 1.25rem;" type="submit">Submit Registration</button>
+                <p style="margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-secondary); text-align: center;">
+                    Already registered? <a href="#" onclick="toggleRegisterForm(false); return false;" style="color: var(--accent-primary); text-decoration: none; font-weight: 500;">Sign In</a>
+                </p>
+            </form>
         </div>
     </div>
 
@@ -55,7 +63,8 @@
                 window.location.href = decodeURIComponent(redirectUrl);
             }
         } else {
-            if (adminToken) {
+            const roleParam = urlParams.get("role");
+            if (adminToken && roleParam !== "student") {
                 window.location.href = "admin/dashboard.html";
             }
         }
@@ -65,35 +74,59 @@
         const passwordGroup = document.getElementById("password-group");
         const passwordInput = document.getElementById("password");
         const emailLabel = document.getElementById("email-label");
+        const emailInput = document.getElementById("email");
         const btnSubmit = document.getElementById("btn-submit");
+        const toggleRegLink = document.getElementById("toggle-registration-link");
 
-        const studentDetailsGroup = document.getElementById("student-details-group");
-        const usernameInput = document.getElementById("username");
-        const studentIdInput = document.getElementById("student-id");
+        function toggleRegisterForm(show) {
+            const loginForm = document.getElementById("login-form");
+            const regForm = document.getElementById("register-form");
+            if (show) {
+                loginForm.style.display = "none";
+                regForm.style.display = "block";
+                toggleRegLink.style.display = "none";
+            } else {
+                loginForm.style.display = "block";
+                regForm.style.display = "none";
+                toggleRegLink.style.display = "block";
+            }
+        }
 
         function initializeView() {
-            if (redirectUrl) {
+            const roleParam = urlParams.get("role");
+            if (roleParam === "student") {
+                activeRole = "student";
+                passwordGroup.style.display = "none";
+                passwordInput.required = false;
+                emailLabel.innerText = "Gmail ID";
+                emailInput.placeholder = "Enter your Gmail ID";
+                btnSubmit.innerText = "Enter Examination";
+                toggleRegLink.style.display = "block";
+                
+                localStorage.removeItem("token");
+                localStorage.removeItem("user");
+                localStorage.removeItem("attempt_id");
+                localStorage.removeItem("session_token");
+                localStorage.removeItem("selected_exam_id");
+            } else if (redirectUrl) {
                 const isTargetAdmin = decodeURIComponent(redirectUrl).includes("/admin/");
                 if (isTargetAdmin) {
                     activeRole = "admin";
                     passwordGroup.style.display = "block";
                     passwordInput.required = true;
-                    studentDetailsGroup.style.display = "none";
-                    usernameInput.required = false;
-                    studentIdInput.required = false;
                     emailLabel.innerText = "Institutional Email";
+                    emailInput.placeholder = "admin@gmail.com";
                     btnSubmit.innerText = "Sign In as Admin";
+                    toggleRegLink.style.display = "none";
                 } else {
                     activeRole = "student";
                     passwordGroup.style.display = "none";
                     passwordInput.required = false;
-                    studentDetailsGroup.style.display = "block";
-                    usernameInput.required = true;
-                    studentIdInput.required = true;
-                    emailLabel.innerText = "Candidate Email";
+                    emailLabel.innerText = "Gmail ID";
+                    emailInput.placeholder = "Enter your Gmail ID";
                     btnSubmit.innerText = "Enter Examination";
+                    toggleRegLink.style.display = "block";
                     
-                    // Prevent session mixups: clear old student credentials on login screen mount
                     localStorage.removeItem("token");
                     localStorage.removeItem("user");
                     localStorage.removeItem("attempt_id");
@@ -105,21 +138,36 @@
                 activeRole = "admin";
                 passwordGroup.style.display = "block";
                 passwordInput.required = true;
-                studentDetailsGroup.style.display = "none";
-                usernameInput.required = false;
-                studentIdInput.required = false;
                 emailLabel.innerText = "Institutional Email";
+                emailInput.placeholder = "admin@gmail.com";
                 btnSubmit.innerText = "Sign In as Admin";
+                toggleRegLink.style.display = "none";
             }
         }
 
         document.getElementById("login-form").addEventListener("submit", function(e) {
             e.preventDefault();
-            const email = document.getElementById("email").value;
+            const email = emailInput.value;
             const password = activeRole === "admin" ? passwordInput.value : "";
-            const username = activeRole === "student" ? usernameInput.value : "";
-            const studentId = activeRole === "student" ? studentIdInput.value : "";
-            handleLogin(email, password, username, studentId);
+            handleLogin(email, password);
+        });
+
+        document.getElementById("register-form").addEventListener("submit", async function(e) {
+            e.preventDefault();
+            const name = document.getElementById("reg-name").value;
+            const email = document.getElementById("reg-email").value;
+            
+            const res = await API.post("/auth/register-student", {
+                first_name: name,
+                email: email
+            });
+            
+            if (res.success) {
+                alert(res.message);
+                toggleRegisterForm(false);
+            } else {
+                alert(res.message || "Registration submission failed.");
+            }
         });
 
         // Initialize the login screen view state based on redirect URL

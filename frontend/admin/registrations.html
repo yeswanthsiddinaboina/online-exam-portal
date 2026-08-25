@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Exam System - Student Registrations</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .search-bar-wrapper {
+            margin-bottom: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .search-input {
+            flex-grow: 1;
+            min-width: 250px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .status-pending {
+            background: rgba(245, 158, 11, 0.15);
+            color: #d97706;
+        }
+        .status-approved {
+            background: rgba(16, 185, 129, 0.15);
+            color: #059669;
+        }
+        .status-rejected {
+            background: rgba(239, 68, 68, 0.15);
+            color: #dc2626;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="#" class="nav-brand">🛡️ SECURE EXAM (ADMIN)</a>
+        <div class="nav-links">
+            <a href="dashboard.html" class="nav-link">Dashboard</a>
+            <a href="exams.html" class="nav-link">Manage Exams</a>
+            <a href="violations.html" class="nav-link">Violations</a>
+            <a href="results.html" class="nav-link">Student Results</a>
+            <a href="registrations.html" class="nav-link active">Registrations</a>
+            <a href="#" class="nav-link" onclick="handleLogout()">Sign Out</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2 style="font-family: var(--font-heading); margin-bottom: 2rem;">Student Registration Report</h2>
+
+        <!-- Stats Overview Cards -->
+        <div class="dashboard-grid">
+            <div class="glass-panel metric-card" id="card-all" onclick="filterByStatus('ALL')" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;">
+                <div class="metric-title">Total Registrations</div>
+                <div class="metric-value" id="stat-reg-total">-</div>
+            </div>
+            <div class="glass-panel metric-card" id="card-pending" onclick="filterByStatus('PENDING')" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;">
+                <div class="metric-title">Pending Approval</div>
+                <div class="metric-value" id="stat-reg-pending" style="color: var(--accent-warning);">-</div>
+            </div>
+            <div class="glass-panel metric-card" id="card-approved" onclick="filterByStatus('APPROVED')" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;">
+                <div class="metric-title">Approved Students</div>
+                <div class="metric-value" id="stat-reg-approved" style="color: var(--accent-success);">-</div>
+            </div>
+            <div class="glass-panel metric-card" id="card-rejected" onclick="filterByStatus('REJECTED')" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;">
+                <div class="metric-title">Rejected Students</div>
+                <div class="metric-value" id="stat-reg-rejected" style="color: var(--accent-danger);">-</div>
+            </div>
+        </div>
+
+        <div class="glass-panel">
+            <div class="search-bar-wrapper">
+                <input class="form-control search-input" type="text" id="reg-search" placeholder="🔍 Search by Candidate Name, User ID, or Gmail ID..." oninput="filterRegistrations(this.value)">
+            </div>
+
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>User ID</th>
+                            <th>Candidate Name</th>
+                            <th>Gmail ID</th>
+                            <th>Registration Date</th>
+                            <th>Exams Written</th>
+                            <th>Exams Pending</th>
+                            <th>Approval Status</th>
+                            <th style="text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="registrations-body">
+                        <tr>
+                            <td colspan="8" style="color: var(--text-secondary); text-align: center;">Loading student registrations...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script>
+        checkAuth("admin");
+
+        let registrationsCache = [];
+
+        async function loadRegistrations() {
+            const res = await API.get("/admin/registrations");
+            if (res.success) {
+                registrationsCache = res.registrations;
+                updateStats(res.registrations);
+                applyAllFilters();
+            } else {
+                alert(res.message || "Failed to load registrations.");
+            }
+        }
+
+        function updateStats(regs) {
+            const total = regs.length;
+            const pending = regs.filter(r => r.registration_status === 'PENDING').length;
+            const approved = regs.filter(r => r.registration_status === 'APPROVED').length;
+            const rejected = regs.filter(r => r.registration_status === 'REJECTED').length;
+
+            document.getElementById("stat-reg-total").innerText = total;
+            document.getElementById("stat-reg-pending").innerText = pending;
+            document.getElementById("stat-reg-approved").innerText = approved;
+            document.getElementById("stat-reg-rejected").innerText = rejected;
+        }
+
+        function renderTable(regs) {
+            const tbody = document.getElementById("registrations-body");
+            if (regs.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="color: var(--text-secondary); text-align: center;">No student registrations found.</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = regs.map(reg => {
+                const dateStr = reg.registration_date ? new Date(reg.registration_date).toLocaleString() : 'N/A';
+                
+                let badgeClass = "status-pending";
+                if (reg.registration_status === "APPROVED") badgeClass = "status-approved";
+                if (reg.registration_status === "REJECTED") badgeClass = "status-rejected";
+
+                let statusHTML = "";
+                if (reg.registration_status === "PENDING") {
+                    statusHTML = `
+                        <div style="display: flex; gap: 0.4rem; align-items: center; white-space: nowrap;">
+                            <span class="status-badge ${badgeClass}" style="margin-right: 0.25rem;">PENDING</span>
+                            <button class="btn btn-primary" onclick="approveReg(${reg.id})" style="padding: 0.2rem 0.4rem; font-size: 0.75rem; background: var(--accent-success); border-color: transparent; line-height: 1.2;">Accept</button>
+                            <button class="btn btn-secondary" onclick="rejectReg(${reg.id})" style="padding: 0.2rem 0.4rem; font-size: 0.75rem; background: var(--accent-warning); border-color: transparent; color: white; line-height: 1.2;">Reject</button>
+                        </div>
+                    `;
+                } else {
+                    statusHTML = `<span class="status-badge ${badgeClass}">${reg.registration_status}</span>`;
+                }
+
+                const actionButtons = `
+                    <button class="btn btn-danger" onclick="deleteStudent(${reg.id})" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; line-height: 1.2;">Delete</button>
+                `;
+
+                return `
+                    <tr>
+                        <td style="font-weight: 600;">${reg.last_name}</td>
+                        <td>${reg.first_name}</td>
+                        <td>${reg.email}</td>
+                        <td>${dateStr}</td>
+                        <td style="font-weight: 500; color: var(--accent-primary);">${reg.exams_written_count}</td>
+                        <td style="font-weight: 500; color: var(--text-secondary);">${reg.exams_not_attempted_count}</td>
+                        <td>${statusHTML}</td>
+                        <td style="text-align: right; white-space: nowrap;">
+                            <div style="display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center;">
+                                ${actionButtons}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        let activeStatusFilter = 'ALL';
+
+        function filterByStatus(status) {
+            activeStatusFilter = status;
+            applyAllFilters();
+        }
+
+        function filterRegistrations(query) {
+            applyAllFilters();
+        }
+
+        function applyAllFilters() {
+            const searchQuery = document.getElementById("reg-search").value.toLowerCase().trim();
+            
+            let filtered = registrationsCache;
+            
+            if (activeStatusFilter !== 'ALL') {
+                filtered = filtered.filter(r => r.registration_status === activeStatusFilter);
+            }
+            
+            if (searchQuery) {
+                filtered = filtered.filter(r => 
+                    (r.first_name || '').toLowerCase().includes(searchQuery) ||
+                    (r.last_name || '').toLowerCase().includes(searchQuery) ||
+                    (r.email || '').toLowerCase().includes(searchQuery)
+                );
+            }
+            
+            renderTable(filtered);
+            
+            const cardIds = ['card-all', 'card-pending', 'card-approved', 'card-rejected'];
+            const activeCardId = 'card-' + activeStatusFilter.toLowerCase();
+            
+            cardIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (id === activeCardId) {
+                        el.style.borderColor = 'var(--accent-primary)';
+                        el.style.background = 'rgba(16, 185, 129, 0.05)';
+                    } else {
+                        el.style.borderColor = 'var(--border-glass)';
+                        el.style.background = '';
+                    }
+                }
+            });
+        }
+
+        async function approveReg(studentId) {
+            const res = await API.post(`/admin/registrations/${studentId}/approve`, {});
+            if (res.success) {
+                loadRegistrations();
+            } else {
+                alert(res.message || "Failed to approve registration.");
+            }
+        }
+
+        async function rejectReg(studentId) {
+            if (confirm("Are you sure you want to reject this registration request?")) {
+                const res = await API.post(`/admin/registrations/${studentId}/reject`, {});
+                if (res.success) {
+                    loadRegistrations();
+                } else {
+                    alert(res.message || "Failed to reject registration.");
+                }
+            }
+        }
+
+        async function deleteStudent(studentId) {
+            if (confirm("Are you sure you want to completely delete this student? All of their exam attempts, results, and proctoring violations will be permanently removed from the system.")) {
+                const res = await API.delete(`/admin/registrations/${studentId}`, {});
+                if (res.success) {
+                    loadRegistrations();
+                } else {
+                    alert(res.message || "Failed to delete student.");
+                }
+            }
+        }
+
+        // Initial Load
+        const statusParam = new URLSearchParams(window.location.search).get("status");
+        if (statusParam) {
+            activeStatusFilter = statusParam.toUpperCase();
+        }
+        loadRegistrations();
+    </script>
+</body>
+</html>

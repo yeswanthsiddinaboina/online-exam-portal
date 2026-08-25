@@ -14,7 +14,8 @@
             <a href="exams.html" class="nav-link">Manage Exams</a>
             <a href="violations.html" class="nav-link active">Violations</a>
             <a href="results.html" class="nav-link">Student Results</a>
-            <span id="user-display" style="color: var(--text-secondary); font-size: 0.95rem; font-weight: 500;"></span>
+            <a href="registrations.html" class="nav-link">Registrations</a>
+            <span id="user-display" style="display: none;"></span>
             <a href="#" class="nav-link" onclick="handleLogout()">Sign Out</a>
         </div>
     </nav>
@@ -29,16 +30,14 @@
                         <tr>
                             <th>Student</th>
                             <th>Exam Name</th>
-                            <th>Infrac Type</th>
-                            <th>Conf</th>
-                            <th>Timestamp</th>
-                            <th>Severity</th>
-                            <th>Webcam Snapshot</th>
+                            <th>Total Infractions</th>
+                            <th>Last Infraction Time</th>
+                            <th style="text-align: right;">Action</th>
                         </tr>
                     </thead>
                     <tbody id="violations-body">
                         <tr>
-                            <td colspan="7" style="color: var(--text-secondary);">Loading violations records...</td>
+                            <td colspan="5" style="color: var(--text-secondary); text-align: center;">Loading violations records...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -46,15 +45,65 @@
         </div>
     </div>
 
-    <!-- EVIDENCE MODAL PREVIEW -->
-    <div class="modal-backdrop" id="evidence-modal">
-        <div class="glass-panel modal-content" style="max-width: 500px; text-align: center;">
-            <h3 style="margin-bottom: 1rem;">Evidence Screenshot</h3>
-            <div class="video-feed-wrapper" style="width: 100%; height: 320px; border-color: var(--accent-primary);">
-                <img id="evidence-img" src="" alt="Evidence Frame" style="width: 100%; height: 100%; object-fit: contain; background: #000;">
+    <!-- Student Audit details modal -->
+    <div class="modal-backdrop" id="audit-modal">
+        <div class="glass-panel modal-content" style="max-width: 900px; width: 90%; max-height: 85vh; overflow-y: auto; text-align: left; padding: 2rem; background: var(--bg-secondary); color: var(--text-primary);">
+            <h3 style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                <span>📋 Detailed Candidate Review</span>
+                <button class="btn btn-secondary" onclick="closeAuditModal()" style="padding: 0.3rem 0.7rem; font-size: 0.8rem;">Close</button>
+            </h3>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 2rem; margin-bottom: 1rem;">
+                <!-- Left: Attempt Overview & Violations -->
+                <div>
+                    <h4 style="border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; margin-bottom: 1rem; color: var(--accent-secondary);">Session Log</h4>
+                    <p style="margin-bottom: 0.5rem;"><strong>Gmail ID:</strong> <span id="audit-email">-</span></p>
+                    <p style="margin-bottom: 0.5rem;"><strong>Candidate Name:</strong> <span id="audit-username">-</span></p>
+                    <p style="margin-bottom: 0.5rem;"><strong>User ID:</strong> <span id="audit-userid">-</span></p>
+                    <p style="margin-bottom: 0.5rem;"><strong>Status:</strong> <span id="audit-status" class="badge">-</span></p>
+                    <p style="margin-bottom: 0.5rem;"><strong>Score:</strong> <span id="audit-score">-</span></p>
+                    <p style="margin-bottom: 1.5rem;"><strong>Timeline:</strong> <span id="audit-timeline">-</span></p>
+                    <button class="btn btn-danger" id="btn-reconduct" onclick="reconductStudentExam()" style="width: 100%; margin-bottom: 1.5rem; padding: 0.5rem 1rem; font-size: 0.85rem; display: none;">🔄 Reconduct Exam (Reset attempt)</button>
+                    
+                    <h4 style="border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; margin-bottom: 1rem; color: var(--accent-danger);">Logged Violations</h4>
+                    <div style="max-height: 250px; overflow-y: auto;">
+                        <table class="table" style="font-size: 0.85rem;">
+                            <thead>
+                                <tr>
+                                    <th>Violation</th>
+                                    <th>Time</th>
+                                    <th>Evidence</th>
+                                </tr>
+                            </thead>
+                            <tbody id="audit-violations-body">
+                                <tr>
+                                    <td colspan="3" style="color: var(--text-muted); text-align: center;">No infractions logged.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Right: Questions Response Review -->
+                <div>
+                    <h4 style="border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; margin-bottom: 1rem; color: var(--accent-primary);">Question Responses</h4>
+                    <div style="max-height: 420px; overflow-y: auto; padding-right: 0.5rem;" id="audit-questions-container">
+                        <p style="color: var(--text-muted);">No responses submitted.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inner evidence picture popup modal -->
+    <div class="modal-backdrop" id="audit-evidence-modal" style="z-index: 1050;">
+        <div class="glass-panel modal-content" style="max-width: 500px; text-align: center; background: var(--bg-secondary);">
+            <h3 style="margin-bottom: 1rem;">Evidence Snapshot</h3>
+            <div class="video-feed-wrapper" style="width: 100%; height: 320px; border-color: var(--accent-danger);">
+                <img id="audit-evidence-img" src="" alt="Evidence Frame" style="width: 100%; height: 100%; object-fit: contain; background: var(--bg-primary);">
             </div>
             <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end;">
-                <button class="btn btn-secondary" onclick="closeEvidenceModal()">Close Review</button>
+                <button class="btn btn-secondary" onclick="closeAuditEvidenceModal()">Close</button>
             </div>
         </div>
     </div>
@@ -64,47 +113,178 @@
         checkAuth("admin");
         document.getElementById("user-display").innerText = `Admin: ${currentUser.first_name}`;
 
+        let currentAuditAttemptId = null;
+
         async function loadViolations() {
             const res = await API.get("/admin/violations");
             const body = document.getElementById("violations-body");
             if (res.success) {
                 if (res.violations.length > 0) {
-                    body.innerHTML = res.violations.map(v => `
-                        <tr>
+                    // Group violations by attempt_id to show unique student attempts
+                    const grouped = {};
+                    res.violations.forEach(v => {
+                        if (!grouped[v.attempt_id]) {
+                            grouped[v.attempt_id] = {
+                                attempt_id: v.attempt_id,
+                                student_name: v.student_name,
+                                student_email: v.student_email,
+                                exam_title: v.exam_title,
+                                violations_count: 0,
+                                last_timestamp: v.timestamp
+                            };
+                        }
+                        grouped[v.attempt_id].violations_count++;
+                        if (new Date(v.timestamp) > new Date(grouped[v.attempt_id].last_timestamp)) {
+                            grouped[v.attempt_id].last_timestamp = v.timestamp;
+                        }
+                    });
+
+                    const groupedList = Object.values(grouped);
+                    // Sort attempts by last violation timestamp desc
+                    groupedList.sort((a, b) => new Date(b.last_timestamp) - new Date(a.last_timestamp));
+
+                    body.innerHTML = groupedList.map(g => `
+                        <tr style="cursor: pointer; transition: background 0.2s;" onclick="openAuditModal(${g.attempt_id})" class="scoreboard-row">
                             <td>
-                                <strong>${v.student_name}</strong> <br>
-                                <span style="font-size: 0.8rem; color: var(--text-muted);">${v.student_email}</span>
+                                <strong>${g.student_name}</strong> <br>
+                                <span style="font-size: 0.8rem; color: var(--text-muted);">${g.student_email}</span>
                             </td>
-                            <td>${v.exam_title}</td>
-                            <td><strong style="color: var(--accent-danger);">${v.event_type.replace('_', ' ')}</strong></td>
-                            <td>${(v.confidence * 100).toFixed(0)}%</td>
-                            <td>${new Date(v.timestamp).toLocaleString()}</td>
-                            <td><span class="badge badge-${v.action_taken === 'TERMINATE' ? 'danger' : 'warning'}">${v.action_taken}</span></td>
+                            <td>${g.exam_title}</td>
                             <td>
-                                ${v.evidence_path ? 
-                                    `<button class="btn btn-primary" onclick="viewEvidence('${v.evidence_path}')" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">View Frame</button>` : 
-                                    '<span style="color: var(--text-muted);">No Snapshot</span>'
-                                }
+                                <span style="font-weight: 600; color: var(--accent-danger);">
+                                    ⚠️ ${g.violations_count} Infractions
+                                </span>
+                            </td>
+                            <td>${new Date(g.last_timestamp).toLocaleString()}</td>
+                            <td style="text-align: right;">
+                                <button class="btn btn-primary" onclick="event.stopPropagation(); openAuditModal(${g.attempt_id})" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">View Details</button>
                             </td>
                         </tr>
                     `).join('');
                 } else {
-                    body.innerHTML = `<tr><td colspan="7" style="color: var(--text-secondary); text-align: center;">No proctoring violation logs in database.</td></tr>`;
+                    body.innerHTML = `<tr><td colspan="5" style="color: var(--text-secondary); text-align: center;">No proctoring violation logs in database.</td></tr>`;
                 }
             } else {
                 alert("Failed to load violation records.");
             }
         }
 
-        function viewEvidence(path) {
-            const token = currentToken;
-            // Add authorization token parameter to serve the image safely to admin
-            const imgUrl = `http://127.0.0.1:5001${path}?token=${token}`;
+        async function openAuditModal(attemptId) {
+            currentAuditAttemptId = attemptId;
+            const btnReconduct = document.getElementById("btn-reconduct");
+            if (btnReconduct) btnReconduct.style.display = "block";
             
-            // Wait, our backend served evidence requires a Bearer header.
-            // But we can update backend /api/admin/evidence/<id> endpoint to also accept token as query param
-            // OR fetch the image via JS fetch with Authorization header, generate ObjectURL and show it.
-            // Let's use Javascript fetch to make it highly secure and avoid exposing token in URL!
+            const res = await API.get(`/results/${attemptId}`);
+            if (res.success) {
+                const r = res.result;
+                document.getElementById("audit-email").innerText = r.student_email || "-";
+                document.getElementById("audit-username").innerText = r.student_username || "-";
+                document.getElementById("audit-userid").innerText = r.student_userid || "-";
+                
+                const badge = document.getElementById("audit-status");
+                badge.innerText = r.status.replace('_', ' ');
+                badge.className = `badge badge-${
+                    r.status === 'MALPRACTICE_CANCELLED' ? 'danger' :
+                    (r.status === 'IN_PROGRESS' ? 'warning' : 'success')
+                }`;
+                
+                document.getElementById("audit-score").innerText = `${r.score_obtained.toFixed(1)} / ${r.questions.reduce((a, b) => a + b.marks, 0).toFixed(1)} (${r.percentage.toFixed(1)}%)`;
+                
+                const startStr = r.started_at ? new Date(r.started_at).toLocaleTimeString() : 'N/A';
+                const endStr = r.ended_at ? new Date(r.ended_at).toLocaleTimeString() : 'N/A';
+                document.getElementById("audit-timeline").innerText = `${startStr} - ${endStr}`;
+                
+                // Render violations list
+                const vBody = document.getElementById("audit-violations-body");
+                if (r.violations && r.violations.length > 0) {
+                    vBody.innerHTML = r.violations.map(v => `
+                        <tr>
+                            <td><strong style="color: var(--accent-danger);">${v.event_type.replace('_', ' ')}</strong></td>
+                            <td>${new Date(v.timestamp).toLocaleTimeString()}</td>
+                            <td>
+                                ${v.evidence_id ? 
+                                    `<button class="btn btn-primary" onclick="viewAuditEvidence('${v.evidence_id}')" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">View</button>` : 
+                                    '<span style="color: var(--text-muted); font-size: 0.75rem;">No Frame</span>'
+                                }
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    vBody.innerHTML = `<tr><td colspan="3" style="color: var(--text-muted); text-align: center;">No infractions logged.</td></tr>`;
+                }
+
+                // Render questions review
+                const qContainer = document.getElementById("audit-questions-container");
+                qContainer.innerHTML = r.questions.map((q, idx) => {
+                    const isMcq = q.question_type === "MCQ" || q.question_type === "TF";
+                    const studentAnsStr = isMcq ? q.student_answer.selected_answers.join(", ") : q.student_answer.text_answer;
+                    const correctAnsStr = q.correct_answer || "[Hidden - Active Duration]";
+                    
+                    const extractOptionLetter = (str) => {
+                        if (!str) return "";
+                        const s = str.trim().toUpperCase();
+                        if (s.length >= 2 && /[A-Z]/.test(s[0]) && [')', '.', '-', ':', ' '].includes(s[1])) {
+                            return s[0];
+                        }
+                        return s;
+                    };
+                    
+                    let isCorrect = false;
+                    if (q.correct_answer) {
+                        if (isMcq) {
+                            const studentAns = q.student_answer.selected_answers.map(extractOptionLetter);
+                            const correctAns = q.correct_answer.split(",").map(extractOptionLetter);
+                            isCorrect = studentAns.length > 0 && 
+                                        studentAns.every(val => correctAns.includes(val)) && 
+                                        correctAns.every(val => studentAns.includes(val));
+                        } else {
+                            isCorrect = (q.student_answer.text_answer || "").trim().toLowerCase() === q.correct_answer.trim().toLowerCase();
+                        }
+                    }
+                    
+                    const borderCol = isCorrect ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)';
+                    
+                    return `
+                        <div class="glass-panel" style="margin-bottom: 1rem; padding: 1rem; border-color: ${borderCol};">
+                            <h5 style="margin-bottom: 0.5rem; color: var(--text-secondary);">Question ${idx + 1} (${q.marks} Marks)</h5>
+                            <p style="font-weight: 500; font-size: 0.95rem; margin-bottom: 0.75rem;">${q.question_text}</p>
+                            
+                            <div style="font-size: 0.85rem; border-top: 1px solid var(--border-glass); padding-top: 0.5rem;">
+                                <div><span style="color: var(--text-secondary);">Student Response:</span> <span style="font-weight: 700; color: ${isCorrect ? 'var(--accent-success)' : 'var(--accent-danger)'};">${studentAnsStr || '[No Answer]'}</span></div>
+                                <div><span style="color: var(--text-secondary);">Correct Response:</span> <span style="font-weight: 700; color: var(--accent-success);">${correctAnsStr}</span></div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                document.getElementById("audit-modal").classList.add("active");
+            } else {
+                alert("Failed to load student details.");
+            }
+        }
+
+        function closeAuditModal() {
+            document.getElementById("audit-modal").classList.remove("active");
+            currentAuditAttemptId = null;
+        }
+
+        async function reconductStudentExam() {
+            if (!currentAuditAttemptId) return;
+            if (confirm("⚠️ WARNING: Are you sure you want to reconduct this exam?\n\nThis will permanently delete the student's previous attempt, answers, score, and all proctoring logs. The candidate will be authorized to log in and write the exam again immediately.")) {
+                const res = await API.post(`/admin/attempts/${currentAuditAttemptId}/reconduct`, {});
+                if (res.success) {
+                    alert(res.message);
+                    closeAuditModal();
+                    loadViolations();
+                } else {
+                    alert(res.message || "Failed to reset student attempt.");
+                }
+            }
+        }
+
+        function viewAuditEvidence(evidenceId) {
+            const token = currentToken;
+            const imgUrl = `http://127.0.0.1:5001/api/admin/evidence/${evidenceId}`;
             
             fetch(imgUrl, {
                 headers: {
@@ -114,18 +294,18 @@
             .then(res => res.blob())
             .then(blob => {
                 const objectURL = URL.createObjectURL(blob);
-                document.getElementById("evidence-img").src = objectURL;
-                document.getElementById("evidence-modal").classList.add("active");
+                document.getElementById("audit-evidence-img").src = objectURL;
+                document.getElementById("audit-evidence-modal").classList.add("active");
             })
             .catch(err => {
-                console.error("Failed to load evidence frame:", err);
-                alert("Could not load evidence screenshot.");
+                console.error("Failed to load audit evidence:", err);
+                alert("Could not load evidence frame.");
             });
         }
 
-        function closeEvidenceModal() {
-            document.getElementById("evidence-modal").classList.remove("active");
-            document.getElementById("evidence-img").src = "";
+        function closeAuditEvidenceModal() {
+            document.getElementById("audit-evidence-modal").classList.remove("active");
+            document.getElementById("audit-evidence-img").src = "";
         }
 
         loadViolations();

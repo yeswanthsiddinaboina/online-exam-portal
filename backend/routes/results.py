@@ -98,6 +98,9 @@ def get_result_details(attempt_id):
     result_data = {
         "attempt_id": attempt.id,
         "exam_title": attempt.exam.title,
+        "student_email": attempt.student.email,
+        "student_username": attempt.student.first_name,
+        "student_userid": attempt.student.last_name,
         "duration_minutes": attempt.exam.duration_minutes,
         "started_at": attempt.started_at.isoformat() + "Z" if attempt.started_at else None,
         "ended_at": attempt.ended_at.isoformat() + "Z" if attempt.ended_at else None,

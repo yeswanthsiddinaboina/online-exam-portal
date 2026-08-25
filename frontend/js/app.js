@@ -86,6 +86,26 @@ const API = {
         }
     },
 
+    async delete(endpoint) {
+        try {
+            const res = await fetch(`${API_BASE}${endpoint}`, {
+                method: "DELETE",
+                headers: getHeaders()
+            });
+            if (res.status === 401) {
+                localStorage.removeItem(tokenKey);
+                localStorage.removeItem(userKey);
+                const dest = encodeURIComponent(window.location.pathname + window.location.search);
+                window.location.href = `/login.html?redirect=${dest}`;
+                return { success: false, error_code: "UNAUTHORIZED", message: "Session expired." };
+            }
+            return await res.json();
+        } catch (e) {
+            console.error("API DELETE error:", e);
+            return { success: false, error_code: "NETWORK_ERROR", message: "Network connectivity issue." };
+        }
+    },
+
     async upload(endpoint, formData) {
         try {
             const res = await fetch(`${API_BASE}${endpoint}`, {
@@ -168,7 +188,11 @@ function handleLogout() {
     // Notify the backend asynchronously to write audit logs
     API.post("/auth/logout", {}).catch(e => console.warn("Async logout notify error:", e));
     
-    window.location.href = "/login.html";
+    if (pageIsAdmin) {
+        window.location.href = "/login.html";
+    } else {
+        window.location.href = "/login.html?role=student";
+    }
 }
 
 // --- SYSTEM CHECK MANAGER ---
@@ -554,4 +578,212 @@ class AIProctorEngine {
         
         setTimeout(() => this.basicCameraAuditLoop(), 3000);
     }
+}
+
+// --- NOTIFICATION DROPDOWN SYSTEM ---
+let notificationsCache = [];
+
+async function initNotificationSystem() {
+    if (!isAdminPage || !currentToken) return;
+
+    // Inject Notification dropdown styling
+    const style = document.createElement("style");
+    style.innerHTML = `
+        .notif-item {
+            padding: 0.75rem;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-glass);
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            text-decoration: none;
+            display: block;
+        }
+        .notif-item:hover {
+            background: rgba(16, 185, 129, 0.05);
+            border-color: var(--accent-primary);
+        }
+        .notif-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+        .notif-desc {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.3;
+        }
+    `;
+    document.head.appendChild(style);
+
+    // Locate nav links container
+    const navLinks = document.querySelector(".nav-links");
+    if (!navLinks) return;
+
+    // Create dropdown wrapper element
+    const notifDropdownWrapper = document.createElement("div");
+    notifDropdownWrapper.className = "nav-item-dropdown";
+    notifDropdownWrapper.style.position = "relative";
+    notifDropdownWrapper.style.display = "inline-block";
+    notifDropdownWrapper.innerHTML = `
+        <a href="#" class="nav-link" id="notif-btn" onclick="toggleNotifDropdown(event)" style="position: relative; padding: 0.25rem 0.5rem; font-size: 1.15rem;">
+            🔔<span id="notif-badge" style="display: none; position: absolute; top: -3px; right: -5px; background: var(--accent-danger); color: white; border-radius: 50%; width: 16px; height: 16px; font-size: 0.65rem; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1.5px solid white;">0</span>
+        </a>
+        <div id="notif-dropdown" class="glass-panel" style="display: none; position: absolute; right: 0; top: 35px; width: 320px; max-height: 400px; overflow-y: auto; z-index: 1000; padding: 1rem; border-color: var(--accent-primary); box-shadow: 0 8px 32px rgba(16,185,129,0.15);">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; margin-bottom: 0.75rem;">
+                <strong style="font-size: 0.9rem; color: var(--text-primary);">Notifications</strong>
+                <a href="#" onclick="markAllNotifsAsRead(event)" style="font-size: 0.75rem; color: var(--accent-primary); text-decoration: none; font-weight: 600;">Mark All as Read</a>
+            </div>
+            <div id="notif-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <p style="color: var(--text-secondary); font-size: 0.8rem; text-align: center; margin: 1rem 0;">No new notifications</p>
+            </div>
+        </div>
+    `;
+
+    // Insert notification button before Sign Out link in the navbar
+    const signOutBtn = navLinks.querySelector("a[onclick='handleLogout()']");
+    if (signOutBtn) {
+        navLinks.insertBefore(notifDropdownWrapper, signOutBtn);
+    } else {
+        navLinks.appendChild(notifDropdownWrapper);
+    }
+
+    // Close dropdown on click outside
+    document.addEventListener("click", function(e) {
+        const dropdown = document.getElementById("notif-dropdown");
+        const btn = document.getElementById("notif-btn");
+        if (dropdown && btn && !dropdown.contains(e.target) && !btn.contains(e.target)) {
+            dropdown.style.display = "none";
+        }
+    });
+
+    // Load initial notifications feed
+    await loadNotifications();
+    
+    // Automatically check for new notifications every 5 seconds without refreshing
+    setInterval(loadNotifications, 5000);
+}
+
+function toggleNotifDropdown(e) {
+    e.preventDefault();
+    const dropdown = document.getElementById("notif-dropdown");
+    if (dropdown) {
+        dropdown.style.display = dropdown.style.display === "none" ? "block" : "none";
+    }
+}
+
+async function loadNotifications() {
+    const res = await API.get("/admin/notifications");
+    if (res.success) {
+        notificationsCache = res.notifications || [];
+        
+        // Retrieve read list from localStorage
+        const readList = JSON.parse(localStorage.getItem("read_notifications") || "[]");
+        
+        // Filter out read notifications
+        const unreadList = notificationsCache.filter(n => !readList.includes(n.id));
+        
+        // Update badge indicator
+        const badge = document.getElementById("notif-badge");
+        if (badge) {
+            if (unreadList.length > 0) {
+                badge.innerText = unreadList.length;
+                badge.style.display = "flex";
+            } else {
+                badge.style.display = "none";
+            }
+        }
+        
+        // Populate list
+        const notifListContainer = document.getElementById("notif-list");
+        if (notifListContainer) {
+            if (unreadList.length > 0) {
+                notifListContainer.innerHTML = unreadList.map(n => `
+                    <div class="notif-item" style="cursor: pointer; position: relative; border-bottom: 1px solid var(--border-glass); padding: 0.75rem;" onclick="window.location.href='${n.link}'">
+                        <div class="notif-title">${n.title}</div>
+                        <div class="notif-desc">${n.message}</div>
+                        <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                            <button class="btn btn-primary" onclick="handleNotifAction(event, '${n.type}', ${n.raw_id}, 'approve')" style="padding: 0.2rem 0.5rem; font-size: 0.7rem; background: var(--accent-success); border-color: transparent; font-weight: 600; line-height: 1.2;">Approve</button>
+                            <button class="btn btn-danger" onclick="handleNotifAction(event, '${n.type}', ${n.raw_id}, 'reject')" style="padding: 0.2rem 0.5rem; font-size: 0.7rem; font-weight: 600; line-height: 1.2;">Reject</button>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                notifListContainer.innerHTML = `<p style="color: var(--text-secondary); font-size: 0.8rem; text-align: center; margin: 1rem 0;">No new notifications</p>`;
+            }
+        }
+    }
+}
+
+async function handleNotifAction(event, type, rawId, action) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
+    let endpoint = "";
+    if (type === "registration") {
+        endpoint = `/admin/registrations/${rawId}/${action}`;
+    } else if (type === "access") {
+        endpoint = `/admin/access/${rawId}/${action}`;
+    }
+    
+    if (!endpoint) return;
+    
+    // Confirm rejection
+    if (action === "reject") {
+        const confirmMsg = type === "registration" 
+            ? "Are you sure you want to reject this student registration?"
+            : "Are you sure you want to reject this exam access request?";
+        if (!confirm(confirmMsg)) return;
+    }
+    
+    const res = await API.post(endpoint, {});
+    if (res.success) {
+        alert(res.message || `Successfully completed action.`);
+        // Reload notifications
+        await loadNotifications();
+        
+        // Also reload the page-level reports if we are currently on registrations/results page to keep tables synced!
+        if (window.location.pathname.includes("registrations.html")) {
+            if (typeof loadRegistrations === "function") loadRegistrations();
+        } else if (window.location.pathname.includes("results.html")) {
+            const selector = document.getElementById("exam-selector");
+            if (selector && typeof loadReports === "function") loadReports(selector.value);
+        }
+    } else {
+        alert(res.message || `Failed to perform action.`);
+    }
+}
+
+function markAllNotifsAsRead(e) {
+    e.preventDefault();
+    const readList = JSON.parse(localStorage.getItem("read_notifications") || "[]");
+    
+    // Add all current notification IDs to read list
+    notificationsCache.forEach(n => {
+        if (!readList.includes(n.id)) {
+            readList.push(n.id);
+        }
+    });
+    
+    localStorage.setItem("read_notifications", JSON.stringify(readList));
+    
+    // Refresh view
+    const badge = document.getElementById("notif-badge");
+    if (badge) badge.style.display = "none";
+    
+    const notifListContainer = document.getElementById("notif-list");
+    if (notifListContainer) {
+        notifListContainer.innerHTML = `<p style="color: var(--text-secondary); font-size: 0.8rem; text-align: center; margin: 1rem 0;">No new notifications</p>`;
+    }
+}
+
+// Auto-run notification system on document load
+document.addEventListener("DOMContentLoaded", initNotificationSystem);
+// If page is already loaded, run immediately
+if (document.readyState === "complete" || document.readyState === "interactive") {
+    initNotificationSystem();
 }

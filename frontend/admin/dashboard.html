@@ -14,7 +14,8 @@
             <a href="exams.html" class="nav-link">Manage Exams</a>
             <a href="violations.html" class="nav-link">Violations</a>
             <a href="results.html" class="nav-link">Student Results</a>
-            <span id="user-display" style="color: var(--text-secondary); font-size: 0.95rem; font-weight: 500;"></span>
+            <a href="registrations.html" class="nav-link">Registrations</a>
+            <span id="user-display" style="display: none;"></span>
             <a href="#" class="nav-link" onclick="handleLogout()">Sign Out</a>
         </div>
     </nav>
@@ -24,23 +25,23 @@
 
         <!-- Metrics Row -->
         <div class="dashboard-grid">
-            <div class="glass-panel metric-card">
+            <div class="glass-panel metric-card" onclick="window.location.href='exams.html'" style="cursor: pointer; transition: transform 0.2s;">
                 <div class="metric-title">Total Exams</div>
                 <div class="metric-value" id="metric-exams">-</div>
             </div>
-            <div class="glass-panel metric-card">
+            <div class="glass-panel metric-card" onclick="window.location.href='exams.html'" style="cursor: pointer; transition: transform 0.2s;">
                 <div class="metric-title">Active Exams</div>
                 <div class="metric-value" id="metric-active">-</div>
             </div>
-            <div class="glass-panel metric-card">
+            <div class="glass-panel metric-card" onclick="window.location.href='registrations.html'" style="cursor: pointer; transition: transform 0.2s;">
                 <div class="metric-title">Registered Students</div>
                 <div class="metric-value" id="metric-students">-</div>
             </div>
-            <div class="glass-panel metric-card">
+            <div class="glass-panel metric-card" onclick="window.location.href='results.html'" style="cursor: pointer; transition: transform 0.2s;">
                 <div class="metric-title">Active Sessions</div>
                 <div class="metric-value" id="metric-sessions">-</div>
             </div>
-            <div class="glass-panel metric-card">
+            <div class="glass-panel metric-card" onclick="window.location.href='violations.html'" style="cursor: pointer; transition: transform 0.2s;">
                 <div class="metric-title">Malpractice Exits</div>
                 <div class="metric-value" id="metric-malpractice" style="color: var(--accent-danger);">-</div>
             </div>
