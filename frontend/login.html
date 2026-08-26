@@ -6,6 +6,7 @@
     <title>Secure Exam System - Login</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
+<<<<<<< Updated upstream
 <body>
     <div class="container auth-wrapper">
         <div class="glass-panel auth-card">
@@ -49,6 +50,107 @@
             </form>
         </div>
     </div>
+=======
+<body class="login-page">
+    <main class="login-shell">
+        <section class="login-intro" aria-label="SecureExam overview">
+            <div class="intro-content">
+                <div class="login-brand">
+                    <span class="brand-mark" aria-hidden="true">
+                        <svg viewBox="0 0 48 54" role="img">
+                            <path d="M24 3 43 10v15c0 12-7.8 20.6-19 26C12.8 45.6 5 37 5 25V10L24 3Z"></path>
+                            <path d="m14 27 6.2 6L35 18"></path>
+                        </svg>
+                    </span>
+                    <span class="brand-name"><span>Secure</span><strong>Exam</strong></span>
+                </div>
+                <span class="intro-rule"></span>
+                <h1>A safe space to<br>demonstrate your<br><em>knowledge</em></h1>
+                <p class="intro-copy">Our secure exam environment protects your identity, your work, and ensures every candidate has a fair chance to succeed.</p>
+            </div>
+
+            <div class="security-features">
+                <div class="security-feature">
+                    <span class="feature-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0Z"></path><path d="M8 12.5 10.5 15 16 9.5"></path></svg>
+                    </span>
+                    <strong>AI Proctoring</strong>
+                    <small>Smart monitoring for integrity and fairness</small>
+                </div>
+                <div class="security-feature">
+                    <span class="feature-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M12 3 20 6v6c0 5-3.2 7.9-8 9-4.8-1.1-8-4-8-9V6l8-3Z"></path><rect x="8.5" y="10.5" width="7" height="6" rx="1"></rect><path d="M10 10.5V9a2 2 0 0 1 4 0v1.5"></path></svg>
+                    </span>
+                    <strong>Encrypted Session</strong>
+                    <small>End-to-end encryption keeps your data safe</small>
+                </div>
+                <div class="security-feature">
+                    <span class="feature-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M4 7h16M12 7v11M7 18h10"></path><path d="M4 7 2.5 16h6L7 7M20 7l-1.5 9h6L20 7Z"></path></svg>
+                    </span>
+                    <strong>Fair Assessment</strong>
+                    <small>Equal opportunity, trusted results</small>
+                </div>
+            </div>
+        </section>
+
+        <section class="login-panel">
+            <div class="protected-badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 6v6c0 5-3.2 7.9-8 9-4.8-1.1-8-4-8-9V6l8-3Z"></path><path d="m8.5 12 2.2 2.2 4.8-4.8"></path></svg>
+                Protected by secure authentication
+            </div>
+
+            <div class="glass-panel auth-card">
+                <div class="login-card-heading">
+                    <h2>Welcome Back</h2>
+                    <p>Sign in to continue your examination</p>
+                </div>
+
+                <form id="login-form">
+                    <div class="form-group login-field">
+                        <label class="form-label" for="email" id="email-label">Email or Student ID</label>
+                        <div class="input-with-icon">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="m4 7 8 6 8-6"></path></svg>
+                            <input class="form-control" type="email" id="email" placeholder="you@institution.edu" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="student-details-group" style="display: none; margin-bottom: 1rem;">
+                        <div style="margin-bottom: 1rem;">
+                            <label class="form-label" for="username">Candidate Name</label>
+                            <input class="form-control" type="text" id="username" placeholder="John Doe">
+                        </div>
+                        <div>
+                            <label class="form-label" for="student-id">User ID (Roll/Emp No)</label>
+                            <input class="form-control" type="text" id="student-id" placeholder="CS2026101">
+                        </div>
+                    </div>
+
+                    <div class="form-group login-field" id="password-group" style="display: block;">
+                        <label class="form-label" for="password">Password</label>
+                        <div class="input-with-icon password-input-wrap">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg>
+                            <input class="form-control" type="password" id="password" placeholder="Enter your password" required>
+                            <button class="password-toggle" id="password-toggle" type="button" aria-label="Show password" title="Show password">
+                                <svg class="eye-visible" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path><circle cx="12" cy="12" r="2.5"></circle></svg>
+                                <svg class="eye-hidden" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 6.2A10.6 10.6 0 0 1 12 6c6 0 9.5 6 9.5 6a17 17 0 0 1-3.1 3.8M6.2 6.8C3.9 8.6 2.5 12 2.5 12s3.5 6 9.5 6a9.8 9.8 0 0 0 3.4-.6"></path><path d="M9.8 9.8a3 3 0 0 0 4.4 4.4"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="login-options">
+                        <label class="remember-option"><input type="checkbox"><span>Remember me</span></label>
+                        <a href="#" class="forgot-link">Forgot password?</a>
+                    </div>
+
+                    <button class="btn btn-primary" id="btn-submit" type="submit">Sign In as Admin</button>
+                </form>
+
+                <p class="support-text">Need help? <a href="#">Contact Exam Support</a></p>
+            </div>
+        </section>
+    </main>
+>>>>>>> Stashed changes
 
     <script src="js/app.js"></script>
     <script>
@@ -172,6 +274,18 @@
 
         // Initialize the login screen view state based on redirect URL
         initializeView();
+    </script>
+    <script>
+        const passwordToggle = document.getElementById("password-toggle");
+        if (passwordToggle) {
+            passwordToggle.addEventListener("click", function() {
+                const isHidden = passwordInput.type === "password";
+                passwordInput.type = isHidden ? "text" : "password";
+                passwordToggle.setAttribute("aria-label", isHidden ? "Hide password" : "Show password");
+                passwordToggle.setAttribute("title", isHidden ? "Hide password" : "Show password");
+                passwordToggle.classList.toggle("is-visible", isHidden);
+            });
+        }
     </script>
 </body>
 </html>
