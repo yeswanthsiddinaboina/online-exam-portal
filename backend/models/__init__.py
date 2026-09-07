@@ -14,3 +14,4 @@ from .evidence import EvidenceRecord
 from .audit import AuditLog
 from .result import Result
 from .access import ExamAccess
+from .password_reset import PasswordResetRequest

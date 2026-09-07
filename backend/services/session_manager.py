@@ -26,7 +26,7 @@ class SessionManager:
     @classmethod
     def start_session(cls, student_id, exam_id):
         """Starts a new exam session for a student."""
-        exam = Exam.query.get(exam_id)
+        exam = Exam.query.filter_by(id=exam_id, is_deleted=False).first()
         if not exam or not exam.is_active:
             raise ValueError("Exam not found or inactive.")
 
@@ -35,11 +35,28 @@ class SessionManager:
         if existing:
             raise PermissionError("EXAM_ALREADY_ATTEMPTED")
 
+        # Enforce course match
+        from backend.models import ExamAccess, User
+        student = User.query.get(student_id)
+        if student:
+            student_course = (student.course or "").strip()
+            exam_course = (exam.course or "Python & Java").strip()
+            if student_course and exam_course != "Python & Java" and student_course.lower() != exam_course.lower():
+                raise PermissionError("EXAM_COURSE_MISMATCH")
+
         # Enforce exam access approval rule
-        from backend.models import ExamAccess
         access = ExamAccess.query.filter_by(student_id=student_id, exam_id=exam_id).first()
         if not access or not access.approved:
-            raise PermissionError("EXAM_ACCESS_RESTRICTED")
+            if student and student.registration_status == "APPROVED":
+                if not access:
+                    access = ExamAccess(student_id=student_id, exam_id=exam_id, approved=True)
+                    db.session.add(access)
+                    db.session.commit()
+                else:
+                    access.approved = True
+                    db.session.commit()
+            else:
+                raise PermissionError("EXAM_ACCESS_RESTRICTED")
 
         # Enforce single active session rule
         if cls.has_any_active_attempt(student_id):

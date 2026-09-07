@@ -10,6 +10,8 @@ class Exam(db.Model):
     duration_minutes = db.Column(db.Integer, nullable=False, default=60)
     created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     is_active = db.Column(db.Boolean, default=True)
+    is_deleted = db.Column(db.Boolean, default=False, nullable=False)
+    course = db.Column(db.String(50), nullable=True, default="Python & Java") # Options: "Python", "Java", "Python & Java"
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     
     # Relationships
@@ -25,6 +27,7 @@ class Exam(db.Model):
             "duration_minutes": self.duration_minutes,
             "created_by": self.created_by,
             "is_active": self.is_active,
+            "course": self.course or "Python & Java",
             "question_count": len(self.questions),
             "created_at": self.created_at.isoformat() if self.created_at else None
         }

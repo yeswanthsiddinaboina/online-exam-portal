@@ -1,12 +1,19 @@
 const API_BASE = "http://127.0.0.1:5001/api";
 
-// Session helper variables
 const isAdminPage = window.location.pathname.includes("/admin/");
 const tokenKey = isAdminPage ? "admin_token" : "token";
 const userKey = isAdminPage ? "admin_user" : "user";
 
+console.log("APP_DEBUG: path=" + window.location.pathname + " | port=" + window.location.port + " | isAdminPage=" + isAdminPage + " | tokenKey=" + tokenKey);
+
 let currentToken = localStorage.getItem(tokenKey) || null;
-let currentUser = JSON.parse(localStorage.getItem(userKey)) || null;
+let currentUser = null;
+try {
+    const rawUser = localStorage.getItem(userKey);
+    currentUser = (rawUser && rawUser !== "undefined") ? JSON.parse(rawUser) : null;
+} catch (e) {
+    currentUser = null;
+}
 let currentAttemptId = localStorage.getItem("attempt_id") || null;
 let currentSessionToken = localStorage.getItem("session_token") || null;
 let heartbeatTimer = null;
@@ -25,18 +32,37 @@ function getHeaders(contentType = "application/json") {
     return headers;
 }
 
+// Cross-port routing constants
+const ADMIN_PORT = "5001";
+const STUDENT_PORT = "5001";
+
+function getRoleRedirectUrl(role, path) {
+    const loc = window.location;
+    const targetPort = role === "admin" ? ADMIN_PORT : STUDENT_PORT;
+    return `${loc.protocol}//${loc.hostname}:${targetPort}${path}`;
+}
+
+function redirectToLogin(dest = "") {
+    if (isAdminPage) {
+        const adminLogin = window.location.pathname.includes("/admin/") ? "login.html" : "/admin/login.html";
+        window.location.href = `${adminLogin}?redirect=${dest}`;
+    } else {
+        window.location.href = `/login.html?role=student&redirect=${dest}`;
+    }
+}
+
 // Redirects helper
 function checkAuth(requiredRole = null) {
     if (!currentToken) {
         const dest = encodeURIComponent(window.location.pathname + window.location.search);
-        window.location.href = `/login.html?redirect=${dest}`;
+        redirectToLogin(dest);
         return;
     }
     if (requiredRole && currentUser && currentUser.role !== requiredRole) {
         if (currentUser.role === "admin") {
-            window.location.href = "/admin/dashboard.html";
+            window.location.href = getRoleRedirectUrl("admin", "/admin/dashboard.html");
         } else {
-            window.location.href = "/dashboard.html";
+            window.location.href = getRoleRedirectUrl("student", "/dashboard.html");
         }
     }
 }
@@ -54,7 +80,7 @@ const API = {
                 localStorage.removeItem(tokenKey);
                 localStorage.removeItem(userKey);
                 const dest = encodeURIComponent(window.location.pathname + window.location.search);
-                window.location.href = `/login.html?redirect=${dest}`;
+                redirectToLogin(dest);
                 return { success: false, error_code: "UNAUTHORIZED", message: "Session expired." };
             }
             return await res.json();
@@ -76,7 +102,7 @@ const API = {
                 localStorage.removeItem(tokenKey);
                 localStorage.removeItem(userKey);
                 const dest = encodeURIComponent(window.location.pathname + window.location.search);
-                window.location.href = `/login.html?redirect=${dest}`;
+                redirectToLogin(dest);
                 return { success: false, error_code: "UNAUTHORIZED", message: "Session expired." };
             }
             return await res.json();
@@ -96,7 +122,7 @@ const API = {
                 localStorage.removeItem(tokenKey);
                 localStorage.removeItem(userKey);
                 const dest = encodeURIComponent(window.location.pathname + window.location.search);
-                window.location.href = `/login.html?redirect=${dest}`;
+                redirectToLogin(dest);
                 return { success: false, error_code: "UNAUTHORIZED", message: "Session expired." };
             }
             return await res.json();
@@ -117,7 +143,7 @@ const API = {
                 localStorage.removeItem(tokenKey);
                 localStorage.removeItem(userKey);
                 const dest = encodeURIComponent(window.location.pathname + window.location.search);
-                window.location.href = `/login.html?redirect=${dest}`;
+                redirectToLogin(dest);
                 return { success: false, error_code: "UNAUTHORIZED", message: "Session expired." };
             }
             return await res.json();
@@ -130,29 +156,61 @@ const API = {
 
 // --- AUTHENTICATION ---
 async function handleLogin(email, password, username = "", student_id = "") {
-    const res = await API.post("/auth/login", { email, password, username, student_id });
-    if (res.success) {
-        const targetTokenKey = res.role === "admin" ? "admin_token" : "token";
-        const targetUserKey = res.role === "admin" ? "admin_user" : "user";
-        localStorage.setItem(targetTokenKey, res.token);
-        localStorage.setItem(targetUserKey, JSON.stringify(res.user));
-        currentToken = res.token;
-        currentUser = res.user;
-        
-        const urlParams = new URLSearchParams(window.location.search);
-        const redirectUrl = urlParams.get("redirect");
-        
-        if (redirectUrl) {
-            window.location.href = decodeURIComponent(redirectUrl);
-        } else {
-            if (res.role === "admin") {
-                window.location.href = "/admin/dashboard.html";
+    const submitBtn = document.getElementById("btn-submit");
+    const originalText = submitBtn ? submitBtn.innerText : "Enter Examination";
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerText = "Signing in...";
+    }
+
+    try {
+        const res = await API.post("/auth/login", { 
+            identifier: email, 
+            email: email, 
+            password: password, 
+            username: username, 
+            student_id: student_id 
+        });
+
+        if (res.success) {
+            const targetTokenKey = res.role === "admin" ? "admin_token" : "token";
+            const targetUserKey = res.role === "admin" ? "admin_user" : "user";
+            localStorage.setItem(targetTokenKey, res.token);
+            localStorage.setItem(targetUserKey, JSON.stringify(res.user));
+            currentToken = res.token;
+            currentUser = res.user;
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const redirectUrl = urlParams.get("redirect");
+            
+            if (redirectUrl) {
+                const decoded = decodeURIComponent(redirectUrl);
+                if (decoded.startsWith("/")) {
+                    window.location.href = getRoleRedirectUrl(res.role, decoded);
+                } else {
+                    window.location.href = decoded;
+                }
             } else {
-                window.location.href = "/dashboard.html";
+                if (res.role === "admin") {
+                    window.location.href = getRoleRedirectUrl("admin", "/admin/dashboard.html");
+                } else {
+                    window.location.href = getRoleRedirectUrl("student", "/dashboard.html");
+                }
+            }
+        } else {
+            alert(res.message || "Login failed");
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerText = originalText;
             }
         }
-    } else {
-        alert(res.message || "Login failed");
+    } catch (err) {
+        console.error("Login error:", err);
+        alert("An error occurred while communicating with the login server.");
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerText = originalText;
+        }
     }
 }
 
@@ -189,7 +247,7 @@ function handleLogout() {
     API.post("/auth/logout", {}).catch(e => console.warn("Async logout notify error:", e));
     
     if (pageIsAdmin) {
-        window.location.href = "/login.html";
+        window.location.href = "/admin/login.html";
     } else {
         window.location.href = "/login.html?role=student";
     }
@@ -222,6 +280,66 @@ class SystemPreCheck {
     }
 }
 
+// --- BIOMETRIC FACIAL LANDMARK COMPARATOR ---
+class FaceBiometrics {
+    // Key landmark indices for structural face shape:
+    // Eye corners, eyebrows, nose bridge/tip, lips, chin, cheek contours
+    static KEY_LANDMARK_INDICES = [
+        33, 133, 159, 145,       // Left eye corners and eyelids
+        263, 362, 386, 374,      // Right eye corners and eyelids
+        70, 63, 105, 66, 107,    // Left eyebrow
+        300, 293, 334, 296, 336, // Right eyebrow
+        1, 2, 4, 5, 6, 168, 197, // Nose bridge and tip
+        61, 291, 0, 17, 13, 14,  // Lips and mouth
+        152, 148, 176,           // Chin
+        234, 454, 127, 356       // Cheeks and jawline
+    ];
+
+    static normalize(landmarks) {
+        if (!landmarks || landmarks.length < 264) return null;
+        
+        const leftEye = landmarks[33];
+        const rightEye = landmarks[263];
+        const nose = landmarks[4];
+        if (!leftEye || !rightEye || !nose) return null;
+        
+        const cx = nose.x;
+        const cy = nose.y;
+        const cz = nose.z || 0;
+        
+        const dx = rightEye.x - leftEye.x;
+        const dy = rightEye.y - leftEye.y;
+        const dz = (rightEye.z || 0) - (leftEye.z || 0);
+        const eyeDist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        
+        if (eyeDist < 0.001) return null;
+        
+        return this.KEY_LANDMARK_INDICES.map(idx => {
+            const pt = landmarks[idx] || landmarks[0];
+            return {
+                x: (pt.x - cx) / eyeDist,
+                y: (pt.y - cy) / eyeDist,
+                z: ((pt.z || 0) - cz) / eyeDist
+            };
+        });
+    }
+
+    static compare(profileA, profileB) {
+        if (!profileA || !profileB || profileA.length === 0 || profileA.length !== profileB.length) {
+            return 1.0;
+        }
+        
+        let total = 0;
+        for (let i = 0; i < profileA.length; i++) {
+            const dx = profileA[i].x - profileB[i].x;
+            const dy = profileA[i].y - profileB[i].y;
+            const dz = profileA[i].z - profileB[i].z;
+            total += Math.sqrt(dx * dx + dy * dy + dz * dz);
+        }
+        return total / profileA.length;
+    }
+}
+
 // --- BROWSER LOCKDOWN ENFORCER ---
 class SandboxEnforcer {
     static init(attemptId, token, onWarning, onTerminate) {
@@ -230,42 +348,55 @@ class SandboxEnforcer {
         this.onWarning = onWarning;
         this.onTerminate = onTerminate;
         this.lastTabSwitchTime = 0;
+        this.active = true;
         
-        // Bind visibility API change
-        document.addEventListener("visibilitychange", this.handleVisibilityChange.bind(this));
+        // Retain bound method references so removeEventListener cleanly unregisters them
+        this._boundVisibilityChange = this.handleVisibilityChange.bind(this);
+        this._boundWindowBlur = this.handleWindowBlur.bind(this);
+        this._boundFullscreenChange = this.handleFullscreenChange.bind(this);
+        this._boundKeydown = this.blockShortcuts.bind(this);
+        this._boundContextMenu = this.blockContextMenu.bind(this);
         
-        // Bind blur / focus
-        window.addEventListener("blur", this.handleWindowBlur.bind(this));
-        
-        // Bind Fullscreen state listener
-        document.addEventListener("fullscreenchange", this.handleFullscreenChange.bind(this));
-        
-        // Block browser shortcut commands
-        window.addEventListener("keydown", this.blockShortcuts.bind(this));
-        
-        // Block right-clicks context menu
-        document.addEventListener("contextmenu", this.blockContextMenu.bind(this));
+        document.addEventListener("visibilitychange", this._boundVisibilityChange);
+        window.addEventListener("blur", this._boundWindowBlur);
+        document.addEventListener("fullscreenchange", this._boundFullscreenChange);
+        window.addEventListener("keydown", this._boundKeydown);
+        document.addEventListener("contextmenu", this._boundContextMenu);
+    }
+
+    static pause() {
+        this.active = false;
+    }
+
+    static resume() {
+        this.active = true;
     }
 
     static destroy() {
-        document.removeEventListener("visibilitychange", this.handleVisibilityChange);
-        window.removeEventListener("blur", this.handleWindowBlur);
-        document.removeEventListener("fullscreenchange", this.handleFullscreenChange);
-        window.removeEventListener("keydown", this.blockShortcuts);
-        document.removeEventListener("contextmenu", this.blockContextMenu);
+        this.active = false;
+        if (this._boundVisibilityChange) {
+            document.removeEventListener("visibilitychange", this._boundVisibilityChange);
+            window.removeEventListener("blur", this._boundWindowBlur);
+            document.removeEventListener("fullscreenchange", this._boundFullscreenChange);
+            window.removeEventListener("keydown", this._boundKeydown);
+            document.removeEventListener("contextmenu", this._boundContextMenu);
+        }
     }
 
     static handleVisibilityChange() {
+        if (!this.active) return;
         if (document.visibilityState === "hidden") {
             this.reportTabSwitch();
         }
     }
 
     static handleWindowBlur() {
+        if (!this.active) return;
         this.reportTabSwitch();
     }
 
     static reportTabSwitch() {
+        if (!this.active) return;
         const now = Date.now();
         if (now - this.lastTabSwitchTime > 2000) { // 2 seconds debounce
             this.lastTabSwitchTime = now;
@@ -274,12 +405,14 @@ class SandboxEnforcer {
     }
 
     static handleFullscreenChange() {
+        if (!this.active) return;
         if (!document.fullscreenElement) {
             this.reportInfrac("FULLSCREEN_EXIT");
         }
     }
 
     static blockShortcuts(e) {
+        if (!this.active) return;
         // Block Escape, F5, Ctrl+R, F12, Alt+Tab, print shortcuts
         const blockedKeys = ["F5", "F12"];
         if (blockedKeys.includes(e.key) || (e.ctrlKey && ["r", "c", "v", "p"].includes(e.key.toLowerCase()))) {
@@ -290,11 +423,13 @@ class SandboxEnforcer {
     }
 
     static blockContextMenu(e) {
+        if (!this.active) return;
         e.preventDefault();
         return false;
     }
 
     static async reportInfrac(eventType) {
+        if (!this.active) return;
         const res = await API.post("/proctor/events", {
             attempt_id: this.attemptId,
             session_token: this.token,
@@ -326,9 +461,18 @@ class AIProctorEngine {
         this.faceMesh = null;
         this.cocoModel = null;
         this.latestPredictions = [];
+        this.isProcessing = false;
+        this.lastPhoneAlertTime = 0;
+        this.lastMultiPersonAlertTime = 0;
+
+        // Dedicated downscaled canvas for 10x faster MobileNet object & person detection
+        this.detectCanvas = document.createElement("canvas");
+        this.detectCanvas.width = 320;
+        this.detectCanvas.height = 240;
+        this.detectCtx = this.detectCanvas.getContext("2d", { willReadFrequently: true });
         
-        // Frame sampling configs (run inference at 2 FPS to prevent processor load)
-        this.sampleInterval = 500; 
+        // High-frequency frame sampling: Ultra-responsive 180ms interval (~5-6 FPS)
+        this.sampleInterval = 180; 
         
         // Cooldown maps to prevent multiple rapid api calls in JS
         this.lastEventTimes = {};
@@ -344,23 +488,26 @@ class AIProctorEngine {
 
     static async start() {
         this.running = true;
-        this.showDebug("Starting proctoring session...");
+        this.showDebug("Starting high-speed secure proctoring session...");
         
         if (typeof tf !== "undefined") {
-            this.showDebug("TensorFlow.js loaded. Backend: " + tf.getBackend());
-        } else {
-            this.showDebug("TensorFlow.js NOT loaded in script context!");
+            try {
+                await tf.ready();
+                this.showDebug("TensorFlow.js ready. Engine Backend: " + tf.getBackend());
+            } catch (e) {
+                this.showDebug("TensorFlow backend note: " + e.message);
+            }
         }
 
-        // Load COCO-SSD object detection model for mobile phones if available
+        // Load COCO-SSD object detection model with fast mobile weights for real-time mobile & partial person detection
         if (typeof cocoSsd !== "undefined") {
-            this.showDebug("Loading COCO-SSD model...");
-            cocoSsd.load().then(model => {
+            this.showDebug("Loading COCO-SSD high-speed detector...");
+            cocoSsd.load({ base: 'lite_mobilenet_v2' }).catch(() => cocoSsd.load()).then(model => {
                 this.cocoModel = model;
-                this.showDebug("COCO-SSD model loaded successfully.");
+                this.showDebug("📱 High-speed detector active (Mobile Phone & Partial Person AI ready).");
                 const statusEl = document.getElementById("detection-model-status");
                 if (statusEl) {
-                    statusEl.innerText = "📱 Detector: Ready";
+                    statusEl.innerText = "📱 Detector: Active (High Speed)";
                     statusEl.style.color = "#10b981";
                 }
             }).catch(err => {
@@ -380,18 +527,31 @@ class AIProctorEngine {
             }
         }
         
-        // Load MediaPipe FaceMesh via script context if available
+        // Load verified candidate biometric profile for continuous exam face matching
+        const storedProfile = localStorage.getItem("verified_face_profile");
+        if (storedProfile) {
+            try {
+                this.verifiedProfile = JSON.parse(storedProfile);
+                this.showDebug("Verified candidate profile loaded. Continuous identity matching active.");
+            } catch (e) {
+                this.verifiedProfile = null;
+            }
+        } else {
+            this.showDebug("⚠️ No verified face profile found!");
+        }
+
+        // Load MediaPipe FaceMesh with enhanced sensitivity for partial and turned faces
         if (typeof FaceMesh !== "undefined") {
-            this.showDebug("Loading MediaPipe FaceMesh...");
+            this.showDebug("Loading MediaPipe FaceMesh (Enhanced Sensitivity)...");
             this.faceMesh = new FaceMesh({
                 locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
             });
 
             this.faceMesh.setOptions({
-                maxNumFaces: 2,
-                refineLandmarks: true,
-                minDetectionConfidence: 0.5,
-                minTrackingConfidence: 0.5
+                maxNumFaces: 6, // Detect up to 6 faces (groups, passersby, partial faces)
+                refineLandmarks: false, // Save massive CPU by skipping 3D iris
+                minDetectionConfidence: 0.30, // Highly sensitive to partial / turned faces
+                minTrackingConfidence: 0.30
             });
 
             this.faceMesh.onResults(this.onResults.bind(this));
@@ -409,36 +569,107 @@ class AIProctorEngine {
     static async inferenceLoop() {
         if (!this.running) return;
         
-        try {
-            // Run MediaPipe FaceMesh
-            await this.faceMesh.send({ image: this.video });
-            
-            // Run COCO-SSD Object Detection for mobile phones
-            if (this.cocoModel) {
-                const predictions = await this.cocoModel.detect(this.video);
+        if (this.video && this.video.readyState >= 2 && !this.isProcessing) {
+            this.isProcessing = true;
+            try {
+                // 1. Send frame to MediaPipe FaceMesh
+                const facePromise = this.faceMesh ? this.faceMesh.send({ image: this.video }) : Promise.resolve();
                 
-                // Show raw prediction classes in logs so candidate sees what model is seeing
-                const visiblePredictions = predictions.filter(p => p.score >= 0.25);
-                this.latestPredictions = visiblePredictions;
-                
-                if (visiblePredictions.length > 0) {
-                    const detectedClasses = visiblePredictions.map(p => `${p.class} (${(p.score*100).toFixed(0)}%)`).join(", ");
-                    this.showDebug("Seen: " + detectedClasses);
+                // 2. High-speed COCO-SSD Detection on downscaled 320x240 offscreen canvas
+                let objectPromise = Promise.resolve();
+                if (this.cocoModel && this.detectCtx) {
+                    this.detectCtx.drawImage(this.video, 0, 0, 320, 240);
+                    objectPromise = this.cocoModel.detect(this.detectCanvas, 10, 0.20);
                 }
+
+                const [, rawPredictions] = await Promise.all([facePromise, objectPromise]);
                 
-                const illegalClasses = ["cell phone", "laptop", "remote"];
-                const violation = visiblePredictions.find(p => illegalClasses.includes(p.class) && p.score >= 0.35); // Lowered threshold to 0.35
-                if (violation) {
-                    this.showDebug(`⚠️ Malpractice alert: ${violation.class} detected (${(violation.score*100).toFixed(0)}%)`);
-                    this.triggerEvent("PHONE_DETECTED", violation.score);
+                if (rawPredictions && rawPredictions.length > 0) {
+                    // Rescale bounding boxes back to display canvas dimensions
+                    const scaleX = (this.canvas.width || 400) / 320;
+                    const scaleY = (this.canvas.height || 300) / 240;
+                    
+                    this.latestPredictions = rawPredictions.map(p => ({
+                        class: p.class.toLowerCase(),
+                        score: p.score,
+                        bbox: [
+                            p.bbox[0] * scaleX,
+                            p.bbox[1] * scaleY,
+                            p.bbox[2] * scaleX,
+                            p.bbox[3] * scaleY
+                        ]
+                    }));
+                } else if (rawPredictions) {
+                    this.latestPredictions = [];
                 }
+
+                // Process high-priority object checks immediately for 0ms delay:
+                this.evaluateLiveDetections();
+
+            } catch (e) {
+                console.warn("AI proctoring frame error:", e);
+            } finally {
+                this.isProcessing = false;
             }
-        } catch (e) {
-            this.showDebug("Inference error: " + e.message);
-            console.error("MediaPipe/COCO-SSD Inference error:", e);
         }
         
         setTimeout(() => this.inferenceLoop(), this.sampleInterval);
+    }
+
+    static evaluateLiveDetections() {
+        const predictions = this.latestPredictions || [];
+        
+        // A. MOBILE PHONE & PROHIBITED DEVICE DETECTION (Sensitive down to 0.25 confidence)
+        const prohibitedClasses = [
+            "cell phone", "phone", "mobile phone", "telephone",
+            "remote", "laptop", "tablet", "book"
+        ];
+        
+        const phoneViolation = predictions.find(p => 
+            prohibitedClasses.includes(p.class) && p.score >= 0.25
+        );
+
+        // Instant hardware badge update in proctoring panel
+        const phoneStatusEl = document.getElementById("dev-phone-status");
+        if (phoneStatusEl) {
+            if (phoneViolation) {
+                phoneStatusEl.innerHTML = `
+                    <span style="font-size: 1rem; color: #ef4444;">📱</span>
+                    <div>
+                        <span style="font-size: 0.68rem; color: #ef4444; display: block; line-height: 1.1; font-weight: 700;">PROHIBITED</span>
+                        <strong style="color: #ef4444;">Phone Detected!</strong>
+                    </div>
+                `;
+            } else {
+                phoneStatusEl.innerHTML = `
+                    <span style="font-size: 1rem;">📱</span>
+                    <div>
+                        <span style="font-size: 0.68rem; color: #6B7280; display: block; line-height: 1.1;">Phone</span>
+                        <strong style="color: #111827;">No phone detected</strong>
+                    </div>
+                `;
+            }
+        }
+
+        if (phoneViolation) {
+            const now = Date.now();
+            if (now - this.lastPhoneAlertTime > 3500) { // Rapid 3.5-second trigger
+                this.lastPhoneAlertTime = now;
+                this.showDebug(`🚨 Mobile phone detected (${(phoneViolation.score * 100).toFixed(0)}%)!`);
+                this.triggerEvent("PHONE_DETECTED", Math.max(phoneViolation.score, 0.6));
+            }
+        }
+
+        // B. MULTIPLE PERSON / PARTIAL PERSON DETECTION VIA COCO-SSD
+        const personDetections = predictions.filter(p => p.class === "person" && p.score >= 0.25);
+        if (personDetections.length > 1) {
+            const now = Date.now();
+            if (now - this.lastMultiPersonAlertTime > 3500) {
+                this.lastMultiPersonAlertTime = now;
+                this.showDebug(`⚠️ Second person / partial presence detected in frame (${personDetections.length} persons seen)!`);
+                this.triggerEvent("MULTIPLE_PERSON", 0.95);
+            }
+        }
     }
 
     static onResults(results) {
@@ -451,40 +682,143 @@ class AIProctorEngine {
         // Clear overlay
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
-        // Draw object detection bounding boxes first so they render even if face is absent
-        if (this.latestPredictions && this.latestPredictions.length > 0) {
-            this.latestPredictions.forEach(pred => {
-                const [x, y, width, height] = pred.bbox;
-                const isIllegal = ["cell phone", "laptop", "remote"].includes(pred.class);
-                
-                this.ctx.strokeStyle = isIllegal ? "#ef4444" : "#10b981";
-                this.ctx.lineWidth = 2;
-                this.ctx.strokeRect(x, y, width, height);
-                
-                this.ctx.fillStyle = isIllegal ? "#ef4444" : "#10b981";
-                this.ctx.font = "12px sans-serif";
-                const label = `${pred.class} (${(pred.score * 100).toFixed(0)}%)`;
-                this.ctx.fillText(label, x, y > 15 ? y - 5 : y + 15);
-            });
+        const faces = results.multiFaceLandmarks || [];
+        const predictions = this.latestPredictions || [];
+        
+        // Identify all person bounding boxes
+        const personDetections = predictions.filter(p => p.class === "person" && p.score >= 0.25);
+        
+        // Multi-Person flag check
+        let isMultiPerson = false;
+        let multiPersonReason = "";
+
+        if (faces.length > 1) {
+            isMultiPerson = true;
+            multiPersonReason = `Multiple faces detected (${faces.length})`;
+        } else if (personDetections.length > 1) {
+            isMultiPerson = true;
+            multiPersonReason = `Multiple persons / partial body detected (${personDetections.length})`;
+        } else if (faces.length === 1 && personDetections.length === 1) {
+            // Check if the single detected person box is completely separate from candidate's face
+            // (e.g. someone standing behind or to the side while candidate's face is seen)
+            const face = faces[0];
+            const faceCenterX = ((face[4].x + face[152].x) / 2) * this.canvas.width;
+            const faceCenterY = ((face[4].y + face[152].y) / 2) * this.canvas.height;
+            const [px, py, pw, ph] = personDetections[0].bbox;
+            
+            const faceInsidePerson = (
+                faceCenterX >= px - 40 &&
+                faceCenterX <= (px + pw + 40) &&
+                faceCenterY >= py - 40 &&
+                faceCenterY <= (py + ph + 40)
+            );
+            
+            if (!faceInsidePerson && personDetections[0].score >= 0.35) {
+                isMultiPerson = true;
+                multiPersonReason = "Unauthorized second person near candidate";
+            }
         }
 
-        const faces = results.multiFaceLandmarks || [];
-        
+        // Update Top Face Verified Badge UI
+        const faceStatusPill = document.getElementById("face-verified-pill");
+        const faceStatusText = document.getElementById("face-status-text");
+        if (faceStatusPill && faceStatusText) {
+            if (isMultiPerson) {
+                faceStatusPill.style.background = "#FEE2E2";
+                faceStatusPill.style.borderColor = "#EF4444";
+                faceStatusPill.style.color = "#DC2626";
+                faceStatusText.innerText = "⚠️ Multiple / Partial Person Detected!";
+            } else if (faces.length === 0) {
+                faceStatusPill.style.background = "#FEF3C7";
+                faceStatusPill.style.borderColor = "#F59E0B";
+                faceStatusPill.style.color = "#B45309";
+                faceStatusText.innerText = "⚠️ Face Not Detected";
+            } else {
+                faceStatusPill.style.background = "#ECFDF5";
+                faceStatusPill.style.borderColor = "rgba(16, 185, 129, 0.25)";
+                faceStatusPill.style.color = "#047857";
+                faceStatusText.innerText = "Face verified";
+            }
+        }
+
+        // Draw Object & Person Bounding Boxes with distinct high-visibility styles
+        predictions.forEach(pred => {
+            const [x, y, width, height] = pred.bbox;
+            const isProhibitedDevice = ["cell phone", "phone", "mobile phone", "telephone", "remote", "laptop", "tablet", "book"].includes(pred.class);
+            const isPerson = pred.class === "person";
+            
+            if (isProhibitedDevice) {
+                // Flashy red box with warning label for mobile devices
+                this.ctx.strokeStyle = "#EF4444";
+                this.ctx.lineWidth = 3;
+                this.ctx.strokeRect(x, y, width, height);
+                
+                this.ctx.fillStyle = "rgba(239, 68, 68, 0.85)";
+                this.ctx.fillRect(x, Math.max(0, y - 22), Math.max(140, width), 22);
+                
+                this.ctx.fillStyle = "#FFFFFF";
+                this.ctx.font = "bold 11px sans-serif";
+                this.ctx.fillText(`🚨 ${pred.class.toUpperCase()} ${(pred.score * 100).toFixed(0)}%`, x + 6, Math.max(15, y - 6));
+            } else if (isPerson && isMultiPerson) {
+                // Red box for second person / unauthorized presence
+                this.ctx.strokeStyle = "#DC2626";
+                this.ctx.lineWidth = 2.5;
+                this.ctx.setLineDash([6, 4]);
+                this.ctx.strokeRect(x, y, width, height);
+                this.ctx.setLineDash([]);
+                
+                this.ctx.fillStyle = "rgba(220, 38, 38, 0.85)";
+                this.ctx.fillRect(x, Math.max(0, y - 20), 160, 20);
+                this.ctx.fillStyle = "#FFFFFF";
+                this.ctx.font = "bold 11px sans-serif";
+                this.ctx.fillText("⚠️ PERSON / PARTIAL PRESENCE", x + 4, Math.max(14, y - 5));
+            }
+        });
+
         // 1. Absence check
         if (faces.length === 0) {
+            this.consecutiveMismatches = 0;
             this.triggerEvent("FACE_ABSENT", 1.0);
             return;
         }
 
-        // 2. Multiple person check
-        if (faces.length > 1) {
-            this.triggerEvent("MULTIPLE_PERSON", 1.0);
+        // 2. Multiple person check (Face or Body presence)
+        if (isMultiPerson) {
+            this.consecutiveMismatches = 0;
+            const now = Date.now();
+            if (now - this.lastMultiPersonAlertTime > 3500) {
+                this.lastMultiPersonAlertTime = now;
+                this.triggerEvent("MULTIPLE_PERSON", 0.95);
+                this.showDebug(`⚠️ ${multiPersonReason}`);
+            }
             return;
         }
 
-        // 3. Head pose / Gaze tracking estimation
-        // Landmarks: 4 (Nose Tip), 33 (Left Eye boundary), 263 (Right Eye boundary), 152 (Chin), 10 (Forehead)
+        // 3. Face Biometric Identity Verification (Comparing against Step 1 & 2 verified candidate)
         const landmarks = faces[0];
+        if (this.verifiedProfile) {
+            const currentProfile = FaceBiometrics.normalize(landmarks);
+            if (currentProfile) {
+                const distance = FaceBiometrics.compare(this.verifiedProfile, currentProfile);
+                
+                if (distance >= 0.24) {
+                    this.consecutiveMismatches = (this.consecutiveMismatches || 0) + 1;
+                    this.showDebug(`⚠️ FACE MISMATCH: Distance=${distance.toFixed(3)} [${this.consecutiveMismatches}/2]`);
+                    
+                    if (this.consecutiveMismatches >= 2) {
+                        this.triggerEvent("FACE_MISMATCH", 1.0);
+                        this.ctx.fillStyle = "rgba(239, 68, 68, 0.9)";
+                        this.ctx.font = "bold 13px sans-serif";
+                        this.ctx.fillText("⚠️ IDENTITY MISMATCH", 10, 25);
+                    }
+                } else {
+                    this.consecutiveMismatches = 0;
+                }
+            }
+        }
+
+        // 4. Head pose / Gaze tracking estimation
+        // Landmarks: 4 (Nose Tip), 33 (Left Eye boundary), 263 (Right Eye boundary), 152 (Chin), 10 (Forehead)
         const nose = landmarks[4];
         const leftEye = landmarks[33];
         const rightEye = landmarks[263];
@@ -494,10 +828,8 @@ class AIProctorEngine {
         if (eyeDistance > 0) {
             const noseRelX = (nose.x - leftEye.x) / eyeDistance;
             
-            // Looking too far right (ratio < 0.35) or too far left (ratio > 0.65)
-            if (noseRelX < 0.35) {
-                this.triggerEvent("HEAD_TURN", 0.85);
-            } else if (noseRelX > 0.65) {
+            // Looking too far right (ratio < 0.33) or too far left (ratio > 0.67)
+            if (noseRelX < 0.33 || noseRelX > 0.67) {
                 this.triggerEvent("HEAD_TURN", 0.85);
             }
         }
@@ -507,7 +839,7 @@ class AIProctorEngine {
     }
 
     static drawFaceMesh(landmarks) {
-        this.ctx.fillStyle = "rgba(99, 102, 241, 0.4)";
+        this.ctx.fillStyle = "rgba(16, 185, 129, 0.45)";
         landmarks.forEach(pt => {
             const x = pt.x * this.canvas.width;
             const y = pt.y * this.canvas.height;
@@ -518,9 +850,14 @@ class AIProctorEngine {
     }
 
     static async triggerEvent(eventType, confidence) {
+        if (!this.running) return;
         const now = Date.now();
-        // Cooldown in client to prevent spam (cooldown matches 10s server rule)
-        if (this.lastEventTimes[eventType] && (now - this.lastEventTimes[eventType]) < 10000) {
+        
+        // Rapid response cooldown:
+        // Mobile phone & multi-person: 3.5 seconds cooldown
+        // Head turn & absence: 4.5 seconds cooldown
+        const cooldownMs = (eventType === "PHONE_DETECTED" || eventType === "MULTIPLE_PERSON") ? 3500 : 4500;
+        if (this.lastEventTimes[eventType] && (now - this.lastEventTimes[eventType]) < cooldownMs) {
             return;
         }
         
@@ -546,15 +883,15 @@ class AIProctorEngine {
     }
 
     static captureAndUploadEvidence(eventType, logId) {
-        this.canvas.width = this.video.videoWidth;
-        this.canvas.height = this.video.videoHeight;
+        // Use an offscreen canvas to avoid flickering the live display canvas
+        const offscreen = document.createElement("canvas");
+        offscreen.width = this.video.videoWidth || 640;
+        offscreen.height = this.video.videoHeight || 480;
+        const oCtx = offscreen.getContext("2d");
+        oCtx.drawImage(this.video, 0, 0, offscreen.width, offscreen.height);
         
-        // Draw frame onto canvas
-        const tempCtx = this.canvas.getContext("2d");
-        tempCtx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
-        
-        // Convert to Blob
-        this.canvas.toBlob(async (blob) => {
+        offscreen.toBlob(async (blob) => {
+            if (!blob) return;
             const formData = new FormData();
             formData.append("file", blob, "screenshot.jpg");
             formData.append("attempt_id", this.attemptId);
@@ -565,7 +902,7 @@ class AIProctorEngine {
             }
             
             await API.upload("/proctor/evidence", formData);
-        }, "image/jpeg", 0.7);
+        }, "image/jpeg", 0.75);
     }
 
     static basicCameraAuditLoop() {
@@ -618,36 +955,46 @@ async function initNotificationSystem() {
     `;
     document.head.appendChild(style);
 
-    // Locate nav links container
-    const navLinks = document.querySelector(".nav-links");
-    if (!navLinks) return;
+    // Check if notif-btn and notif-dropdown already exist in the HTML
+    let notifBtn = document.getElementById("notif-btn");
+    let notifDropdown = document.getElementById("notif-dropdown");
 
-    // Create dropdown wrapper element
-    const notifDropdownWrapper = document.createElement("div");
-    notifDropdownWrapper.className = "nav-item-dropdown";
-    notifDropdownWrapper.style.position = "relative";
-    notifDropdownWrapper.style.display = "inline-block";
-    notifDropdownWrapper.innerHTML = `
-        <a href="#" class="nav-link" id="notif-btn" onclick="toggleNotifDropdown(event)" style="position: relative; padding: 0.25rem 0.5rem; font-size: 1.15rem;">
-            🔔<span id="notif-badge" style="display: none; position: absolute; top: -3px; right: -5px; background: var(--accent-danger); color: white; border-radius: 50%; width: 16px; height: 16px; font-size: 0.65rem; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1.5px solid white;">0</span>
-        </a>
-        <div id="notif-dropdown" class="glass-panel" style="display: none; position: absolute; right: 0; top: 35px; width: 320px; max-height: 400px; overflow-y: auto; z-index: 1000; padding: 1rem; border-color: var(--accent-primary); box-shadow: 0 8px 32px rgba(16,185,129,0.15);">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; margin-bottom: 0.75rem;">
-                <strong style="font-size: 0.9rem; color: var(--text-primary);">Notifications</strong>
-                <a href="#" onclick="markAllNotifsAsRead(event)" style="font-size: 0.75rem; color: var(--accent-primary); text-decoration: none; font-weight: 600;">Mark All as Read</a>
-            </div>
-            <div id="notif-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
-                <p style="color: var(--text-secondary); font-size: 0.8rem; text-align: center; margin: 1rem 0;">No new notifications</p>
-            </div>
-        </div>
-    `;
+    if (!notifBtn || !notifDropdown) {
+        // Locate modern top actions container or legacy nav links
+        const topActions = document.querySelector(".admin-top-actions") || document.querySelector(".nav-links");
+        if (!topActions) return;
 
-    // Insert notification button before Sign Out link in the navbar
-    const signOutBtn = navLinks.querySelector("a[onclick='handleLogout()']");
-    if (signOutBtn) {
-        navLinks.insertBefore(notifDropdownWrapper, signOutBtn);
-    } else {
-        navLinks.appendChild(notifDropdownWrapper);
+        // Check if there is a placeholder bell div in topActions
+        const existingBell = topActions.querySelector('div[title="Notifications"]') || Array.from(topActions.children).find(el => el.innerText && el.innerText.includes("🔔"));
+
+        // Create dropdown wrapper element
+        const notifDropdownWrapper = document.createElement("div");
+        notifDropdownWrapper.className = "notification-bell-wrapper";
+        notifDropdownWrapper.innerHTML = `
+            <div id="notif-btn" class="notification-bell-btn" onclick="toggleNotifDropdown(event)" title="Notifications">
+                🔔<span id="notif-badge" class="notification-badge" style="display: none;">0</span>
+            </div>
+            <div id="notif-dropdown" class="notification-dropdown" style="display: none;">
+                <div class="notification-dropdown-header">
+                    <h4><span>🔔</span> Notifications</h4>
+                    <a href="#" onclick="markAllNotifsAsRead(event)" style="font-size: 0.75rem; color: var(--primary-green); text-decoration: none; font-weight: 700;">Mark All as Read</a>
+                </div>
+                <div id="notif-list" class="notification-list">
+                    <p style="color: var(--text-secondary); font-size: 0.8rem; text-align: center; margin: 1.5rem 0;">Loading notifications...</p>
+                </div>
+            </div>
+        `;
+
+        if (existingBell) {
+            existingBell.replaceWith(notifDropdownWrapper);
+        } else {
+            const avatar = topActions.querySelector(".admin-avatar");
+            if (avatar) {
+                topActions.insertBefore(notifDropdownWrapper, avatar);
+            } else {
+                topActions.appendChild(notifDropdownWrapper);
+            }
+        }
     }
 
     // Close dropdown on click outside
@@ -662,15 +1009,22 @@ async function initNotificationSystem() {
     // Load initial notifications feed
     await loadNotifications();
     
-    // Automatically check for new notifications every 5 seconds without refreshing
-    setInterval(loadNotifications, 5000);
+    // Automatically check for new notifications every 10 seconds
+    setInterval(loadNotifications, 10000);
 }
 
 function toggleNotifDropdown(e) {
-    e.preventDefault();
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
     const dropdown = document.getElementById("notif-dropdown");
     if (dropdown) {
-        dropdown.style.display = dropdown.style.display === "none" ? "block" : "none";
+        const isHidden = dropdown.style.display === "none" || !dropdown.style.display;
+        dropdown.style.display = isHidden ? "flex" : "none";
+        if (isHidden) {
+            loadNotifications();
+        }
     }
 }
 
@@ -700,18 +1054,28 @@ async function loadNotifications() {
         const notifListContainer = document.getElementById("notif-list");
         if (notifListContainer) {
             if (unreadList.length > 0) {
-                notifListContainer.innerHTML = unreadList.map(n => `
-                    <div class="notif-item" style="cursor: pointer; position: relative; border-bottom: 1px solid var(--border-glass); padding: 0.75rem;" onclick="window.location.href='${n.link}'">
-                        <div class="notif-title">${n.title}</div>
-                        <div class="notif-desc">${n.message}</div>
-                        <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
-                            <button class="btn btn-primary" onclick="handleNotifAction(event, '${n.type}', ${n.raw_id}, 'approve')" style="padding: 0.2rem 0.5rem; font-size: 0.7rem; background: var(--accent-success); border-color: transparent; font-weight: 600; line-height: 1.2;">Approve</button>
-                            <button class="btn btn-danger" onclick="handleNotifAction(event, '${n.type}', ${n.raw_id}, 'reject')" style="padding: 0.2rem 0.5rem; font-size: 0.7rem; font-weight: 600; line-height: 1.2;">Reject</button>
+                notifListContainer.innerHTML = unreadList.map(n => {
+                    let icon = "🔔";
+                    if (n.type === "registration") icon = "🎓";
+                    else if (n.type === "access") icon = "🔑";
+                    else if (n.type === "password_reset") icon = "🔒";
+
+                    return `
+                        <div class="notification-item" onclick="window.location.href='${n.link}'">
+                            <div class="notification-item-icon">${icon}</div>
+                            <div class="notification-item-content">
+                                <div class="notification-item-title">${escapeHtml(n.title)}</div>
+                                <div class="notification-item-msg">${escapeHtml(n.message)}</div>
+                                <div style="display: flex; gap: 0.4rem; margin-top: 0.35rem;">
+                                    <button class="btn btn-primary" onclick="handleNotifAction(event, '${n.type}', ${n.raw_id}, 'approve')" style="padding: 0.22rem 0.6rem; font-size: 0.72rem; font-weight: 700; line-height: 1.2;">Approve</button>
+                                    <button class="btn btn-danger" onclick="handleNotifAction(event, '${n.type}', ${n.raw_id}, 'reject')" style="padding: 0.22rem 0.6rem; font-size: 0.72rem; font-weight: 700; line-height: 1.2;">Reject</button>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
             } else {
-                notifListContainer.innerHTML = `<p style="color: var(--text-secondary); font-size: 0.8rem; text-align: center; margin: 1rem 0;">No new notifications</p>`;
+                notifListContainer.innerHTML = `<div style="text-align: center; padding: 2rem 1rem; color: var(--text-secondary);"><div style="font-size: 2rem; margin-bottom: 0.35rem;">🎉</div><strong style="display: block; font-size: 0.9rem; color: var(--forest-dark);">All caught up!</strong><span style="font-size: 0.78rem;">No pending notifications.</span></div>`;
             }
         }
     }
@@ -728,15 +1092,18 @@ async function handleNotifAction(event, type, rawId, action) {
         endpoint = `/admin/registrations/${rawId}/${action}`;
     } else if (type === "access") {
         endpoint = `/admin/access/${rawId}/${action}`;
+    } else if (type === "password_reset") {
+        endpoint = `/admin/password-resets/${rawId}/${action}`;
     }
     
     if (!endpoint) return;
     
     // Confirm rejection
     if (action === "reject") {
-        const confirmMsg = type === "registration" 
-            ? "Are you sure you want to reject this student registration?"
-            : "Are you sure you want to reject this exam access request?";
+        let confirmMsg = "Are you sure you want to reject this request?";
+        if (type === "registration") confirmMsg = "Are you sure you want to reject this student registration?";
+        else if (type === "access") confirmMsg = "Are you sure you want to reject this exam access request?";
+        else if (type === "password_reset") confirmMsg = "Are you sure you want to reject this password reset request?";
         if (!confirm(confirmMsg)) return;
     }
     
@@ -779,6 +1146,12 @@ function markAllNotifsAsRead(e) {
     if (notifListContainer) {
         notifListContainer.innerHTML = `<p style="color: var(--text-secondary); font-size: 0.8rem; text-align: center; margin: 1rem 0;">No new notifications</p>`;
     }
+}
+
+function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>'"]/g, character => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", "\'": "&#39;", '"': "&quot;"
+    }[character]));
 }
 
 // Auto-run notification system on document load

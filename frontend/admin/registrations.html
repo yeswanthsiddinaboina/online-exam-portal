@@ -3,102 +3,373 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure Exam System - Student Registrations</title>
+    <title>Exam Portal | Student Registrations</title>
     <link rel="stylesheet" href="../css/style.css">
     <style>
-        .search-bar-wrapper {
+        .search-bar-box {
             margin-bottom: 1.5rem;
             display: flex;
             gap: 1rem;
             flex-wrap: wrap;
         }
-        .search-input {
-            flex-grow: 1;
-            min-width: 250px;
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.25rem;
+            margin-bottom: 2rem;
         }
-        .status-badge {
-            display: inline-block;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            font-weight: 600;
+
+        @media (max-width: 1200px) {
+            .dashboard-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .admin-stat-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 110px;
+            padding: 1.35rem 1.5rem;
+        }
+
+        .stat-card-info {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .stat-icon-wrapper {
+            width: 48px;
+            height: 48px;
+            min-width: 48px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.35rem;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+
+        .stat-icon-wrapper svg {
+            width: 22px;
+            height: 22px;
+            display: block;
+        }
+
+        /* Auto-fit Registrations Table without horizontal scroll */
+        .admin-content-scroll {
+            padding: 1.5rem 1.75rem;
+        }
+
+        .glass-panel {
+            padding: 1.25rem 1.5rem;
+        }
+
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
+            background: #FFFFFF;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.83rem;
+            table-layout: auto;
+        }
+
+        .table th, .table td {
+            padding: 0.65rem 0.55rem;
+            vertical-align: middle;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .table th {
+            font-size: 0.75rem;
+            font-weight: 700;
             text-transform: uppercase;
+            letter-spacing: 0.03em;
+            background-color: #F9FAFB;
+            color: var(--text-secondary);
+            white-space: nowrap;
         }
-        .status-pending {
-            background: rgba(245, 158, 11, 0.15);
-            color: #d97706;
+
+        .col-userid {
+            font-size: 0.84rem;
+            font-weight: 700;
+            color: var(--primary-green);
+            white-space: nowrap;
         }
-        .status-approved {
-            background: rgba(16, 185, 129, 0.15);
-            color: #059669;
+
+        .col-candidate {
+            font-weight: 700;
+            white-space: nowrap;
         }
-        .status-rejected {
-            background: rgba(239, 68, 68, 0.15);
-            color: #dc2626;
+
+        .col-course {
+            white-space: nowrap;
+        }
+
+        .col-email {
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .col-date {
+            white-space: nowrap;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        .col-written, .col-pending, .col-status {
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .col-actions {
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .btn-action-approve {
+            background-color: var(--primary-green);
+            color: #FFFFFF;
+            border: none;
+            padding: 0.28rem 0.6rem;
+            font-size: 0.76rem;
+            font-weight: 700;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+            box-shadow: 0 1px 3px rgba(14, 159, 110, 0.25);
+        }
+
+        .btn-action-approve:hover {
+            background-color: var(--primary-green-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-action-reject {
+            background-color: #FEF2F2;
+            color: var(--accent-danger);
+            border: 1px solid #FECACA;
+            padding: 0.28rem 0.6rem;
+            font-size: 0.76rem;
+            font-weight: 700;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+        }
+
+        .btn-action-reject:hover {
+            background-color: var(--accent-danger);
+            color: #FFFFFF;
+            border-color: var(--accent-danger);
+            transform: translateY(-1px);
         }
     </style>
 </head>
 <body>
-    <nav class="navbar">
-        <a href="#" class="nav-brand">🛡️ SECURE EXAM (ADMIN)</a>
-        <div class="nav-links">
-            <a href="dashboard.html" class="nav-link">Dashboard</a>
-            <a href="exams.html" class="nav-link">Manage Exams</a>
-            <a href="violations.html" class="nav-link">Violations</a>
-            <a href="results.html" class="nav-link">Student Results</a>
-            <a href="registrations.html" class="nav-link active">Registrations</a>
-            <a href="#" class="nav-link" onclick="handleLogout()">Sign Out</a>
+    <div class="admin-app-shell">
+        <!-- 1. LEFT SIDEBAR (Deep Forest Green) -->
+        <aside class="admin-sidebar">
+            <div>
+                <a href="dashboard.html" class="admin-sidebar-brand">
+                    <div class="admin-brand-icon">🛡️</div>
+                    <div>
+                        <div class="admin-brand-title">Exam Portal</div>
+                        <div class="admin-brand-subtitle">Admin Panel</div>
+                    </div>
+                </a>
+
+                <nav class="admin-nav-menu">
+                    <a href="dashboard.html" class="admin-nav-item">
+                        <span>📊</span>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="exams.html" class="admin-nav-item">
+                        <span>📝</span>
+                        <span>Exams</span>
+                    </a>
+                    <a href="violations.html" class="admin-nav-item">
+                        <span>⚠️</span>
+                        <span>Violations</span>
+                    </a>
+                    <a href="results.html" class="admin-nav-item">
+                        <span>📋</span>
+                        <span>Results</span>
+                    </a>
+                    <a href="registrations.html" class="admin-nav-item active">
+                        <span>👥</span>
+                        <span>Students</span>
+                    </a>
+                </nav>
+            </div>
+
+            <div class="admin-sidebar-bottom">
+                <a href="#" class="admin-nav-item" onclick="openSignOutModal(); return false;">
+                    <span>🚪</span>
+                    <span>Sign Out</span>
+                </a>
+
+                <div class="admin-profile-card">
+                    <div class="admin-avatar">A</div>
+                    <div>
+                        <div class="admin-info-name" id="user-display">Admin</div>
+                        <div class="admin-info-role">Super Administrator</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 2. MAIN STAGE -->
+        <div class="admin-main-stage">
+            <header class="admin-top-bar">
+                <div class="admin-page-title-box">
+                    <h2>Student Registrations</h2>
+                    <p>Verify and manage candidate accounts & exam permissions</p>
+                </div>
+
+                <div class="admin-top-actions">
+                    <button class="btn btn-secondary" onclick="loadRegistrations()" style="font-size: 0.85rem; padding: 0.5rem 1rem;">
+                        🔄 Refresh
+                    </button>
+
+                    <div class="notification-bell-wrapper">
+                        <div id="notif-btn" class="notification-bell-btn" onclick="toggleNotifDropdown(event)" title="Notifications">
+                            🔔<span id="notif-badge" class="notification-badge" style="display: none;">0</span>
+                        </div>
+                        <div id="notif-dropdown" class="notification-dropdown" style="display: none;">
+                            <div class="notification-dropdown-header">
+                                <h4><span>🔔</span> Notifications</h4>
+                                <a href="#" onclick="markAllNotifsAsRead(event)" style="font-size: 0.75rem; color: var(--primary-green); text-decoration: none; font-weight: 700;">Mark All as Read</a>
+                            </div>
+                            <div id="notif-list" class="notification-list">
+                                <p style="color: var(--text-secondary); font-size: 0.8rem; text-align: center; margin: 1.5rem 0;">Loading notifications...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="admin-avatar" style="width: 36px; height: 36px; font-size: 0.85rem;">
+                        SA
+                    </div>
+                </div>
+            </header>
+
+            <main class="admin-content-scroll">
+                <!-- 4 Statistics Cards Row (Green Brand Styled) -->
+                <div class="dashboard-grid">
+                    <div class="admin-stat-card" id="card-all" onclick="filterByStatus('ALL')" title="Filter by All Profiles">
+                        <div class="stat-card-info">
+                            <div class="metric-title">Total Registrations</div>
+                            <div class="metric-value" id="stat-reg-total">-</div>
+                            <div class="stat-trend up">All candidate profiles</div>
+                        </div>
+                        <div class="stat-icon-wrapper">👥</div>
+                    </div>
+
+                    <div class="admin-stat-card" id="card-pending" onclick="filterByStatus('PENDING')" title="Filter by Pending Verification">
+                        <div class="stat-card-info">
+                            <div class="metric-title">Pending Approval</div>
+                            <div class="metric-value" id="stat-reg-pending">-</div>
+                            <div class="stat-trend up">Awaiting verification</div>
+                        </div>
+                        <div class="stat-icon-wrapper">⏳</div>
+                    </div>
+
+                    <div class="admin-stat-card" id="card-approved" onclick="filterByStatus('APPROVED')" title="Filter by Approved Students">
+                        <div class="stat-card-info">
+                            <div class="metric-title">Approved Students</div>
+                            <div class="metric-value" id="stat-reg-approved">-</div>
+                            <div class="stat-trend up">Active verified candidates</div>
+                        </div>
+                        <div class="stat-icon-wrapper">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="admin-stat-card" id="card-rejected" onclick="filterByStatus('REJECTED')" title="Filter by Rejected Students">
+                        <div class="stat-card-info">
+                            <div class="metric-title">Rejected Students</div>
+                            <div class="metric-value" id="stat-reg-rejected">-</div>
+                            <div class="stat-trend up">Access denied</div>
+                        </div>
+                        <div class="stat-icon-wrapper">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Registrations Table Card -->
+                <div class="glass-panel">
+                    <div class="search-bar-box">
+                        <input class="form-control" type="text" id="reg-search" placeholder="🔍 Search by Candidate Name, User ID, or Gmail ID..." oninput="filterRegistrations(this.value)" style="flex: 1; min-width: 280px;">
+                    </div>
+
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th class="col-userid">User ID</th>
+                                    <th class="col-candidate">Candidate</th>
+                                    <th class="col-course">Course</th>
+                                    <th class="col-email">Gmail ID</th>
+                                    <th class="col-date" title="Registration Date">Reg Date</th>
+                                    <th class="col-written" title="Exams Written">Written</th>
+                                    <th class="col-pending" title="Exams Pending">Pending</th>
+                                    <th class="col-status" title="Approval Status">Status</th>
+                                    <th class="col-actions">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="registrations-body">
+                                <tr>
+                                    <td colspan="9" style="color: var(--text-secondary); text-align: center; padding: 2rem;">Loading student registrations...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
         </div>
-    </nav>
+    </div>
 
-    <div class="container">
-        <h2 style="font-family: var(--font-heading); margin-bottom: 2rem;">Student Registration Report</h2>
-
-        <!-- Stats Overview Cards -->
-        <div class="dashboard-grid">
-            <div class="glass-panel metric-card" id="card-all" onclick="filterByStatus('ALL')" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;">
-                <div class="metric-title">Total Registrations</div>
-                <div class="metric-value" id="stat-reg-total">-</div>
-            </div>
-            <div class="glass-panel metric-card" id="card-pending" onclick="filterByStatus('PENDING')" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;">
-                <div class="metric-title">Pending Approval</div>
-                <div class="metric-value" id="stat-reg-pending" style="color: var(--accent-warning);">-</div>
-            </div>
-            <div class="glass-panel metric-card" id="card-approved" onclick="filterByStatus('APPROVED')" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;">
-                <div class="metric-title">Approved Students</div>
-                <div class="metric-value" id="stat-reg-approved" style="color: var(--accent-success);">-</div>
-            </div>
-            <div class="glass-panel metric-card" id="card-rejected" onclick="filterByStatus('REJECTED')" style="cursor: pointer; transition: transform 0.2s, border-color 0.2s;">
-                <div class="metric-title">Rejected Students</div>
-                <div class="metric-value" id="stat-reg-rejected" style="color: var(--accent-danger);">-</div>
-            </div>
-        </div>
-
-        <div class="glass-panel">
-            <div class="search-bar-wrapper">
-                <input class="form-control search-input" type="text" id="reg-search" placeholder="🔍 Search by Candidate Name, User ID, or Gmail ID..." oninput="filterRegistrations(this.value)">
-            </div>
-
-            <div class="table-container">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>User ID</th>
-                            <th>Candidate Name</th>
-                            <th>Gmail ID</th>
-                            <th>Registration Date</th>
-                            <th>Exams Written</th>
-                            <th>Exams Pending</th>
-                            <th>Approval Status</th>
-                            <th style="text-align: right;">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="registrations-body">
-                        <tr>
-                            <td colspan="8" style="color: var(--text-secondary); text-align: center;">Loading student registrations...</td>
-                        </tr>
-                    </tbody>
-                </table>
+    <!-- SIGN OUT MODAL -->
+    <div class="modal-backdrop" id="signout-modal">
+        <div class="modal-content" style="text-align: center; max-width: 420px;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🚪</div>
+            <h3 style="margin-bottom: 0.75rem; color: var(--text-primary);">Sign Out</h3>
+            <p style="color: var(--text-secondary); font-size: 0.92rem; line-height: 1.5; margin-bottom: 1.75rem;">
+                Are you sure you want to sign out of the Exam Portal Admin Panel?
+            </p>
+            <div style="display: flex; gap: 1rem; justify-content: center;">
+                <button class="btn btn-secondary" onclick="closeSignOutModal()" style="flex: 1;">Cancel</button>
+                <button class="btn btn-primary" onclick="handleLogout()" style="flex: 1; background: var(--primary-green);">Yes, Sign Out</button>
             </div>
         </div>
     </div>
@@ -106,79 +377,115 @@
     <script src="../js/app.js"></script>
     <script>
         checkAuth("admin");
+        document.getElementById("user-display").innerText = `Admin: ${currentUser.first_name || 'Administrator'}`;
 
-        let registrationsCache = [];
+        function openSignOutModal() {
+            document.getElementById("signout-modal").classList.add("active");
+        }
+
+        function closeSignOutModal() {
+            document.getElementById("signout-modal").classList.remove("active");
+        }
+
+        let allRegistrations = [];
+        let currentStatusFilter = "ALL";
 
         async function loadRegistrations() {
             const res = await API.get("/admin/registrations");
-            if (res.success) {
-                registrationsCache = res.registrations;
-                updateStats(res.registrations);
-                applyAllFilters();
+            if (res.success && res.registrations) {
+                allRegistrations = res.registrations;
+                
+                // Compute status counts
+                const total = allRegistrations.length;
+                const pending = allRegistrations.filter(r => r.registration_status === "PENDING").length;
+                const approved = allRegistrations.filter(r => r.registration_status === "APPROVED").length;
+                const rejected = allRegistrations.filter(r => r.registration_status === "REJECTED").length;
+
+                document.getElementById("stat-reg-total").innerText = total;
+                document.getElementById("stat-reg-pending").innerText = pending;
+                document.getElementById("stat-reg-approved").innerText = approved;
+                document.getElementById("stat-reg-rejected").innerText = rejected;
+
+                filterByStatus(currentStatusFilter);
             } else {
-                alert(res.message || "Failed to load registrations.");
+                document.getElementById("registrations-body").innerHTML = `<tr><td colspan="8" style="color: var(--accent-danger); text-align: center; padding: 2rem;">Failed to load registrations.</td></tr>`;
             }
         }
 
-        function updateStats(regs) {
-            const total = regs.length;
-            const pending = regs.filter(r => r.registration_status === 'PENDING').length;
-            const approved = regs.filter(r => r.registration_status === 'APPROVED').length;
-            const rejected = regs.filter(r => r.registration_status === 'REJECTED').length;
+        function filterByStatus(status) {
+            currentStatusFilter = status;
+            
+            // Highlight active card
+            ["all", "pending", "approved", "rejected"].forEach(type => {
+                const card = document.getElementById(`card-${type}`);
+                if (card) {
+                    card.style.borderColor = (type.toUpperCase() === status || (type === "all" && status === "ALL")) ? "var(--primary-green)" : "var(--border-subtle)";
+                }
+            });
 
-            document.getElementById("stat-reg-total").innerText = total;
-            document.getElementById("stat-reg-pending").innerText = pending;
-            document.getElementById("stat-reg-approved").innerText = approved;
-            document.getElementById("stat-reg-rejected").innerText = rejected;
+            renderRegistrations();
         }
 
-        function renderTable(regs) {
+        function filterRegistrations(searchVal) {
+            renderRegistrations(searchVal.toLowerCase().trim());
+        }
+
+        function renderRegistrations(searchTerm = "") {
+            let filtered = allRegistrations;
+
+            if (currentStatusFilter !== "ALL") {
+                filtered = filtered.filter(r => r.registration_status === currentStatusFilter);
+            }
+
+            if (searchTerm) {
+                filtered = filtered.filter(r => 
+                    (r.first_name && r.first_name.toLowerCase().includes(searchTerm)) ||
+                    (r.email && r.email.toLowerCase().includes(searchTerm)) ||
+                    (r.last_name && r.last_name.toLowerCase().includes(searchTerm)) ||
+                    (r.course && r.course.toLowerCase().includes(searchTerm))
+                );
+            }
+
             const tbody = document.getElementById("registrations-body");
-            if (regs.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="8" style="color: var(--text-secondary); text-align: center;">No student registrations found.</td>
-                    </tr>
-                `;
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" style="color: var(--text-secondary); text-align: center; padding: 2rem;">No matching candidate registrations found.</td></tr>`;
                 return;
             }
 
-            tbody.innerHTML = regs.map(reg => {
-                const dateStr = reg.registration_date ? new Date(reg.registration_date).toLocaleString() : 'N/A';
-                
-                let badgeClass = "status-pending";
-                if (reg.registration_status === "APPROVED") badgeClass = "status-approved";
-                if (reg.registration_status === "REJECTED") badgeClass = "status-rejected";
-
-                let statusHTML = "";
-                if (reg.registration_status === "PENDING") {
-                    statusHTML = `
-                        <div style="display: flex; gap: 0.4rem; align-items: center; white-space: nowrap;">
-                            <span class="status-badge ${badgeClass}" style="margin-right: 0.25rem;">PENDING</span>
-                            <button class="btn btn-primary" onclick="approveReg(${reg.id})" style="padding: 0.2rem 0.4rem; font-size: 0.75rem; background: var(--accent-success); border-color: transparent; line-height: 1.2;">Accept</button>
-                            <button class="btn btn-secondary" onclick="rejectReg(${reg.id})" style="padding: 0.2rem 0.4rem; font-size: 0.75rem; background: var(--accent-warning); border-color: transparent; color: white; line-height: 1.2;">Reject</button>
-                        </div>
-                    `;
-                } else {
-                    statusHTML = `<span class="status-badge ${badgeClass}">${reg.registration_status}</span>`;
-                }
-
-                const actionButtons = `
-                    <button class="btn btn-danger" onclick="deleteStudent(${reg.id})" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; line-height: 1.2;">Delete</button>
-                `;
+            tbody.innerHTML = filtered.map(r => {
+                let badgeClass = "badge-warning";
+                if (r.registration_status === "APPROVED") badgeClass = "badge-active";
+                if (r.registration_status === "REJECTED") badgeClass = "badge-danger";
 
                 return `
                     <tr>
-                        <td style="font-weight: 600;">${reg.last_name}</td>
-                        <td>${reg.first_name}</td>
-                        <td>${reg.email}</td>
-                        <td>${dateStr}</td>
-                        <td style="font-weight: 500; color: var(--accent-primary);">${reg.exams_written_count}</td>
-                        <td style="font-weight: 500; color: var(--text-secondary);">${reg.exams_not_attempted_count}</td>
-                        <td>${statusHTML}</td>
-                        <td style="text-align: right; white-space: nowrap;">
-                            <div style="display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center;">
-                                ${actionButtons}
+                        <td class="col-userid">${r.last_name || 'Not Assigned'}</td>
+                        <td class="col-candidate">${r.first_name || 'Candidate'}</td>
+                        <td class="col-course">
+                            <span class="badge" style="background: #E0F2FE; color: #0369A1; font-weight: 700; font-size: 0.74rem; padding: 0.2rem 0.5rem; border-radius: 6px;">
+                                📚 ${r.course || 'Python'}
+                            </span>
+                        </td>
+                        <td class="col-email" title="${r.email}">${r.email}</td>
+                        <td class="col-date">${r.registration_date ? new Date(r.registration_date).toLocaleDateString() : '-'}</td>
+                        <td class="col-written"><span style="font-weight: 700; color: var(--forest-dark);">${r.exams_written_count || 0}</span></td>
+                        <td class="col-pending"><span style="font-weight: 700; color: var(--accent-warning);">${r.exams_not_attempted_count || 0}</span></td>
+                        <td class="col-status"><span class="badge ${badgeClass}" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;">${r.registration_status}</span></td>
+                        <td class="col-actions">
+                            <div style="display: inline-flex; align-items: center; justify-content: flex-end; gap: 0.35rem;">
+                                ${r.registration_status === "PENDING" ? `
+                                    <button class="btn-action-approve" onclick="approveStudent(${r.id})" title="Approve Student Account">Approve</button>
+                                    <button class="btn-action-reject" onclick="rejectStudent(${r.id})" title="Reject Student Account">Reject</button>
+                                ` : `
+                                    <button class="btn btn-delete btn-delete-icon" onclick="deleteStudent(${r.id})" title="Delete Candidate" style="width: 28px; height: 28px; min-width: 28px;">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"></polyline>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                                        </svg>
+                                    </button>
+                                `}
                             </div>
                         </td>
                     </tr>
@@ -186,76 +493,27 @@
             }).join('');
         }
 
-        let activeStatusFilter = 'ALL';
-
-        function filterByStatus(status) {
-            activeStatusFilter = status;
-            applyAllFilters();
-        }
-
-        function filterRegistrations(query) {
-            applyAllFilters();
-        }
-
-        function applyAllFilters() {
-            const searchQuery = document.getElementById("reg-search").value.toLowerCase().trim();
-            
-            let filtered = registrationsCache;
-            
-            if (activeStatusFilter !== 'ALL') {
-                filtered = filtered.filter(r => r.registration_status === activeStatusFilter);
-            }
-            
-            if (searchQuery) {
-                filtered = filtered.filter(r => 
-                    (r.first_name || '').toLowerCase().includes(searchQuery) ||
-                    (r.last_name || '').toLowerCase().includes(searchQuery) ||
-                    (r.email || '').toLowerCase().includes(searchQuery)
-                );
-            }
-            
-            renderTable(filtered);
-            
-            const cardIds = ['card-all', 'card-pending', 'card-approved', 'card-rejected'];
-            const activeCardId = 'card-' + activeStatusFilter.toLowerCase();
-            
-            cardIds.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) {
-                    if (id === activeCardId) {
-                        el.style.borderColor = 'var(--accent-primary)';
-                        el.style.background = 'rgba(16, 185, 129, 0.05)';
-                    } else {
-                        el.style.borderColor = 'var(--border-glass)';
-                        el.style.background = '';
-                    }
-                }
-            });
-        }
-
-        async function approveReg(studentId) {
-            const res = await API.post(`/admin/registrations/${studentId}/approve`, {});
+        async function approveStudent(studentId) {
+            const res = await API.post(`/admin/registrations/${studentId}/approve`);
             if (res.success) {
                 loadRegistrations();
             } else {
-                alert(res.message || "Failed to approve registration.");
+                alert(res.message || "Failed to approve student.");
             }
         }
 
-        async function rejectReg(studentId) {
-            if (confirm("Are you sure you want to reject this registration request?")) {
-                const res = await API.post(`/admin/registrations/${studentId}/reject`, {});
-                if (res.success) {
-                    loadRegistrations();
-                } else {
-                    alert(res.message || "Failed to reject registration.");
-                }
+        async function rejectStudent(studentId) {
+            const res = await API.post(`/admin/registrations/${studentId}/reject`);
+            if (res.success) {
+                loadRegistrations();
+            } else {
+                alert(res.message || "Failed to reject student.");
             }
         }
 
         async function deleteStudent(studentId) {
-            if (confirm("Are you sure you want to completely delete this student? All of their exam attempts, results, and proctoring violations will be permanently removed from the system.")) {
-                const res = await API.delete(`/admin/registrations/${studentId}`, {});
+            if (confirm("Are you sure you want to delete this candidate? All their exam history and records will be deleted!")) {
+                const res = await API.delete(`/admin/registrations/${studentId}`);
                 if (res.success) {
                     loadRegistrations();
                 } else {
@@ -264,11 +522,6 @@
             }
         }
 
-        // Initial Load
-        const statusParam = new URLSearchParams(window.location.search).get("status");
-        if (statusParam) {
-            activeStatusFilter = statusParam.toUpperCase();
-        }
         loadRegistrations();
     </script>
 </body>

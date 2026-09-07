@@ -232,7 +232,7 @@ def parse_questions_file():
 @role_required(["admin"])
 def save_questions(exam_id):
     user = request.current_user
-    if not Exam.query.get(exam_id):
+    if not Exam.query.filter_by(id=exam_id, is_deleted=False).first():
         return jsonify({"success": False, "error_code": "EXAM_NOT_FOUND", "message": "Exam not found."}), 404
     try:
         questions = _validate_questions((request.get_json() or {}).get("questions"))
@@ -263,7 +263,7 @@ def save_questions(exam_id):
 @token_required
 def get_exam_questions(exam_id):
     user = request.current_user
-    exam = Exam.query.get(exam_id)
+    exam = Exam.query.filter_by(id=exam_id, is_deleted=False).first()
     
     if not exam:
         return jsonify({
@@ -284,6 +284,19 @@ def get_exam_questions(exam_id):
     
     # Crucial security requirement: Redact correct answers for students
     include_correct = (user.role == "admin")
+    
+    # Shuffle questions stably for student attempts to prevent collusion
+    if user.role != "admin":
+        from backend.models import ExamAttempt
+        import random
+        
+        attempt = ExamAttempt.query.filter_by(student_id=user.id, exam_id=exam_id).first()
+        seed_val = attempt.id if attempt else user.id
+        
+        questions_list = list(questions)
+        random.seed(seed_val)
+        random.shuffle(questions_list)
+        questions = questions_list
     
     return jsonify({
         "success": True,
@@ -593,7 +606,7 @@ def upload_questions_csv(exam_id):
 @token_required
 @role_required(["admin"])
 def preview_questions_upload(exam_id):
-    if not Exam.query.get(exam_id):
+    if not Exam.query.filter_by(id=exam_id, is_deleted=False).first():
         return jsonify({"success": False, "error_code": "EXAM_NOT_FOUND", "message": "Exam not found."}), 404
     uploaded_file = request.files.get("file")
     if not uploaded_file or not uploaded_file.filename:
@@ -610,7 +623,7 @@ def preview_questions_upload(exam_id):
 @role_required(["admin"])
 def save_questions_bulk(exam_id):
     user = request.current_user
-    exam = Exam.query.get(exam_id)
+    exam = Exam.query.filter_by(id=exam_id, is_deleted=False).first()
     if not exam:
         return jsonify({"success": False, "error_code": "EXAM_NOT_FOUND", "message": "Exam not found."}), 404
     try:

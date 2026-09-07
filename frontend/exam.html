@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure Exam Session</title>
+    <title>Secure Exam Session | Assessment Portal</title>
     <link rel="stylesheet" href="css/style.css">
     <!-- MediaPipe scripts for local real-time proctoring -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
@@ -11,115 +11,1029 @@
     <!-- TensorFlow.js and COCO-SSD for Object/Mobile Phone Detection -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js" crossorigin="anonymous"></script>
+    <style>
+        html, body {
+            background-color: var(--bg-primary) !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            font-family: var(--font-body) !important;
+            color: var(--text-primary) !important;
+            height: 100vh !important;
+            width: 100vw !important;
+            overflow: hidden !important;
+            display: flex !important;
+            flex-direction: row !important;
+            box-sizing: border-box !important;
+        }
+
+        /* --- 1. LEFT SIDEBAR (Dark Forest Green) --- */
+        .exam-sidebar-pane {
+            width: 260px !important;
+            min-width: 260px !important;
+            max-width: 260px !important;
+            height: 100vh !important;
+            background: var(--forest-dark) !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+            padding: 1.75rem 1.25rem !important;
+            color: #FFFFFF !important;
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.1) !important;
+            z-index: 100 !important;
+            flex-shrink: 0 !important;
+            box-sizing: border-box !important;
+        }
+
+        .exam-sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-family: var(--font-heading);
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: #FFFFFF;
+            margin-bottom: 2.5rem;
+            text-decoration: none;
+        }
+
+        .exam-brand-shield {
+            width: 34px;
+            height: 34px;
+            background: var(--emerald-accent);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--forest-dark);
+            font-weight: 900;
+            font-size: 1.1rem;
+        }
+
+        .exam-sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            flex-grow: 1;
+        }
+
+        .exam-nav-step {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            color: #CBD5E1;
+            font-size: 0.92rem;
+            font-weight: 500;
+            transition: var(--transition-smooth);
+            user-select: none;
+        }
+
+        .exam-nav-step.active {
+            background: var(--sidebar-active-pill);
+            color: #FFFFFF;
+            font-weight: 700;
+            border-left: 3.5px solid var(--emerald-accent);
+        }
+
+        .step-left-content {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .step-done-badge {
+            width: 20px;
+            height: 20px;
+            background: var(--emerald-accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            color: var(--forest-dark);
+            font-weight: 900;
+        }
+
+        .step-active-badge {
+            width: 22px;
+            height: 22px;
+            background: var(--emerald-accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            color: var(--forest-dark);
+            font-weight: 800;
+        }
+
+        .step-upcoming-badge {
+            width: 20px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            color: #CBD5E1;
+            font-weight: 600;
+        }
+
+        .exam-security-assurance-card {
+            background: rgba(16, 185, 129, 0.08);
+            border: 1px solid var(--sidebar-border);
+            border-radius: 14px;
+            padding: 1.25rem 1rem;
+            text-align: center;
+        }
+
+        .assurance-icon-bubble {
+            width: 44px;
+            height: 44px;
+            background: rgba(16, 185, 129, 0.16);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 0.75rem auto;
+            font-size: 1.25rem;
+        }
+
+        .assurance-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #FFFFFF;
+            margin-bottom: 0.35rem;
+        }
+
+        .assurance-desc {
+            font-size: 0.78rem;
+            color: #9CA3AF;
+            line-height: 1.45;
+        }
+
+        /* --- 2. MAIN CENTER + RIGHT STAGE --- */
+        .exam-stage-wrapper {
+            flex: 1 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            height: 100vh !important;
+            min-width: 0 !important;
+            overflow: hidden !important;
+            background: #F8FAF9 !important;
+            box-sizing: border-box !important;
+        }
+
+        /* Top Header Bar */
+        .exam-top-bar {
+            height: 64px !important;
+            min-height: 64px !important;
+            max-height: 64px !important;
+            background: #FFFFFF !important;
+            border-bottom: 1px solid var(--border-subtle) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            padding: 0 2rem !important;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+            flex-shrink: 0 !important;
+            box-sizing: border-box !important;
+        }
+
+        .exam-title-group {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+        }
+
+        .exam-title-icon {
+            font-size: 1.4rem;
+        }
+
+        .exam-headline {
+            font-family: var(--font-heading);
+            font-weight: 800;
+            font-size: 1.15rem;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .exam-top-widgets {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+        }
+
+        .widget-pill {
+            padding: 0.45rem 1.1rem;
+            border-radius: 24px;
+            font-size: 0.86rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .widget-question-index {
+            background: #FFFFFF;
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+        }
+
+        .widget-timer-pill {
+            background: var(--mint-card-tint);
+            border: 1.5px solid rgba(16, 185, 129, 0.35);
+            color: var(--primary-green);
+            font-size: 1rem;
+            font-weight: 700;
+            font-family: var(--font-heading);
+        }
+
+        .btn-fullscreen-toggle {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: 1px solid var(--border-subtle);
+            background: #FFFFFF;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            transition: var(--transition-smooth);
+        }
+
+        .btn-fullscreen-toggle:hover {
+            background: #F3F4F6;
+            color: var(--text-primary);
+        }
+
+        /* Workspace Grid (Center Question + Right Sidebar) */
+        .exam-workspace-grid {
+            flex: 1 !important;
+            display: grid !important;
+            grid-template-columns: 1fr 340px !important;
+            gap: 1.5rem !important;
+            padding: 1.5rem 2rem !important;
+            height: calc(100vh - 64px) !important;
+            max-height: calc(100vh - 64px) !important;
+            overflow-y: auto !important;
+            box-sizing: border-box !important;
+        }
+
+        /* Center Question Area Card */
+        .question-card-outer {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 1rem !important;
+            min-width: 0 !important;
+        }
+
+        .question-main-card {
+            background: #FFFFFF !important;
+            border-radius: 16px !important;
+            border: 1px solid var(--border-subtle) !important;
+            padding: 2rem 2.25rem !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+            min-height: 480px !important;
+            box-sizing: border-box !important;
+        }
+
+        .question-type-badge {
+            align-self: flex-start;
+            background: var(--mint-soft);
+            color: #047857;
+            border-radius: 20px;
+            padding: 0.35rem 0.85rem;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            margin-bottom: 1.25rem;
+        }
+
+        .question-title-text {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.45;
+            margin-bottom: 0.4rem;
+        }
+
+        .question-instruction-sub {
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            margin-bottom: 1.75rem;
+        }
+
+        /* Answer Options List */
+        .answer-options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+            margin-bottom: 2rem;
+        }
+
+        .answer-card-item {
+            background: #FFFFFF;
+            border: 1.5px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 0.95rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            user-select: none;
+        }
+
+        .answer-card-item:hover {
+            border-color: #9CA3AF;
+            background: #F9FAFB;
+        }
+
+        .answer-card-item.selected {
+            background: #F0FDF4 !important;
+            border-color: #10B981 !important;
+            border-width: 1.5px !important;
+        }
+
+        .answer-radio-circle {
+            width: 20px;
+            height: 20px;
+            min-width: 20px;
+            border-radius: 50%;
+            border: 2px solid #D1D5DB;
+            background: #FFFFFF;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition-smooth);
+        }
+
+        .answer-card-item.selected .answer-radio-circle {
+            border-color: var(--primary-green) !important;
+            background: #FFFFFF !important;
+        }
+
+        .answer-radio-inner-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--primary-green);
+            display: none;
+        }
+
+        .answer-card-item.selected .answer-radio-inner-dot {
+            display: block !important;
+        }
+
+        .answer-letter-label {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            min-width: 22px;
+        }
+
+        .answer-text-content {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            flex: 1;
+        }
+
+        /* Short Answer Textarea */
+        .short-answer-input {
+            width: 100%;
+            border: 1.5px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 1rem;
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            outline: none;
+            resize: vertical;
+            min-height: 140px;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+
+        .short-answer-input:focus {
+            border-color: var(--primary-green);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+        }
+
+        /* Question Bottom Actions Bar */
+        .question-bottom-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-top: 1px solid var(--border-subtle);
+            padding-top: 1.25rem;
+            margin-top: auto;
+        }
+
+        .btn-question-action {
+            background: #FFFFFF;
+            border: 1.5px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 0.55rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+
+        .btn-question-action:hover {
+            background: #F3F4F6;
+            color: var(--text-primary);
+        }
+
+        .btn-question-action.review-flagged {
+            background: #FEF3C7;
+            border-color: #F59E0B;
+            color: #B45309;
+        }
+
+        /* Bottom Security Alert Banner */
+        .bottom-security-strip {
+            background: var(--mint-card-tint);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            border-radius: 12px;
+            padding: 0.75rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: #065F46;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        /* --- 3. RIGHT PROCTORING & PALETTE SIDEBAR --- */
+        .exam-proctor-pane {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .proctor-box-card {
+            background: #FFFFFF;
+            border: 1px solid var(--border-subtle);
+            border-radius: 20px;
+            padding: 1.25rem;
+            box-shadow: var(--shadow-subtle);
+        }
+
+        .proctor-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.85rem;
+        }
+
+        .proctor-title-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .signal-indicator {
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            height: 14px;
+        }
+
+        .signal-indicator span {
+            width: 3px;
+            background: var(--emerald-accent);
+            border-radius: 1px;
+        }
+
+        /* Web Cam Viewport */
+        .webcam-card-feed {
+            position: relative;
+            width: 100%;
+            height: 180px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #0B0C15;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .webcam-card-feed video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .webcam-card-feed canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .face-status-pill {
+            margin-top: 0.75rem;
+            background: var(--mint-soft);
+            border: 1px solid rgba(16, 185, 129, 0.35);
+            border-radius: 8px;
+            padding: 0.45rem;
+            color: #047857;
+            font-size: 0.82rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+        }
+
+        .hardware-metrics-row {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 0.85rem;
+            padding-top: 0.85rem;
+            border-top: 1px solid var(--border-subtle);
+            font-size: 0.76rem;
+            color: var(--text-secondary);
+        }
+
+        .hardware-metric-item {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .hardware-metric-item.active {
+            color: #047857;
+            font-weight: 600;
+        }
+
+        /* Palette Card */
+        .palette-box-card {
+            background: #FFFFFF;
+            border: 1px solid var(--border-subtle);
+            border-radius: 20px;
+            padding: 1.25rem;
+            box-shadow: var(--shadow-subtle);
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+        }
+
+        .palette-heading {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .palette-legend-strip {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.74rem;
+            color: var(--text-secondary);
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-subtle);
+            flex-wrap: wrap;
+            gap: 0.4rem;
+        }
+
+        .palette-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .legend-indicator-box {
+            width: 10px;
+            height: 10px;
+            border-radius: 3px;
+        }
+
+        .palette-buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr) !important;
+            gap: 0.35rem;
+            max-height: 190px;
+            overflow-y: auto;
+            padding-right: 2px;
+        }
+
+        .palette-cell-btn {
+            height: 30px !important;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: 1px solid var(--border-subtle);
+            background: #F3F4F6;
+            color: var(--text-primary);
+            transition: all 0.15s ease;
+        }
+
+        .palette-cell-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        /* Progress Bar Box */
+        .exam-progress-container {
+            margin-top: 0.25rem;
+        }
+
+        .progress-label-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.35rem;
+        }
+
+        .progress-track-rail {
+            height: 6px;
+            background: #E5E7EB;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .progress-fill-indicator {
+            height: 100%;
+            background: var(--emerald-accent);
+            border-radius: 999px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* Main Big Save & Next Button */
+        .btn-exam-primary-next {
+            background: var(--forest-dark);
+            color: #FFFFFF;
+            border: none;
+            border-radius: 12px;
+            padding: 0.9rem 1.25rem;
+            font-size: 1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(6, 44, 37, 0.2);
+            transition: var(--transition-smooth);
+            width: 100%;
+        }
+
+        .btn-exam-primary-next:hover {
+            background: var(--primary-green);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(14, 159, 110, 0.3);
+        }
+
+        .btn-exam-secondary-prev {
+            background: #FFFFFF;
+            color: var(--text-secondary);
+            border: 1.5px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 0.55rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            width: 100%;
+        }
+
+        .btn-exam-secondary-prev:hover {
+            background: #F9FAFB;
+            color: var(--text-primary);
+        }
+
+        .btn-exam-secondary-prev:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+    </style>
 </head>
-<body style="background: #06070d;">
-    <!-- FULLSCREEN REQUIREMENT COVER -->
+<body>
+    <!-- 1. FULLSCREEN REQUIREMENT COVER -->
     <div id="fullscreen-lockout" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #0b0c15; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; text-align: center; padding: 2rem;">
-        <div class="glass-panel" style="max-width: 480px;">
-            <div class="logo-icon" style="font-size: 3rem; margin-bottom: 1.5rem;">🔒</div>
-            <h2 style="margin-bottom: 1rem;">Fullscreen Mode Required</h2>
+        <div class="glass-panel" style="max-width: 480px; background: #FFFFFF; border-radius: 20px; padding: 2.5rem;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🔒</div>
+            <h2 style="margin-bottom: 1rem; font-family: var(--font-heading); color: var(--text-primary);">Fullscreen Mode Required</h2>
             <p style="color: var(--text-secondary); margin-bottom: 2rem; font-size: 0.95rem; line-height: 1.5;">
                 This exam is proctored. You must enter and maintain fullscreen mode. Exiting fullscreen or navigating away from this window will trigger security violations.
             </p>
-            <button class="btn btn-primary" id="btn-enter-fullscreen" style="width: 100%;">Enter Fullscreen to Begin</button>
+            <button class="btn btn-primary" id="btn-enter-fullscreen" style="width: 100%; background: var(--forest-dark); padding: 0.85rem; font-weight: 700; border-radius: 10px;">Enter Fullscreen to Begin</button>
         </div>
     </div>
 
-    <!-- START EXAM COVER OVERLAY -->
+    <!-- 2. START EXAM COVER OVERLAY -->
     <div id="start-exam-overlay" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #0b0c15; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; text-align: center; padding: 2rem;">
-        <div class="glass-panel" style="max-width: 480px;">
-            <div class="logo-icon" style="font-size: 3rem; margin-bottom: 1.5rem;">📝</div>
-            <h2 style="margin-bottom: 1rem; color: var(--accent-primary);">Ready to Begin?</h2>
+        <div class="glass-panel" style="max-width: 480px; background: #FFFFFF; border-radius: 20px; padding: 2.5rem;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📝</div>
+            <h2 style="margin-bottom: 1rem; color: var(--primary-green); font-family: var(--font-heading);">Ready to Begin?</h2>
             <p style="color: var(--text-secondary); margin-bottom: 2rem; font-size: 0.95rem; line-height: 1.5;">
-                You have authorized fullscreen. Your webcam proctoring, browser monitoring, and exam timer will start immediately once you click the button below. Make sure you are ready before proceeding.
+                You have authorized fullscreen. Your webcam proctoring, browser monitoring, and exam timer will start immediately once you click the button below.
             </p>
-            <button class="btn btn-primary" id="btn-start-exam" style="width: 100%; background: var(--accent-primary); border-color: transparent;">Start Exam</button>
+            <button class="btn btn-primary" id="btn-start-exam" style="width: 100%; background: var(--forest-dark); padding: 0.85rem; font-weight: 700; border-radius: 10px;">Start Exam</button>
         </div>
     </div>
 
-    <div class="container" style="padding: 1.5rem; display: flex; flex-direction: column; height: 100vh;">
-        <!-- Header -->
-        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 1rem;">
-            <div>
-                <h3 id="exam-title" style="font-weight: 700;">Loading Examination...</h3>
-                <span id="save-status" style="font-size: 0.8rem; color: var(--accent-success); font-weight: 500;">✓ Autosaved</span>
+    <!-- 3. LEFT NAVIGATION SIDEBAR (Deep Forest Green) -->
+    <aside class="exam-sidebar-pane">
+        <div>
+            <!-- Brand -->
+            <a href="#" class="exam-sidebar-brand">
+                <div class="exam-brand-shield">✓</div>
+                <span>SecureExam</span>
+            </a>
+
+            <!-- Workflow Stepper -->
+            <div class="exam-sidebar-nav">
+                <div class="exam-nav-step">
+                    <div class="step-left-content">
+                        <span>📄</span>
+                        <span>Instructions</span>
+                    </div>
+                    <div class="step-done-badge">✓</div>
+                </div>
+
+                <div class="exam-nav-step">
+                    <div class="step-left-content">
+                        <span>💻</span>
+                        <span>System Check</span>
+                    </div>
+                    <div class="step-done-badge">✓</div>
+                </div>
+
+                <div class="exam-nav-step active">
+                    <div class="step-left-content">
+                        <span>✏️</span>
+                        <span>Exam</span>
+                    </div>
+                    <div class="step-active-badge" id="sidebar-step-indicator">3</div>
+                </div>
+
+                <div class="exam-nav-step" style="cursor: pointer;" onclick="confirmSubmit()">
+                    <div class="step-left-content">
+                        <span>🏁</span>
+                        <span>Submit</span>
+                    </div>
+                    <div class="step-upcoming-badge">4</div>
+                </div>
             </div>
-            <div class="glass-panel" style="padding: 0.5rem 1.5rem; border-radius: 8px; font-family: var(--font-heading); font-weight: 700; font-size: 1.5rem; color: var(--accent-primary);" id="timer-display">
-                00:00
+        </div>
+
+        <!-- Bottom Shield Security Card -->
+        <div class="exam-security-assurance-card">
+            <div class="assurance-icon-bubble">🛡️</div>
+            <div class="assurance-title">Your exam is secure</div>
+            <div class="assurance-desc">We're monitoring your session to ensure academic integrity.</div>
+        </div>
+    </aside>
+
+    <!-- 4. MAIN STAGE (Top Bar + Workspace) -->
+    <div class="exam-stage-wrapper">
+        <!-- TOP HEADER BAR -->
+        <header class="exam-top-bar">
+            <div class="exam-title-group">
+                <span class="exam-title-icon">📖</span>
+                <div>
+                    <h3 class="exam-headline" id="exam-title">Loading Examination...</h3>
+                    <span id="save-status" style="font-size: 0.78rem; color: var(--emerald-accent); font-weight: 600;">✓ Autosaved</span>
+                </div>
+            </div>
+
+            <div class="exam-top-widgets">
+                <div class="widget-pill widget-question-index" id="question-indicator-wrapper">
+                    Question <span id="current-q-num">1</span> of <span id="total-q-num">40</span>
+                </div>
+
+                <div class="widget-pill widget-timer-pill">
+                    <span>⏱️</span>
+                    <span id="timer-display">00:00</span>
+                </div>
+
+                <button class="btn-fullscreen-toggle" title="Toggle Fullscreen" onclick="document.documentElement.requestFullscreen().catch(()=>{})">
+                    <span>⛶</span>
+                </button>
             </div>
         </header>
 
-        <!-- Main Workspace -->
-        <main class="exam-layout">
-            <!-- Left: Question Workspace -->
-                    <section class="question-area glass-panel" style="padding: 2rem; display: flex; flex-direction: column; justify-content: space-between;">
-                <div>
-                    <h4 id="question-number" style="color: var(--text-secondary); margin-bottom: 0.75rem; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.05em;">Question - of -</h4>
-                    <p id="question-text" style="font-size: 1.15rem; line-height: 1.6; margin-bottom: 2rem; font-weight: 500;">Loading question content...</p>
-                    
-                    <div id="options-container">
-                        <!-- Dynamic options checkbox/radio items -->
+        <!-- MAIN WORKSPACE GRID -->
+        <main class="exam-workspace-grid">
+            <!-- CENTER: ACTIVE QUESTION WORKSPACE -->
+            <section class="question-card-outer">
+                <div class="question-main-card">
+                    <div>
+                        <div class="question-type-badge" id="question-type-tag">Multiple Choice</div>
+                        
+                        <div class="question-title-text" id="question-text">
+                            Loading question content...
+                        </div>
+                        
+                        <div class="question-instruction-sub" id="question-subinstruction">
+                            Select the most appropriate answer.
+                        </div>
+
+                        <!-- Options Container -->
+                        <div class="answer-options-list" id="options-container">
+                            <!-- Dynamic options items -->
+                        </div>
+                    </div>
+
+                    <!-- Question Card Footer Actions -->
+                    <div class="question-bottom-actions">
+                        <button class="btn-question-action" id="btn-mark" onclick="toggleMarkReview()">
+                            <span>🔖</span>
+                            <span id="btn-mark-label">Mark for Review</span>
+                        </button>
+
+                        <button class="btn-question-action" id="btn-clear" onclick="clearAnswer()">
+                            <span>🗑️</span>
+                            <span>Clear Answer</span>
+                        </button>
                     </div>
                 </div>
-                
-                <!-- Navigation controls -->
-                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-glass); padding-top: 1.5rem; margin-top: 2rem;">
-                    <button class="btn btn-secondary" id="btn-prev" onclick="navigatePrev()">Previous</button>
-                    <button class="btn btn-secondary" id="btn-mark" onclick="toggleMarkReview()" style="border-color: var(--accent-warning); color: var(--accent-warning);">Mark for Review</button>
-                    <button class="btn btn-secondary" id="btn-next" onclick="navigateNext()">Next</button>
-                    <button class="btn btn-danger" id="btn-submit" onclick="confirmSubmit()">Submit Exam</button>
+
+                <!-- Bottom Security Reminder Banner -->
+                <div class="bottom-security-strip">
+                    <span>🔒</span>
+                    <span>Do not refresh or close this window. Your exam session is being monitored.</span>
                 </div>
             </section>
 
-            <!-- Right: Proctoring sidebar -->
-            <aside class="proctor-sidebar">
-                <div class="glass-panel" style="padding: 1rem; text-align: center;">
-                    <div class="video-feed-wrapper">
-                        <video id="webcam-feed" autoplay playsinline muted></video>
-                        <canvas id="proctor-canvas" class="canvas-overlay"></canvas>
-                        <div class="proctor-status-indicator" style="flex-direction: column; gap: 4px; align-items: flex-start; padding: 0.5rem 0.8rem; border-radius: 6px; width: calc(100% - 24px); box-sizing: border-box;">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <div class="status-dot" id="proctor-dot"></div>
-                                <span id="proctor-text" style="font-weight: 600; font-size: 13px;">Proctoring Active</span>
+            <!-- RIGHT: PROCTORING & PALETTE COLUMN -->
+            <aside class="exam-proctor-pane">
+                <!-- 1. Live Proctoring Card -->
+                <div class="proctor-box-card">
+                    <div class="proctor-header-row">
+                        <div class="proctor-title-badge">
+                            <span style="color: #10B981; font-weight: 900;">✓</span>
+                            <span>Live Proctoring</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.6rem;">
+                            <div class="signal-indicator" title="Proctoring Signal Strong">
+                                <span style="height: 4px;"></span>
+                                <span style="height: 7px;"></span>
+                                <span style="height: 10px;"></span>
+                                <span style="height: 14px;"></span>
                             </div>
-                            <span id="detection-model-status" style="font-size: 11px; font-weight: 500; opacity: 0.85; display: inline-block;">📱 Detector: Loading Model...</span>
+                            <span style="color: var(--text-secondary); cursor: pointer; font-size: 1.1rem; line-height: 1;" title="Options">⋮</span>
                         </div>
                     </div>
-                    <div id="proctor-debug-console" style="margin-top: 10px; font-size: 10px; font-family: monospace; color: var(--text-secondary); background: rgba(16, 185, 129, 0.08); border-radius: 6px; padding: 6px 10px; text-align: left; max-height: 80px; overflow-y: auto; border: 1px solid var(--border-glass); line-height: 1.4; word-break: break-all;">
-                        [SYSTEM] Initializing logs...
+
+                    <!-- Video Viewport (Retaining existing elements) -->
+                    <div class="webcam-card-feed">
+                        <video id="webcam-feed" autoplay playsinline muted></video>
+                        <canvas id="proctor-canvas"></canvas>
+                    </div>
+
+                    <!-- Face Verified Status Badge -->
+                    <div class="face-status-pill" id="face-verified-pill">
+                        <span>✓</span>
+                        <span id="face-status-text">Face verified</span>
+                    </div>
+
+                    <!-- Hardware Status Row -->
+                    <div class="hardware-metrics-row" style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.85rem; padding-top: 0.85rem; border-top: 1px solid var(--border-subtle); font-size: 0.76rem; color: #4B5563;">
+                        <div class="hardware-metric-item active" id="dev-cam-status" style="display: flex; align-items: center; gap: 0.4rem;">
+                            <span>📹</span>
+                            <div>
+                                <span style="font-size: 0.68rem; color: #6B7280; display: block; line-height: 1.1;">Camera</span>
+                                <strong style="color: #111827;">On</strong>
+                            </div>
+                        </div>
+                        <div class="hardware-metric-item active" id="dev-phone-status" style="display: flex; align-items: center; gap: 0.4rem;">
+                            <span>📱</span>
+                            <div>
+                                <span style="font-size: 0.68rem; color: #6B7280; display: block; line-height: 1.1;">Phone</span>
+                                <strong style="color: #111827;">No phone detected</strong>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="glass-panel" style="padding: 1.25rem; flex-grow: 1;">
-                    <h4 style="margin-bottom: 1rem; font-size: 1rem;">Questions Overview</h4>
-                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem;" id="nav-matrix">
-                        <!-- Exam matrix buttons -->
+                <!-- 2. Question Palette Card -->
+                <div class="palette-box-card">
+                    <h4 class="palette-heading">Question Palette</h4>
+                    
+                    <!-- Legend -->
+                    <div class="palette-legend-strip" style="display: flex; align-items: center; justify-content: space-between; font-size: 0.74rem; color: #6B7280; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-subtle); flex-wrap: wrap; gap: 0.4rem;">
+                        <div class="palette-legend-item" style="display: flex; align-items: center; gap: 0.35rem;">
+                            <div class="legend-indicator-box" style="width: 11px; height: 11px; border-radius: 3px; background: #0E9F6E;"></div>
+                            <span>Answered</span>
+                        </div>
+                        <div class="palette-legend-item" style="display: flex; align-items: center; gap: 0.35rem;">
+                            <div class="legend-indicator-box" style="width: 11px; height: 11px; border-radius: 3px; background: #EF4444;"></div>
+                            <span>Skipped</span>
+                        </div>
+                        <div class="palette-legend-item" style="display: flex; align-items: center; gap: 0.35rem;">
+                            <div class="legend-indicator-box" style="width: 11px; height: 11px; border-radius: 3px; background: #FFFFFF; border: 1.5px solid #111827;"></div>
+                            <span>Current</span>
+                        </div>
+                        <div class="palette-legend-item" style="display: flex; align-items: center; gap: 0.35rem;">
+                            <div class="legend-indicator-box" style="width: 11px; height: 11px; border-radius: 3px; background: #E5E7EB;"></div>
+                            <span>Unanswered</span>
+                        </div>
                     </div>
+
+                    <!-- Matrix Grid (Retaining nav-matrix ID) -->
+                    <div class="palette-buttons-grid" id="nav-matrix">
+                        <!-- Dynamic Question Buttons -->
+                    </div>
+
+                    <!-- Exam Progress -->
+                    <div class="exam-progress-container">
+                        <div class="progress-label-row">
+                            <span>Exam Progress</span>
+                            <span id="progress-percent-label">0%</span>
+                        </div>
+                        <div class="progress-track-rail">
+                            <div class="progress-fill-indicator" id="progress-fill-bar"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Navigation Controls -->
+                <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+                    <button class="btn-exam-primary-next" id="btn-save-next" onclick="navigateNext()">
+                        <span>Save & Next</span>
+                        <span>→</span>
+                    </button>
+                    <button class="btn-exam-secondary-prev" id="btn-main-prev" onclick="navigatePrev()">
+                        <span>←</span>
+                        <span>Previous Question</span>
+                    </button>
                 </div>
             </aside>
         </main>
     </div>
 
-    <!-- WARNING NOTIFICATION MODAL -->
+    <!-- 5. IN-PAGE SUBMISSION CONFIRMATION MODAL (Prevents exiting fullscreen) -->
+    <div class="modal-backdrop" id="submit-confirm-modal" style="z-index: 10001;">
+        <div class="modal-content" style="text-align: center; max-width: 460px;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🏁</div>
+            <h3 style="margin-bottom: 0.75rem; color: var(--forest-dark); font-family: var(--font-heading);">Submit Examination?</h3>
+            <p style="color: var(--text-secondary); line-height: 1.6; font-size: 0.95rem; margin-bottom: 1.75rem;">
+                Are you sure you want to finish and submit your examination answers? Once submitted, your examination attempt will be permanently evaluated and cannot be reopened.
+            </p>
+            <div style="display: flex; gap: 1rem; justify-content: center;">
+                <button class="btn btn-secondary" id="btn-cancel-submit" onclick="cancelSubmit()" style="flex: 1; padding: 0.75rem;">Continue Exam</button>
+                <button class="btn btn-primary" id="btn-confirm-submit" onclick="executeSubmit()" style="flex: 1; padding: 0.75rem; background: var(--primary-green);">Yes, Submit</button>
+            </div>
+            <div id="submit-loading-status" style="display: none; margin-top: 1.25rem; color: var(--primary-green); font-weight: 700; font-size: 0.9rem;">
+                ⏳ Submitting answers and computing results...
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. WARNING NOTIFICATION MODAL -->
     <div class="modal-backdrop" id="warning-modal">
-        <div class="glass-panel modal-content alert-warning" style="text-align: center;">
+        <div class="modal-content" style="text-align: center; max-width: 440px;">
             <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
-            <h3 style="margin-bottom: 1rem; color: var(--accent-warning);">Security Warning</h3>
-            <p id="warning-message" style="line-height: 1.6; margin-bottom: 1.5rem; color: var(--text-primary); font-size: 0.95rem;">
-                Warning: Examination policy violation detected. The system is automatically reviewing this alert and continuing analysis.
+            <h3 style="margin-bottom: 1rem; color: var(--accent-warning); font-family: var(--font-heading);">Security Warning</h3>
+            <p id="warning-message" style="line-height: 1.6; margin-bottom: 1.5rem; color: var(--text-secondary); font-size: 0.95rem;">
+                Warning: Examination policy violation detected. The system is automatically reviewing this alert.
             </p>
         </div>
     </div>
 
-    <!-- TERMINATION MODAL -->
+    <!-- 7. TERMINATION MODAL -->
     <div class="modal-backdrop" id="termination-modal">
-        <div class="glass-panel modal-content alert-danger" style="text-align: center; max-width: 450px;">
+        <div class="modal-content" style="text-align: center; max-width: 450px;">
             <div style="font-size: 4rem; margin-bottom: 1rem;">🚫</div>
-            <h3 style="margin-bottom: 1rem; color: var(--accent-danger);">Exam Terminated</h3>
-            <p id="termination-message" style="line-height: 1.6; margin-bottom: 2rem; color: var(--text-primary);">
+            <h3 style="margin-bottom: 1rem; color: var(--accent-danger); font-family: var(--font-heading);">Exam Terminated</h3>
+            <p id="termination-message" style="line-height: 1.6; margin-bottom: 2rem; color: var(--text-secondary);">
                 Your examination has been terminated because the permitted violation threshold was exceeded.
             </p>
-            <a href="#" class="btn btn-danger" onclick="redirectToDashboard(); return false;" style="width: 100%; display: block; text-decoration: none; box-sizing: border-box; text-align: center;">Return to Dashboard</a>
+            <a href="#" class="btn btn-danger" onclick="redirectToDashboard(); return false;" style="width: 100%; display: block; text-decoration: none; box-sizing: border-box; text-align: center; border-radius: 10px; padding: 0.85rem; font-weight: 700;">Return to Dashboard</a>
         </div>
     </div>
 
@@ -132,13 +1046,35 @@
             window.location.href = "dashboard.html";
         }
 
+        const verifiedProfile = localStorage.getItem("verified_face_profile");
+        if (!verifiedProfile) {
+            alert("Biometric face verification required! You must complete face matching before accessing the examination.");
+            window.location.href = "dashboard.html";
+        }
+
         let questions = [];
         let currentIndex = 0;
         let selectedAnswersMap = {}; // Maps question_id to selected answers array
         let textAnswersMap = {}; // Maps question_id to text answer string
         let reviewSet = new Set();
+        let skippedSet = new Set(); // Tracks question IDs skipped by student
+        let visitedSet = new Set(); // Tracks question IDs visited
         let timeRemaining = 0;
         let aiCamera = null;
+        let isSubmitting = false;
+
+        function updateCurrentQuestionSkipStatus() {
+            if (questions.length === 0) return;
+            const q = questions[currentIndex];
+            visitedSet.add(q.id);
+            const isAnswered = (selectedAnswersMap[q.id] && selectedAnswersMap[q.id].length > 0) || 
+                               (textAnswersMap[q.id] && textAnswersMap[q.id].trim() !== "");
+            if (!isAnswered) {
+                skippedSet.add(q.id);
+            } else {
+                skippedSet.delete(q.id);
+            }
+        }
 
         // Enter Fullscreen Enforcer
         document.getElementById("btn-enter-fullscreen").addEventListener("click", () => {
@@ -158,8 +1094,8 @@
 
         // Initialize exam session on screen lock
         async function initializeExam() {
-            // Load examination questions
-            const res = await API.get(`/exams/${localStorage.getItem("selected_exam_id") || 1}/questions`);
+            const examId = localStorage.getItem("selected_exam_id") || 1;
+            const res = await API.get(`/exams/${examId}/questions`);
             if (res.success) {
                 questions = res.questions;
                 
@@ -170,14 +1106,20 @@
                 });
                 
                 // Load metadata
-                const metadataRes = await API.get(`/exams/${localStorage.getItem("selected_exam_id") || 1}`);
+                const metadataRes = await API.get(`/exams/${examId}`);
                 if (metadataRes.success) {
                     document.getElementById("exam-title").innerText = metadataRes.exam.title;
                 }
 
+                document.getElementById("total-q-num").innerText = questions.length;
+
                 // Render first question
+                if (questions.length > 0) {
+                    visitedSet.add(questions[0].id);
+                }
                 renderQuestion();
                 renderMatrix();
+                updateProgressBar();
 
                 // Setup Sandbox & local AI
                 setupSecuritySandbox();
@@ -196,127 +1138,217 @@
             if (questions.length === 0) return;
             const q = questions[currentIndex];
             
-            document.getElementById("question-number").innerText = `Question ${currentIndex + 1} of ${questions.length}`;
+            document.getElementById("current-q-num").innerText = currentIndex + 1;
             document.getElementById("question-text").innerText = q.question_text;
+            
+            // Question Tag
+            const tagEl = document.getElementById("question-type-tag");
+            const subInstructionEl = document.getElementById("question-subinstruction");
+            if (q.question_type === "TF") {
+                tagEl.innerText = "True / False";
+                subInstructionEl.innerText = "Select True or False for the statement above.";
+            } else if (q.question_type === "SHORT_ANSWER") {
+                tagEl.innerText = "Short Answer";
+                subInstructionEl.innerText = "Type your detailed response in the text field below.";
+            } else {
+                tagEl.innerText = "Multiple Choice";
+                subInstructionEl.innerText = "Select the most appropriate answer.";
+            }
             
             const container = document.getElementById("options-container");
             container.innerHTML = "";
 
             if (q.question_type === "MCQ" || q.question_type === "TF") {
+                const cleanOptionText = (text) => {
+                    if (!text) return "";
+                    return text.replace(/^[a-d]\s*[\).\-]\s*/i, "");
+                };
+                
                 q.options.forEach(opt => {
                     const isSelected = selectedAnswersMap[q.id].includes(opt.option_letter);
-                    const div = document.createElement("div");
-                    div.className = `option-item ${isSelected ? 'selected' : ''}`;
-                    div.innerHTML = `
-                        <input type="checkbox" class="option-checkbox" ${isSelected ? 'checked' : ''}>
-                        <span style="font-weight: 600; margin-right: 0.5rem;">${opt.option_letter}.</span>
-                        <span>${opt.option_text}</span>
+                    const card = document.createElement("div");
+                    card.className = `answer-card-item ${isSelected ? 'selected' : ''}`;
+                    card.innerHTML = `
+                        <div class="answer-radio-circle">
+                            <div class="answer-radio-inner-dot"></div>
+                        </div>
+                        <span class="answer-letter-label">${opt.option_letter}.</span>
+                        <span class="answer-text-content">${cleanOptionText(opt.option_text)}</span>
                     `;
                     
-                    div.addEventListener("click", () => handleOptionSelection(opt.option_letter, div));
-                    container.appendChild(div);
+                    card.addEventListener("click", () => handleOptionSelection(opt.option_letter, card));
+                    container.appendChild(card);
                 });
             } else if (q.question_type === "SHORT_ANSWER") {
                 const textarea = document.createElement("textarea");
-                textarea.className = "form-control";
-                textarea.rows = 5;
+                textarea.className = "short-answer-input";
                 textarea.placeholder = "Type your answer here...";
                 textarea.value = textAnswersMap[q.id];
                 textarea.addEventListener("input", (e) => {
                     textAnswersMap[q.id] = e.target.value;
+                    if (e.target.value.trim() !== "") {
+                        skippedSet.delete(q.id);
+                    } else if (visitedSet.has(q.id)) {
+                        skippedSet.add(q.id);
+                    }
                     triggerAutoSave();
+                    renderMatrix();
+                    updateProgressBar();
                 });
                 container.appendChild(textarea);
             }
 
-            // Update Nav state
-            document.getElementById("btn-prev").disabled = currentIndex === 0;
-            document.getElementById("btn-next").disabled = currentIndex === questions.length - 1;
+            // Update Navigation Buttons state
+            document.getElementById("btn-main-prev").disabled = currentIndex === 0;
             
-            const markBtn = document.getElementById("btn-mark");
-            if (reviewSet.has(q.id)) {
-                markBtn.innerText = "Unmark Review";
-                markBtn.style.background = "rgba(245, 158, 11, 0.1)";
+            const nextBtn = document.getElementById("btn-save-next");
+            if (currentIndex === questions.length - 1) {
+                nextBtn.innerHTML = `<span>Submit Exam</span> <span>🏁</span>`;
+                nextBtn.style.background = "var(--primary-green)";
             } else {
-                markBtn.innerText = "Mark for Review";
-                markBtn.style.background = "transparent";
+                nextBtn.innerHTML = `<span>Save & Next</span> <span>→</span>`;
+                nextBtn.style.background = "var(--forest-dark)";
+            }
+            
+            // Mark for Review state
+            const markBtn = document.getElementById("btn-mark");
+            const markLabel = document.getElementById("btn-mark-label");
+            if (reviewSet.has(q.id)) {
+                markBtn.className = "btn-question-action review-flagged";
+                markLabel.innerText = "Marked for Review";
+            } else {
+                markBtn.className = "btn-question-action";
+                markLabel.innerText = "Mark for Review";
             }
         }
 
         function handleOptionSelection(letter, element) {
             const q = questions[currentIndex];
-            const checkbox = element.querySelector(".option-checkbox");
             
             if (selectedAnswersMap[q.id].includes(letter)) {
                 selectedAnswersMap[q.id] = selectedAnswersMap[q.id].filter(l => l !== letter);
                 element.classList.remove("selected");
-                checkbox.checked = false;
             } else {
-                // If single option MCQ, clear others
+                // If single option MCQ or TF, clear others
                 if (q.question_type === "TF" || q.question_type === "MCQ") {
                     selectedAnswersMap[q.id] = [letter];
-                    const items = document.querySelectorAll(".option-item");
+                    const items = document.querySelectorAll(".answer-card-item");
                     items.forEach(el => el.classList.remove("selected"));
-                    const checkBoxes = document.querySelectorAll(".option-checkbox");
-                    checkBoxes.forEach(cb => cb.checked = false);
                 } else {
                     selectedAnswersMap[q.id].push(letter);
                 }
                 element.classList.add("selected");
-                checkbox.checked = true;
+            }
+
+            // Update skipped status immediately
+            if (selectedAnswersMap[q.id].length > 0) {
+                skippedSet.delete(q.id);
+            } else if (visitedSet.has(q.id)) {
+                skippedSet.add(q.id);
             }
             
             triggerAutoSave();
             renderMatrix();
+            updateProgressBar();
+        }
+
+        function clearAnswer() {
+            if (questions.length === 0) return;
+            const q = questions[currentIndex];
+            selectedAnswersMap[q.id] = [];
+            textAnswersMap[q.id] = "";
+            
+            const items = document.querySelectorAll(".answer-card-item");
+            items.forEach(el => el.classList.remove("selected"));
+            
+            const txt = document.querySelector(".short-answer-input");
+            if (txt) txt.value = "";
+
+            if (visitedSet.has(q.id)) {
+                skippedSet.add(q.id);
+            }
+
+            triggerAutoSave();
+            renderMatrix();
+            updateProgressBar();
         }
 
         function renderMatrix() {
             const container = document.getElementById("nav-matrix");
-            container.innerHTML = questions.map((q, idx) => {
-                let statusClass = "btn-secondary";
-                const isSelected = selectedAnswersMap[q.id].length > 0 || textAnswersMap[q.id] !== "";
-                const isReview = reviewSet.has(q.id);
+            if (!container || questions.length === 0) return;
 
-                if (currentIndex === idx) {
-                    statusClass = "btn-primary";
-                } else if (isReview) {
-                    statusClass = "btn-secondary"; // styled amber in inline styles
-                } else if (isSelected) {
-                    statusClass = "btn-secondary";
-                }
-                
+            container.innerHTML = questions.map((q, idx) => {
+                const isSelected = (selectedAnswersMap[q.id] && selectedAnswersMap[q.id].length > 0) || 
+                                   (textAnswersMap[q.id] && textAnswersMap[q.id].trim() !== "");
+                const isReview = reviewSet.has(q.id);
+                const isSkipped = skippedSet.has(q.id) && !isSelected;
+                const isCurrent = currentIndex === idx;
+
                 let inlineStyle = "";
-                if (isReview) {
-                    inlineStyle = "border-color: var(--accent-warning); color: var(--accent-warning);";
-                } else if (isSelected && currentIndex !== idx) {
-                    inlineStyle = "border-color: var(--accent-success); color: var(--accent-success);";
+
+                if (isCurrent) {
+                    inlineStyle = "background: #FFFFFF; color: #111827; font-weight: 800; border: 2px solid #111827;";
+                } else if (isReview) {
+                    inlineStyle = "border: 1.5px solid #F59E0B; color: #B45309; background: #FEF3C7; font-weight: 700;";
+                } else if (isSelected) {
+                    inlineStyle = "background: #0E9F6E; color: #FFFFFF; border: none; font-weight: 700;";
+                } else if (isSkipped) {
+                    inlineStyle = "background: #EF4444; color: #FFFFFF; border: none; font-weight: 700; box-shadow: 0 1px 3px rgba(239, 68, 68, 0.3);";
+                } else {
+                    inlineStyle = "background: #F9FAFB; color: #6B7280; border: 1px solid #E5E7EB;";
                 }
                 
                 return `
-                    <button class="btn ${statusClass}" style="padding: 0.5rem; font-size: 0.9rem; justify-content: center; ${inlineStyle}" onclick="jumpToQuestion(${idx})">
+                    <button class="palette-cell-btn" style="${inlineStyle}" onclick="jumpToQuestion(${idx})">
                         ${idx + 1}
                     </button>
                 `;
             }).join('');
         }
 
+        function updateProgressBar() {
+            if (questions.length === 0) return;
+            let answeredCount = 0;
+            questions.forEach(q => {
+                const hasAnswer = (selectedAnswersMap[q.id] && selectedAnswersMap[q.id].length > 0) || 
+                                  (textAnswersMap[q.id] && textAnswersMap[q.id].trim() !== "");
+                if (hasAnswer) answeredCount++;
+            });
+            const percent = Math.round((answeredCount / questions.length) * 100);
+            const fillEl = document.getElementById("progress-fill-bar");
+            const labelEl = document.getElementById("progress-percent-label");
+            if (fillEl) fillEl.style.width = `${percent}%`;
+            if (labelEl) labelEl.innerText = `${percent}%`;
+        }
+
         function jumpToQuestion(idx) {
+            if (idx === currentIndex) return;
+            updateCurrentQuestionSkipStatus();
             currentIndex = idx;
+            visitedSet.add(questions[currentIndex].id);
             renderQuestion();
             renderMatrix();
         }
 
         function navigateNext() {
+            if (currentIndex === questions.length - 1) {
+                confirmSubmit();
+                return;
+            }
+            updateCurrentQuestionSkipStatus();
             if (currentIndex < questions.length - 1) {
                 currentIndex++;
+                visitedSet.add(questions[currentIndex].id);
                 renderQuestion();
                 renderMatrix();
             }
         }
 
         function navigatePrev() {
+            updateCurrentQuestionSkipStatus();
             if (currentIndex > 0) {
                 currentIndex--;
+                visitedSet.add(questions[currentIndex].id);
                 renderQuestion();
                 renderMatrix();
             }
@@ -336,8 +1368,11 @@
         // Auto Save Trigger (Immediate API Post)
         let saveTimeout = null;
         function triggerAutoSave() {
-            document.getElementById("save-status").innerText = "Saving...";
-            document.getElementById("save-status").style.color = "var(--text-secondary)";
+            const statusEl = document.getElementById("save-status");
+            if (statusEl) {
+                statusEl.innerText = "Saving...";
+                statusEl.style.color = "var(--text-secondary)";
+            }
             
             if (saveTimeout) clearTimeout(saveTimeout);
             
@@ -350,12 +1385,14 @@
                     text_answer: textAnswersMap[q.id]
                 });
                 
-                if (res.success) {
-                    document.getElementById("save-status").innerText = "✓ Autosaved";
-                    document.getElementById("save-status").style.color = "var(--accent-success)";
-                } else {
-                    document.getElementById("save-status").innerText = "⚠ Save Connection Error";
-                    document.getElementById("save-status").style.color = "var(--accent-danger)";
+                if (statusEl) {
+                    if (res.success) {
+                        statusEl.innerText = "✓ Autosaved";
+                        statusEl.style.color = "var(--emerald-accent)";
+                    } else {
+                        statusEl.innerText = "⚠ Save Connection Error";
+                        statusEl.style.color = "var(--accent-danger)";
+                    }
                 }
             }, 1000);
         }
@@ -378,7 +1415,6 @@
                 AIProctorEngine.start();
             } catch (e) {
                 console.error("Webcam init error:", e);
-                // Report Camera failure event
                 SandboxEnforcer.reportInfrac("CAMERA_FAILURE");
             }
         }
@@ -386,6 +1422,7 @@
         // Heartbeat thread (executes every 5 seconds)
         function startHeartbeat() {
             heartbeatTimer = setInterval(async () => {
+                if (isSubmitting) return; // Do not send heartbeat violations while user is submitting
                 const isFullscreen = !!document.fullscreenElement;
                 const visibility = document.visibilityState;
 
@@ -425,11 +1462,12 @@
                 const minutes = Math.floor(timeRemaining / 60);
                 const seconds = timeRemaining % 60;
                 
-                document.getElementById("timer-display").innerText = 
-                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                
-                if (timeRemaining <= 300) { // Under 5 minutes remaining, color timer crimson
-                    document.getElementById("timer-display").style.color = "var(--accent-danger)";
+                const timerEl = document.getElementById("timer-display");
+                if (timerEl) {
+                    timerEl.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    if (timeRemaining <= 300) { // Under 5 minutes remaining, color timer crimson
+                        timerEl.style.color = "var(--accent-danger)";
+                    }
                 }
             }, 1000);
         }
@@ -438,27 +1476,13 @@
             document.getElementById("warning-message").innerText = message;
             document.getElementById("warning-modal").classList.add("active");
 
-            document.getElementById("proctor-dot").className = "status-dot danger";
-            document.getElementById("proctor-text").innerText = "Warning Triggered";
-
             clearTimeout(window.warningAutoHideTimer);
             window.warningAutoHideTimer = setTimeout(() => {
                 document.getElementById("warning-modal").classList.remove("active");
-                document.getElementById("proctor-dot").className = "status-dot";
-                document.getElementById("proctor-text").innerText = "Proctoring Active";
                 if (typeof AIProctorEngine !== "undefined") {
                     AIProctorEngine.lastEventTimes = {};
                 }
             }, 2000);
-        }
-
-        function dismissWarningModal() {
-            document.getElementById("warning-modal").classList.remove("active");
-            document.getElementById("proctor-dot").className = "status-dot";
-            document.getElementById("proctor-text").innerText = "Proctoring Active";
-            if (typeof AIProctorEngine !== "undefined") {
-                AIProctorEngine.lastEventTimes = {};
-            }
         }
 
         function triggerTermination(message) {
@@ -480,31 +1504,74 @@
             localStorage.removeItem("attempt_id");
             localStorage.removeItem("session_token");
             localStorage.removeItem("selected_exam_id");
+            localStorage.removeItem("verified_face_profile");
             window.location.href = "dashboard.html";
         }
 
-        async function confirmSubmit() {
-            if (confirm("Are you sure you want to submit your examination answers?")) {
-                clearInterval(heartbeatTimer);
-                clearInterval(examTimer);
-                SandboxEnforcer.destroy();
-                SystemPreCheck.releaseMedia();
-                
+        function confirmSubmit() {
+            isSubmitting = true;
+            SandboxEnforcer.pause();
+            document.getElementById("submit-confirm-modal").classList.add("active");
+        }
+
+        function cancelSubmit() {
+            document.getElementById("submit-confirm-modal").classList.remove("active");
+            isSubmitting = false;
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            }
+            SandboxEnforcer.resume();
+        }
+
+        async function executeSubmit() {
+            const confirmBtn = document.getElementById("btn-confirm-submit");
+            const cancelBtn = document.getElementById("btn-cancel-submit");
+            const loadingStatus = document.getElementById("submit-loading-status");
+            
+            if (confirmBtn) confirmBtn.disabled = true;
+            if (cancelBtn) cancelBtn.disabled = true;
+            if (loadingStatus) loadingStatus.style.display = "block";
+
+            // Fully teardown monitoring and timers before submitting
+            clearInterval(heartbeatTimer);
+            clearInterval(examTimer);
+            SandboxEnforcer.destroy();
+            if (typeof AIProctorEngine !== "undefined") {
+                AIProctorEngine.stop();
+            }
+            SystemPreCheck.releaseMedia();
+            
+            try {
                 const res = await API.post(`/attempts/${currentAttemptId}/submit`, {
                     session_token: currentSessionToken
                 });
 
                 if (res.success) {
-                    alert("Examination submitted successfully. Loading results...");
+                    if (loadingStatus) loadingStatus.innerText = "✓ Evaluation completed! Loading results...";
                     localStorage.setItem("last_evaluated_attempt_id", currentAttemptId);
                     const tempId = currentAttemptId;
                     localStorage.removeItem("attempt_id");
                     localStorage.removeItem("session_token");
                     localStorage.removeItem("selected_exam_id");
-                    window.location.href = `result.html?attempt_id=${tempId}`;
+                    localStorage.removeItem("verified_face_profile");
+                    
+                    setTimeout(() => {
+                        window.location.href = `result.html?attempt_id=${tempId}`;
+                    }, 400);
                 } else {
                     alert(res.message || "Failed to submit exam.");
+                    if (confirmBtn) confirmBtn.disabled = false;
+                    if (cancelBtn) cancelBtn.disabled = false;
+                    if (loadingStatus) loadingStatus.style.display = "none";
+                    SandboxEnforcer.resume();
                 }
+            } catch (err) {
+                console.error("Submit error:", err);
+                alert("An error occurred while submitting your examination.");
+                if (confirmBtn) confirmBtn.disabled = false;
+                if (cancelBtn) cancelBtn.disabled = false;
+                if (loadingStatus) loadingStatus.style.display = "none";
+                SandboxEnforcer.resume();
             }
         }
     </script>

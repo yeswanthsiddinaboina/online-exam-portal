@@ -57,6 +57,12 @@ def start_exam(exam_id):
                 "error_code": "EXAM_ACCESS_RESTRICTED",
                 "message": "Access restricted. You must request and receive administrator approval to write this exam."
             }), 403
+        elif err_msg == "EXAM_COURSE_MISMATCH":
+            return jsonify({
+                "success": False,
+                "error_code": "EXAM_COURSE_MISMATCH",
+                "message": "This examination is not assigned to your enrolled course."
+            }), 403
         return jsonify({
             "success": False,
             "error_code": err_msg,

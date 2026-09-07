@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam Portal | Administrator Sign In</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        body {
+            background: radial-gradient(circle at 20% 20%, #0d4a3b 0%, var(--forest-dark) 80%);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 1.5rem;
+            color: #FFFFFF;
+        }
+
+        .admin-login-card {
+            background: #FFFFFF;
+            border-radius: 24px;
+            padding: 2.75rem 2.5rem;
+            max-width: 440px;
+            width: 100%;
+            box-shadow: var(--shadow-elevation);
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-login-card">
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <div style="width: 48px; height: 48px; background: var(--mint-soft); border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 0.75rem;">
+                🛡️
+            </div>
+            <h2 style="font-size: 1.6rem; color: var(--forest-dark); margin-bottom: 0.35rem;">Exam Portal Admin</h2>
+            <p style="font-size: 0.88rem; color: var(--text-secondary); margin: 0;">Sign in to access examination administration</p>
+        </div>
+        
+        <form id="admin-login-form">
+            <div class="form-group">
+                <label class="form-label" for="admin-email">Administrator Email</label>
+                <input class="form-control" type="email" id="admin-email" placeholder="admin@gmail.com" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="admin-password">Password</label>
+                <input class="form-control" type="password" id="admin-password" placeholder="••••••••" required>
+            </div>
+            
+            <button class="btn btn-primary" id="btn-submit" style="width: 100%; padding: 0.85rem; font-size: 0.95rem; margin-top: 1rem;" type="submit">
+                Sign In to Admin Portal
+            </button>
+        </form>
+
+        <div style="margin-top: 2rem; text-align: center; font-size: 0.82rem; color: var(--text-muted);">
+            Secure Proctoring &amp; Assessment Engine
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script>
+        const adminToken = localStorage.getItem("admin_token");
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectUrl = urlParams.get("redirect");
+
+        if (adminToken) {
+            if (redirectUrl) {
+                window.location.href = decodeURIComponent(redirectUrl);
+            } else {
+                window.location.href = "dashboard.html";
+            }
+        }
+
+        document.getElementById("admin-login-form").addEventListener("submit", function(e) {
+            e.preventDefault();
+            const email = document.getElementById("admin-email").value.trim();
+            const password = document.getElementById("admin-password").value;
+            handleLogin(email, password);
+        });
+    </script>
+</body>
+</html>

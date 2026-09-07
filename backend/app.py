@@ -6,7 +6,7 @@ project_root = Path(__file__).resolve().parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, redirect
 from flask_cors import CORS
 from werkzeug.exceptions import HTTPException
 from backend.config import Config
@@ -61,6 +61,26 @@ def create_app(config_class=Config):
                     conn.commit()
                 logger.info("Database migrated: added first_login_completed column to users table.")
 
+            if 'course' not in columns:
+                with engine.connect() as conn:
+                    conn.execute(db.text("ALTER TABLE users ADD COLUMN course VARCHAR(50) DEFAULT NULL"))
+                    conn.commit()
+                logger.info("Database migrated: added course column to users table.")
+
+            # Self-healing migration for exams table
+            exam_columns = [c['name'] for c in inspector.get_columns('exams')]
+            if 'is_deleted' not in exam_columns:
+                with engine.connect() as conn:
+                    conn.execute(db.text("ALTER TABLE exams ADD COLUMN is_deleted BOOLEAN DEFAULT 0"))
+                    conn.commit()
+                logger.info("Database migrated: added is_deleted column to exams table.")
+
+            if 'course' not in exam_columns:
+                with engine.connect() as conn:
+                    conn.execute(db.text("ALTER TABLE exams ADD COLUMN course VARCHAR(50) DEFAULT 'Python & Java'"))
+                    conn.commit()
+                logger.info("Database migrated: added course column to exams table.")
+
             # Enforce single admin user policy with fixed credentials
             from backend.models.user import User
             admin_user = User.query.filter_by(email="admin@gmail.com").first()
@@ -93,7 +113,6 @@ def create_app(config_class=Config):
                     
                 db.session.delete(oa)
                 logger.info(f"Removed redundant admin account: {oa.email}")
-                
             db.session.commit()
         except Exception as db_err:
             db.session.rollback()
@@ -137,7 +156,17 @@ def create_app(config_class=Config):
 
     @app.route("/", methods=["GET"])
     def index():
-        return app.send_static_file("login.html")
+        return redirect("/admin/login.html")
+
+    @app.route("/student", methods=["GET"])
+    @app.route("/student/", methods=["GET"])
+    def student_portal_redirect():
+        return redirect("/login.html?role=student")
+
+    @app.route("/admin", methods=["GET"])
+    @app.route("/admin/", methods=["GET"])
+    def admin_portal_redirect():
+        return redirect("/admin/login.html")
 
     @app.route("/health", methods=["GET"])
     def health_check():
@@ -147,5 +176,10 @@ def create_app(config_class=Config):
 
 if __name__ == "__main__":
     app = create_app()
+    print("\n" + "="*65)
+    print(" 🛡️  SECURE EXAM SYSTEM STARTED")
+    print(" 🔑 Administrator Login (Main Link): http://127.0.0.1:5001/")
+    print(" 🎓 Student Examination Portal Link: http://127.0.0.1:5001/student")
+    print("="*65 + "\n")
     # Run the server
     app.run(host="127.0.0.1", port=5001, debug=True)

@@ -10,11 +10,12 @@ logger = get_logger()
 
 def generate_token(user_id, role, expires_in_hours=12):
     """Generates a JWT token for the user session."""
+    logger.info(f"generate_token call - SECRET_KEY is: '{Config.SECRET_KEY}'")
     try:
         payload = {
             "exp": datetime.now(timezone.utc) + timedelta(hours=expires_in_hours),
             "iat": datetime.now(timezone.utc),
-            "sub": user_id,
+            "sub": str(user_id),
             "role": role
         }
         return jwt.encode(
@@ -28,13 +29,16 @@ def generate_token(user_id, role, expires_in_hours=12):
 
 def decode_token(token):
     """Decodes a JWT token."""
+    logger.info(f"decode_token call - SECRET_KEY is: '{Config.SECRET_KEY}'")
     try:
         return jwt.decode(token, Config.SECRET_KEY, algorithms=["HS256"])
     except jwt.ExpiredSignatureError:
         return {"error": "TOKEN_EXPIRED", "message": "The session token has expired."}
-    except jwt.InvalidTokenError:
-        return {"error": "INVALID_TOKEN", "message": "The session token is invalid."}
+    except jwt.InvalidTokenError as e:
+        logger.error(f"JWT decode failed with InvalidTokenError: {str(e)}", exc_info=True)
+        return {"error": "INVALID_TOKEN", "message": f"The session token is invalid: {str(e)}"}
     except Exception as e:
+        logger.error(f"JWT decode failed with unexpected Exception: {str(e)}", exc_info=True)
         return {"error": "TOKEN_ERROR", "message": str(e)}
 
 def token_required(f):
@@ -45,12 +49,18 @@ def token_required(f):
         
         # Check authorization header
         auth_header = request.headers.get("Authorization")
+        logger.info(f"token_required check - Authorization Header: {auth_header}")
         if auth_header:
             parts = auth_header.split()
             if len(parts) == 2 and parts[0].lower() == "bearer":
                 token = parts[1]
                 
+        # Fallback to query parameter token (essential for browser <img> tags, media, and direct downloads)
         if not token:
+            token = request.args.get("token")
+
+        if not token:
+            logger.warning("token_required check failed: token is missing or malformed")
             return jsonify({
                 "success": False,
                 "error_code": "UNAUTHORIZED",
@@ -58,6 +68,7 @@ def token_required(f):
             }), 401
             
         decoded = decode_token(token)
+        logger.info(f"token_required check - Decoded token payload: {decoded}")
         if "error" in decoded:
             return jsonify({
                 "success": False,
@@ -66,7 +77,16 @@ def token_required(f):
             }), 401
             
         # Fetch current user
-        user = User.query.get(decoded["sub"])
+        try:
+            user_id = int(decoded["sub"])
+        except (ValueError, TypeError, KeyError):
+            return jsonify({
+                "success": False,
+                "error_code": "INVALID_TOKEN",
+                "message": "Malformed token subject claim."
+            }), 401
+            
+        user = User.query.get(user_id)
         if not user:
             return jsonify({
                 "success": False,

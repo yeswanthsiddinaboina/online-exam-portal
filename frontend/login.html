@@ -3,175 +3,694 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure Exam System - Login</title>
+    <title>SecureExam | Student & Candidate Portal</title>
     <link rel="stylesheet" href="css/style.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+            background-color: var(--bg-primary);
+        }
+
+        .auth-split-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* --- LEFT SIDEBAR SHOWCASE (Deep Forest Green) --- */
+        .auth-showcase-panel {
+            flex: 1.1;
+            background: radial-gradient(circle at 20% 20%, #0d4a3b 0%, var(--forest-dark) 80%);
+            padding: 4rem 4.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            color: #FFFFFF;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Organic subtle watermark lines */
+        .auth-showcase-panel::after {
+            content: "";
+            position: absolute;
+            top: -10%;
+            right: -10%;
+            width: 450px;
+            height: 450px;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .auth-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            font-family: var(--font-heading);
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #FFFFFF;
+            text-decoration: none;
+        }
+
+        .auth-brand-icon {
+            width: 38px;
+            height: 38px;
+            background: var(--emerald-accent);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--forest-dark);
+            font-size: 1.25rem;
+            font-weight: 900;
+        }
+
+        .auth-hero-copy {
+            max-width: 520px;
+            margin: 2rem 0;
+        }
+
+        .auth-hero-title {
+            font-size: 2.75rem;
+            font-weight: 800;
+            line-height: 1.2;
+            color: #FFFFFF;
+            margin-bottom: 1.25rem;
+            letter-spacing: -0.02em;
+        }
+
+        .auth-hero-title span {
+            color: var(--emerald-accent);
+        }
+
+        .auth-hero-desc {
+            font-size: 1.05rem;
+            line-height: 1.6;
+            color: #D1D5DB;
+        }
+
+        /* Feature Cards Grid */
+        .auth-features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.25rem;
+            margin-top: 1rem;
+        }
+
+        .auth-feature-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 14px;
+            padding: 1.25rem 1rem;
+            transition: var(--transition-smooth);
+        }
+
+        .auth-feature-card:hover {
+            background: rgba(255, 255, 255, 0.07);
+            border-color: var(--emerald-accent);
+        }
+
+        .feature-icon-bubble {
+            width: 36px;
+            height: 36px;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.15rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #FFFFFF;
+            margin-bottom: 0.35rem;
+        }
+
+        .feature-desc {
+            font-size: 0.8rem;
+            line-height: 1.4;
+            color: #9CA3AF;
+        }
+
+        /* --- RIGHT AUTHENTICATION CARD PANEL --- */
+        .auth-form-panel {
+            flex: 0.9;
+            background-color: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2.5rem;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .auth-security-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #FFFFFF;
+            border: 1px solid var(--border-subtle);
+            border-radius: 9999px;
+            padding: 0.45rem 1.15rem;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--primary-green);
+            box-shadow: var(--shadow-subtle);
+            margin-bottom: 1.75rem;
+        }
+
+        .auth-card-main {
+            background: #FFFFFF;
+            border: 1px solid var(--border-subtle);
+            border-radius: 24px;
+            padding: 2.75rem 2.5rem;
+            width: 100%;
+            max-width: 440px;
+            box-shadow: var(--shadow-elevation);
+            box-sizing: border-box;
+        }
+
+        .auth-card-title {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            text-align: center;
+            margin-bottom: 0.35rem;
+        }
+
+        .auth-card-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .input-icon-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-icon-prefix {
+            position: absolute;
+            left: 1rem;
+            font-size: 1.05rem;
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+
+        .input-icon-wrapper .form-control {
+            padding-left: 2.75rem;
+            padding-right: 2.75rem;
+        }
+
+        .input-toggle-password {
+            position: absolute;
+            right: 1rem;
+            cursor: pointer;
+            font-size: 1rem;
+            color: var(--text-muted);
+            user-select: none;
+            transition: color 0.2s;
+        }
+
+        .input-toggle-password:hover {
+            color: var(--text-primary);
+        }
+
+        .form-row-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            font-size: 0.86rem;
+        }
+
+        .remember-checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .forgot-link {
+            color: var(--primary-green);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+
+        .forgot-link:hover {
+            color: var(--primary-green-hover);
+            text-decoration: underline;
+        }
+
+        /* Step pills for reset password view */
+        .step-pill-wrapper {
+            display: flex;
+            background: #F3F4F6;
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 4px;
+            margin-bottom: 1.5rem;
+        }
+
+        .step-pill-btn {
+            flex: 1;
+            padding: 0.65rem 0.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: transparent;
+            color: var(--text-secondary);
+        }
+
+        .step-pill-btn.active {
+            background: var(--primary-green);
+            color: #FFFFFF;
+            box-shadow: 0 2px 8px rgba(14, 159, 110, 0.25);
+        }
+
+        @media (max-width: 992px) {
+            .auth-showcase-panel {
+                display: none;
+            }
+            .auth-form-panel {
+                flex: 1;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="container auth-wrapper">
-        <div class="glass-panel auth-card">
-            <h2 style="font-family: var(--font-heading); text-align: center; margin-bottom: 2.5rem;" id="login-title">Administrator Login</h2>
-            
-            <!-- Unified Login Form -->
-            <form id="login-form">
-                <div class="form-group">
-                    <label class="form-label" for="email" id="email-label">Institutional Email</label>
-                    <input class="form-control" type="text" id="email" placeholder="admin@gmail.com" required>
-                </div>
-                
-                <div class="form-group" id="password-group">
-                    <label class="form-label" for="password">Password</label>
-                    <input class="form-control" type="password" id="password" placeholder="••••••••" required>
-                </div>
-                
-                <button class="btn btn-primary" id="btn-submit" style="width: 100%; margin-top: 1.5rem;" type="submit">Sign In as Admin</button>
-            </form>
+    <div class="auth-split-container">
+        <!-- 1. LEFT SHOWCASE PANEL -->
+        <div class="auth-showcase-panel">
+            <!-- Brand Header -->
+            <a href="login.html" class="auth-brand">
+                <div class="auth-brand-icon">✓</div>
+                <span>SecureExam</span>
+            </a>
 
-            <!-- Toggle Register Link -->
-            <p id="toggle-registration-link" style="margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-secondary); text-align: center; display: none;">
-                New candidate? <a href="#" onclick="toggleRegisterForm(true); return false;" style="color: var(--accent-primary); text-decoration: none; font-weight: 500;">Register Here</a>
-            </p>
-
-            <!-- Toggled Student Registration Form -->
-            <form id="register-form" style="display: none;">
-                <h2 style="font-family: var(--font-heading); text-align: center; margin-bottom: 1.5rem;">Candidate Registration</h2>
-                <div class="form-group">
-                    <label class="form-label" for="reg-name">Candidate Name</label>
-                    <input class="form-control" type="text" id="reg-name" placeholder="John Doe" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label" for="reg-email">Gmail ID</label>
-                    <input class="form-control" type="email" id="reg-email" placeholder="student@gmail.com" required>
-                </div>
-                <button class="btn btn-primary" style="width: 100%; margin-top: 1.25rem;" type="submit">Submit Registration</button>
-                <p style="margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-secondary); text-align: center;">
-                    Already registered? <a href="#" onclick="toggleRegisterForm(false); return false;" style="color: var(--accent-primary); text-decoration: none; font-weight: 500;">Sign In</a>
+            <!-- Headline & Vision Copy -->
+            <div class="auth-hero-copy">
+                <h1 class="auth-hero-title">
+                    A safe space to demonstrate your <span>knowledge</span>
+                </h1>
+                <p class="auth-hero-desc">
+                    Our secure examination environment protects your identity, your work, and ensures every candidate has a fair chance to succeed.
                 </p>
-            </form>
+            </div>
+
+            <!-- 3 Modern Feature Cards -->
+            <div class="auth-features-grid">
+                <div class="auth-feature-card">
+                    <div class="feature-icon-bubble">👤</div>
+                    <div class="feature-title">AI Proctoring</div>
+                    <div class="feature-desc">Smart monitoring for integrity and fairness.</div>
+                </div>
+
+                <div class="auth-feature-card">
+                    <div class="feature-icon-bubble">🔒</div>
+                    <div class="feature-title">Encrypted Session</div>
+                    <div class="feature-desc">End-to-end protection keeps your data safe.</div>
+                </div>
+
+                <div class="auth-feature-card">
+                    <div class="feature-icon-bubble">⚖️</div>
+                    <div class="feature-title">Fair Assessment</div>
+                    <div class="feature-desc">Equal opportunity and trusted results.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. RIGHT AUTHENTICATION CARD PANEL -->
+        <div class="auth-form-panel">
+            <!-- Floating Security Guarantee Badge -->
+            <div class="auth-security-badge">
+                <span>🛡️</span> Protected by secure authentication
+            </div>
+
+            <!-- CARD CONTAINER -->
+            <div class="auth-card-main">
+                <!-- VIEW 1: STUDENT LOGIN (Default) -->
+                <div id="view-login">
+                    <h2 class="auth-card-title">Welcome Back</h2>
+                    <p class="auth-card-subtitle">Sign in to continue your examination</p>
+                    
+                    <form id="login-form">
+                        <div class="form-group">
+                            <label class="form-label" for="login-identifier">Email or Student ID</label>
+                            <div class="input-icon-wrapper">
+                                <span class="input-icon-prefix">✉️</span>
+                                <input class="form-control" type="text" id="login-identifier" placeholder="Enter your email or student ID" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="login-password">Password</label>
+                            <div class="input-icon-wrapper">
+                                <span class="input-icon-prefix">🔒</span>
+                                <input class="form-control" type="password" id="login-password" placeholder="Enter your password" required>
+                                <span class="input-toggle-password" id="toggle-login-pass" onclick="togglePasswordVisibility('login-password', this)">👁️</span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row-options">
+                            <label class="remember-checkbox-label">
+                                <input type="checkbox" id="chk-remember-me" checked style="accent-color: var(--primary-green); width: 15px; height: 15px;">
+                                <span>Remember me</span>
+                            </label>
+                            <a href="#" class="forgot-link" onclick="showView('reset'); return false;">
+                                Forgot password?
+                            </a>
+                        </div>
+                        
+                        <button class="btn btn-primary" id="btn-submit" style="width: 100%; padding: 0.85rem; font-size: 1rem;" type="submit">
+                            <span>🛡️</span> Sign In Securely
+                        </button>
+                    </form>
+
+                    <p style="margin-top: 1.75rem; font-size: 0.88rem; color: var(--text-secondary); text-align: center;">
+                        New candidate? <a href="#" onclick="showView('register'); return false;" style="color: var(--primary-green); text-decoration: none; font-weight: 700;">Register Here</a>
+                    </p>
+                </div>
+
+                <!-- VIEW 2: CANDIDATE REGISTRATION -->
+                <div id="view-register" style="display: none;">
+                    <h2 class="auth-card-title">Candidate Registration</h2>
+                    <p class="auth-card-subtitle">Create your secure examination profile</p>
+                    
+                    <form id="register-form">
+                        <div class="form-group">
+                            <label class="form-label" for="reg-name">Full Name</label>
+                            <div class="input-icon-wrapper">
+                                <span class="input-icon-prefix">👤</span>
+                                <input class="form-control" type="text" id="reg-name" placeholder="John Doe" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="reg-email">Gmail ID</label>
+                            <div class="input-icon-wrapper">
+                                <span class="input-icon-prefix">✉️</span>
+                                <input class="form-control" type="email" id="reg-email" placeholder="student@gmail.com" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="reg-course">Course</label>
+                            <div class="input-icon-wrapper">
+                                <span class="input-icon-prefix">📚</span>
+                                <select class="form-control" id="reg-course" required style="cursor: pointer; appearance: auto; padding-left: 2.75rem; background-color: #FFFFFF; font-weight: 500;">
+                                    <option value="" disabled selected>Select your enrolled course</option>
+                                    <option value="Python">Python</option>
+                                    <option value="Java">Java</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="reg-password">Password</label>
+                            <div class="input-icon-wrapper">
+                                <span class="input-icon-prefix">🔒</span>
+                                <input class="form-control" type="password" id="reg-password" placeholder="Create password (min 4 characters)" minlength="4" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="reg-confirm-password">Confirm Password</label>
+                            <div class="input-icon-wrapper">
+                                <span class="input-icon-prefix">🔒</span>
+                                <input class="form-control" type="password" id="reg-confirm-password" placeholder="Re-enter password" minlength="4" required>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary" style="width: 100%; padding: 0.85rem; margin-top: 0.5rem;" type="submit">
+                            Submit Registration
+                        </button>
+                    </form>
+
+                    <p style="margin-top: 1.5rem; font-size: 0.88rem; color: var(--text-secondary); text-align: center;">
+                        Already registered? <a href="#" onclick="showView('login'); return false;" style="color: var(--primary-green); text-decoration: none; font-weight: 700;">Back to Sign In</a>
+                    </p>
+                </div>
+
+                <!-- VIEW 3: RESET PASSWORD (Admin Approval Flow) -->
+                <div id="view-reset" style="display: none;">
+                    <h2 class="auth-card-title">Reset Password</h2>
+                    <p class="auth-card-subtitle">Verified administration recovery</p>
+
+                    <!-- Step Selector Tabs -->
+                    <div class="step-pill-wrapper">
+                        <button type="button" id="pill-step-1" class="step-pill-btn active" onclick="switchResetStep(1)">
+                            1. Request Approval
+                        </button>
+                        <button type="button" id="pill-step-2" class="step-pill-btn" onclick="switchResetStep(2)">
+                            2. Set New Password
+                        </button>
+                    </div>
+
+                    <!-- Step 1: Request Admin Approval -->
+                    <div id="reset-step-1">
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem; line-height: 1.5;">
+                            Enter your registered Gmail ID or User ID below. Your password reset request will be submitted to the administrator for verification.
+                        </p>
+                        <form id="form-reset-step1">
+                            <div class="form-group">
+                                <label class="form-label" for="req-identifier">Gmail ID or User ID</label>
+                                <div class="input-icon-wrapper">
+                                    <span class="input-icon-prefix">✉️</span>
+                                    <input class="form-control" type="text" id="req-identifier" placeholder="e.g. student@gmail.com or STU12345" required>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary" type="submit" style="width: 100%; padding: 0.8rem;" id="btn-submit-step1">
+                                Submit Reset Request to Admin
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Step 2: Set New Password -->
+                    <div id="reset-step-2" style="display: none;">
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem; line-height: 1.5;">
+                            Once the administrator approves your request, enter your identifier and create your new password below.
+                        </p>
+                        <form id="form-reset-step2">
+                            <div class="form-group">
+                                <label class="form-label" for="confirm-identifier">Gmail ID or User ID</label>
+                                <div class="input-icon-wrapper">
+                                    <span class="input-icon-prefix">✉️</span>
+                                    <input class="form-control" type="text" id="confirm-identifier" placeholder="e.g. student@gmail.com or STU12345" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="confirm-new-pass">New Password</label>
+                                <div class="input-icon-wrapper">
+                                    <span class="input-icon-prefix">🔒</span>
+                                    <input class="form-control" type="password" id="confirm-new-pass" placeholder="Enter new password (min 4 chars)" minlength="4" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="confirm-repeat-pass">Confirm New Password</label>
+                                <div class="input-icon-wrapper">
+                                    <span class="input-icon-prefix">🔒</span>
+                                    <input class="form-control" type="password" id="confirm-repeat-pass" placeholder="Re-enter new password" minlength="4" required>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary" type="submit" style="width: 100%; padding: 0.8rem;" id="btn-submit-step2">
+                                Save New Password & Sign In
+                            </button>
+                        </form>
+                    </div>
+
+                    <p style="margin-top: 1.5rem; font-size: 0.88rem; color: var(--text-secondary); text-align: center;">
+                        Remember your password? <a href="#" onclick="showView('login'); return false;" style="color: var(--primary-green); text-decoration: none; font-weight: 700;">Back to Sign In</a>
+                    </p>
+                </div>
+            </div>
         </div>
     </div>
 
     <script src="js/app.js"></script>
     <script>
-        // Redirect if already authenticated (Admin only; Students must always see the login gate to prevent session leakage)
-        const adminToken = localStorage.getItem("admin_token");
-        const urlParams = new URLSearchParams(window.location.search);
-        const redirectUrl = urlParams.get("redirect");
-        
-        if (redirectUrl) {
-            const isTargetAdmin = decodeURIComponent(redirectUrl).includes("/admin/");
-            if (isTargetAdmin && adminToken) {
-                window.location.href = decodeURIComponent(redirectUrl);
-            }
-        } else {
-            const roleParam = urlParams.get("role");
-            if (adminToken && roleParam !== "student") {
-                window.location.href = "admin/dashboard.html";
-            }
-        }
+        // Clear leftover session state to prevent cross-contamination
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        localStorage.removeItem("attempt_id");
+        localStorage.removeItem("session_token");
+        localStorage.removeItem("selected_exam_id");
 
-        let activeRole = "admin";
-        
-        const passwordGroup = document.getElementById("password-group");
-        const passwordInput = document.getElementById("password");
-        const emailLabel = document.getElementById("email-label");
-        const emailInput = document.getElementById("email");
-        const btnSubmit = document.getElementById("btn-submit");
-        const toggleRegLink = document.getElementById("toggle-registration-link");
-
-        function toggleRegisterForm(show) {
-            const loginForm = document.getElementById("login-form");
-            const regForm = document.getElementById("register-form");
-            if (show) {
-                loginForm.style.display = "none";
-                regForm.style.display = "block";
-                toggleRegLink.style.display = "none";
+        function togglePasswordVisibility(inputId, iconEl) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            if (input.type === "password") {
+                input.type = "text";
+                iconEl.innerText = "🙈";
             } else {
-                loginForm.style.display = "block";
-                regForm.style.display = "none";
-                toggleRegLink.style.display = "block";
+                input.type = "password";
+                iconEl.innerText = "👁️";
             }
         }
 
-        function initializeView() {
-            const roleParam = urlParams.get("role");
-            if (roleParam === "student") {
-                activeRole = "student";
-                passwordGroup.style.display = "none";
-                passwordInput.required = false;
-                emailLabel.innerText = "Gmail ID";
-                emailInput.placeholder = "Enter your Gmail ID";
-                btnSubmit.innerText = "Enter Examination";
-                toggleRegLink.style.display = "block";
-                
-                localStorage.removeItem("token");
-                localStorage.removeItem("user");
-                localStorage.removeItem("attempt_id");
-                localStorage.removeItem("session_token");
-                localStorage.removeItem("selected_exam_id");
-            } else if (redirectUrl) {
-                const isTargetAdmin = decodeURIComponent(redirectUrl).includes("/admin/");
-                if (isTargetAdmin) {
-                    activeRole = "admin";
-                    passwordGroup.style.display = "block";
-                    passwordInput.required = true;
-                    emailLabel.innerText = "Institutional Email";
-                    emailInput.placeholder = "admin@gmail.com";
-                    btnSubmit.innerText = "Sign In as Admin";
-                    toggleRegLink.style.display = "none";
-                } else {
-                    activeRole = "student";
-                    passwordGroup.style.display = "none";
-                    passwordInput.required = false;
-                    emailLabel.innerText = "Gmail ID";
-                    emailInput.placeholder = "Enter your Gmail ID";
-                    btnSubmit.innerText = "Enter Examination";
-                    toggleRegLink.style.display = "block";
-                    
-                    localStorage.removeItem("token");
-                    localStorage.removeItem("user");
-                    localStorage.removeItem("attempt_id");
-                    localStorage.removeItem("session_token");
-                    localStorage.removeItem("selected_exam_id");
+        function showView(viewName) {
+            document.getElementById("view-login").style.display = viewName === "login" ? "block" : "none";
+            document.getElementById("view-register").style.display = viewName === "register" ? "block" : "none";
+            document.getElementById("view-reset").style.display = viewName === "reset" ? "block" : "none";
+
+            if (viewName === "reset") {
+                const currentId = document.getElementById("login-identifier").value.trim();
+                if (currentId) {
+                    document.getElementById("req-identifier").value = currentId;
+                    document.getElementById("confirm-identifier").value = currentId;
                 }
-            } else {
-                // Default direct access shows only the Admin login page
-                activeRole = "admin";
-                passwordGroup.style.display = "block";
-                passwordInput.required = true;
-                emailLabel.innerText = "Institutional Email";
-                emailInput.placeholder = "admin@gmail.com";
-                btnSubmit.innerText = "Sign In as Admin";
-                toggleRegLink.style.display = "none";
+                switchResetStep(1);
             }
         }
 
+        function switchResetStep(step) {
+            const pill1 = document.getElementById("pill-step-1");
+            const pill2 = document.getElementById("pill-step-2");
+            const step1 = document.getElementById("reset-step-1");
+            const step2 = document.getElementById("reset-step-2");
+
+            if (step === 1) {
+                pill1.classList.add("active");
+                pill2.classList.remove("active");
+                step1.style.display = "block";
+                step2.style.display = "none";
+            } else {
+                pill2.classList.add("active");
+                pill1.classList.remove("active");
+                step2.style.display = "block";
+                step1.style.display = "none";
+            }
+        }
+
+        // Login Submission
         document.getElementById("login-form").addEventListener("submit", function(e) {
             e.preventDefault();
-            const email = emailInput.value;
-            const password = activeRole === "admin" ? passwordInput.value : "";
-            handleLogin(email, password);
+            const identifier = document.getElementById("login-identifier").value.trim();
+            const password = document.getElementById("login-password").value;
+            handleLogin(identifier, password);
         });
 
+        // Registration Submission
         document.getElementById("register-form").addEventListener("submit", async function(e) {
             e.preventDefault();
-            const name = document.getElementById("reg-name").value;
-            const email = document.getElementById("reg-email").value;
-            
+            const name = document.getElementById("reg-name").value.trim();
+            const email = document.getElementById("reg-email").value.trim().toLowerCase();
+            const course = document.getElementById("reg-course").value;
+            const password = document.getElementById("reg-password").value;
+            const confirmPassword = document.getElementById("reg-confirm-password").value;
+
+            if (!course) {
+                alert("Please select your enrolled course (Python or Java).");
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                alert("Passwords do not match. Please verify.");
+                return;
+            }
+
             const res = await API.post("/auth/register-student", {
                 first_name: name,
-                email: email
+                email: email,
+                course: course,
+                password: password
             });
             
             if (res.success) {
                 alert(res.message);
-                toggleRegisterForm(false);
+                showView("login");
+                document.getElementById("login-identifier").value = email;
             } else {
                 alert(res.message || "Registration submission failed.");
             }
         });
 
-        // Initialize the login screen view state based on redirect URL
-        initializeView();
+        // Password Reset - Step 1 Submission
+        document.getElementById("form-reset-step1").addEventListener("submit", async function(e) {
+            e.preventDefault();
+            const identifier = document.getElementById("req-identifier").value.trim();
+            const btn = document.getElementById("btn-submit-step1");
+            btn.disabled = true;
+            btn.innerText = "Submitting...";
+
+            try {
+                const res = await API.post("/auth/reset-password/request", { identifier });
+                alert(res.message);
+                if (res.status === "APPROVED") {
+                    document.getElementById("confirm-identifier").value = identifier;
+                    switchResetStep(2);
+                }
+            } catch (err) {
+                alert("Network error. Please verify server connectivity.");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Submit Reset Request to Admin";
+            }
+        });
+
+        // Password Reset - Step 2 Submission
+        document.getElementById("form-reset-step2").addEventListener("submit", async function(e) {
+            e.preventDefault();
+            const identifier = document.getElementById("confirm-identifier").value.trim();
+            const newPass = document.getElementById("confirm-new-pass").value;
+            const repeatPass = document.getElementById("confirm-repeat-pass").value;
+
+            if (newPass !== repeatPass) {
+                alert("New passwords do not match. Please verify.");
+                return;
+            }
+
+            const btn = document.getElementById("btn-submit-step2");
+            btn.disabled = true;
+            btn.innerText = "Saving New Password...";
+
+            try {
+                const res = await API.post("/auth/reset-password/confirm", {
+                    identifier: identifier,
+                    new_password: newPass
+                });
+
+                if (res.success) {
+                    alert(res.message);
+                    showView("login");
+                    document.getElementById("login-identifier").value = identifier;
+                    document.getElementById("login-password").value = newPass;
+                } else {
+                    alert(res.message || "Failed to reset password.");
+                }
+            } catch (err) {
+                alert("An error occurred while resetting password.");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Save New Password & Sign In";
+            }
+        });
+
+        // Check if redirected with ?view=register or ?view=reset
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get("view") === "register") {
+            showView("register");
+        } else if (urlParams.get("view") === "reset") {
+            showView("reset");
+        }
     </script>
 </body>
 </html>

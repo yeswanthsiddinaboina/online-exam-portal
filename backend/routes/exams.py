@@ -12,14 +12,30 @@ def get_all_exams():
     user = request.current_user
     
     if user.role == "admin":
-        exams = Exam.query.all()
+        exams = Exam.query.filter_by(is_deleted=False).all()
         return jsonify({
             "success": True,
             "exams": [exam.to_dict(include_config=True) for exam in exams]
         }), 200
     else:
-        # Candidates can only see active exams
-        exams = Exam.query.filter_by(is_active=True).all()
+        # Candidates can only see active, non-deleted exams assigned to their course
+        student_course = (user.course or "").strip()
+        if student_course.lower() == "python":
+            exams = Exam.query.filter(
+                Exam.is_active == True,
+                Exam.is_deleted == False,
+                db.or_(Exam.course == "Python", Exam.course == "Python & Java", Exam.course == None)
+            ).all()
+        elif student_course.lower() == "java":
+            exams = Exam.query.filter(
+                Exam.is_active == True,
+                Exam.is_deleted == False,
+                db.or_(Exam.course == "Java", Exam.course == "Python & Java", Exam.course == None)
+            ).all()
+        else:
+            # Fallback for legacy students without course set
+            exams = Exam.query.filter_by(is_active=True, is_deleted=False).all()
+
         from backend.models import ExamAttempt, ExamAccess
         attempts = ExamAttempt.query.filter_by(student_id=user.id).all()
         attempted_exam_ids = {a.exam_id for a in attempts}
@@ -37,7 +53,7 @@ def get_all_exams():
                 d["attempt_status"] = attempt_obj.status if attempt_obj else None
                 d["session_token"] = attempt_obj.session_token if attempt_obj else None
             
-            # Access permission check
+            # Access permission check: requires per-exam request and admin approval
             access_obj = access_map.get(exam.id)
             if access_obj:
                 d["access_status"] = "APPROVED" if access_obj.approved else "PENDING"
@@ -55,7 +71,7 @@ def get_all_exams():
 @token_required
 def get_exam_by_id(exam_id):
     user = request.current_user
-    exam = Exam.query.get(exam_id)
+    exam = Exam.query.filter_by(id=exam_id, is_deleted=False).first()
     
     if not exam:
         return jsonify({
@@ -65,12 +81,23 @@ def get_exam_by_id(exam_id):
         }), 404
         
     # Standard students shouldn't access inactive exams
-    if user.role != "admin" and not exam.is_active:
-        return jsonify({
-            "success": False,
-            "error_code": "EXAM_INACTIVE",
-            "message": "This examination is not currently active."
-        }), 403
+    if user.role != "admin":
+        if not exam.is_active:
+            return jsonify({
+                "success": False,
+                "error_code": "EXAM_INACTIVE",
+                "message": "This examination is not currently active."
+            }), 403
+
+        # Check course assignment
+        student_course = (user.course or "").strip()
+        exam_course = (exam.course or "Python & Java").strip()
+        if student_course and exam_course != "Python & Java" and student_course.lower() != exam_course.lower():
+            return jsonify({
+                "success": False,
+                "error_code": "EXAM_COURSE_MISMATCH",
+                "message": f"This examination is assigned to {exam_course} students only."
+            }), 403
 
     return jsonify({
         "success": True,
@@ -89,6 +116,11 @@ def create_exam():
     duration_minutes = data.get("duration_minutes", 60)
     sec_cfg = data.get("security_config", {})
 
+    raw_course = data.get("course", "Python & Java")
+    course = raw_course.strip() if isinstance(raw_course, str) else "Python & Java"
+    if course not in ["Python", "Java", "Python & Java"]:
+        course = "Python & Java"
+
     if not title:
         return jsonify({
             "success": False,
@@ -103,7 +135,8 @@ def create_exam():
             description=description,
             duration_minutes=int(duration_minutes),
             created_by=user.id,
-            is_active=data.get("is_active", True)
+            is_active=data.get("is_active", True),
+            course=course
         )
         db.session.add(exam)
         db.session.flush() # Flush to get exam.id for configuration binding
@@ -132,11 +165,11 @@ def create_exam():
             ip_address=request.remote_addr,
             user_agent=request.headers.get("User-Agent")
         )
-        audit.details = {"exam_id": exam.id, "title": exam.title}
+        audit.details = {"exam_id": exam.id, "title": exam.title, "course": exam.course}
         db.session.add(audit)
         
         db.session.commit()
-        logger.info(f"Exam created by admin {user.email}: {title} (ID: {exam.id})")
+        logger.info(f"Exam created by admin {user.email}: {title} (ID: {exam.id}, Course: {course})")
         
         return jsonify({
             "success": True,
@@ -158,7 +191,7 @@ def create_exam():
 @role_required(["admin"])
 def update_exam(exam_id):
     user = request.current_user
-    exam = Exam.query.get(exam_id)
+    exam = Exam.query.filter_by(id=exam_id, is_deleted=False).first()
     
     if not exam:
         return jsonify({
@@ -179,6 +212,10 @@ def update_exam(exam_id):
             exam.duration_minutes = int(data["duration_minutes"])
         if "is_active" in data:
             exam.is_active = bool(data["is_active"])
+        if "course" in data:
+            up_course = data["course"].strip() if isinstance(data["course"], str) else "Python & Java"
+            if up_course in ["Python", "Java", "Python & Java"]:
+                exam.course = up_course
 
         # Update security configs if specified
         sec_cfg = data.get("security_config")
@@ -224,12 +261,59 @@ def update_exam(exam_id):
             "message": "Failed to update examination details."
         }), 500
 
+@exams_bp.route("/<int:exam_id>/toggle-status", methods=["POST", "PATCH"])
+@token_required
+@role_required(["admin"])
+def toggle_exam_status(exam_id):
+    user = request.current_user
+    exam = Exam.query.filter_by(id=exam_id, is_deleted=False).first()
+    if not exam:
+        return jsonify({
+            "success": False,
+            "error_code": "EXAM_NOT_FOUND",
+            "message": f"Exam with ID {exam_id} not found."
+        }), 404
+
+    data = request.get_json() or {}
+    new_status = data.get("is_active")
+    if new_status is None:
+        exam.is_active = not exam.is_active
+    else:
+        exam.is_active = bool(new_status)
+
+    try:
+        audit = AuditLog(
+            user_id=user.id,
+            action="EXAM_STATUS_TOGGLED",
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get("User-Agent")
+        )
+        audit.details = {"exam_id": exam.id, "title": exam.title, "is_active": exam.is_active}
+        db.session.add(audit)
+        db.session.commit()
+
+        status_str = "Active" if exam.is_active else "Inactive"
+        logger.info(f"Exam {exam.title} (ID: {exam.id}) status toggled to {status_str} by admin {user.email}")
+        return jsonify({
+            "success": True,
+            "message": f"Exam '{exam.title}' is now {status_str}.",
+            "is_active": exam.is_active
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error toggling exam status: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error_code": "TOGGLE_STATUS_FAILED",
+            "message": "Failed to update exam status."
+        }), 500
+
 @exams_bp.route("/<int:exam_id>", methods=["DELETE"])
 @token_required
 @role_required(["admin"])
 def delete_exam(exam_id):
     user = request.current_user
-    exam = Exam.query.get(exam_id)
+    exam = Exam.query.filter_by(id=exam_id, is_deleted=False).first()
     
     if not exam:
         return jsonify({
@@ -239,9 +323,10 @@ def delete_exam(exam_id):
         }), 404
 
     try:
-        # Perform cascade delete
+        # Perform soft delete
         title = exam.title
-        db.session.delete(exam)
+        exam.is_deleted = True
+        exam.is_active = False
         
         # Log audit trail
         audit = AuditLog(
@@ -254,7 +339,7 @@ def delete_exam(exam_id):
         db.session.add(audit)
         
         db.session.commit()
-        logger.info(f"Exam deleted by admin {user.email}: {title} (ID: {exam_id})")
+        logger.info(f"Exam soft-deleted by admin {user.email}: {title} (ID: {exam_id})")
         
         return jsonify({
             "success": True,

@@ -1,4 +1,6 @@
 from flask import Blueprint, request, jsonify, send_file
+import io
+import re
 from backend.models import db, User, Exam, ExamAttempt, ViolationLog, AuditLog, Result, EvidenceRecord
 from backend.utils.security import token_required, role_required
 from backend.utils.logger import get_logger
@@ -13,8 +15,8 @@ admin_bp = Blueprint("admin", __name__)
 @role_required(["admin"])
 def get_dashboard_metrics():
     try:
-        total_exams = Exam.query.count()
-        active_exams = Exam.query.filter_by(is_active=True).count()
+        total_exams = Exam.query.filter_by(is_deleted=False).count()
+        active_exams = Exam.query.filter_by(is_active=True, is_deleted=False).count()
         
         # Candidate counts
         total_candidates = User.query.filter_by(role="student").count()
@@ -33,24 +35,62 @@ def get_dashboard_metrics():
         avg_score_query = db.session.query(db.func.avg(Result.percentage)).scalar()
         average_score = round(float(avg_score_query), 2) if avg_score_query else 0.0
 
-        # Recent violations
+        # Recent violations aggregated uniquely per student attempt
         recent_violation_records = ViolationLog.query.order_by(
             ViolationLog.timestamp.desc()
-        ).limit(10).all()
+        ).all()
 
-        recent_violations = []
+        violations_by_attempt = {}
+        ordered_attempt_ids = []
+
         for v in recent_violation_records:
             attempt = v.attempt
-            recent_violations.append({
+            if not attempt or not attempt.student or not attempt.exam:
+                continue
+
+            att_id = attempt.id
+            if att_id not in violations_by_attempt:
+                ordered_attempt_ids.append(att_id)
+                student = attempt.student
+                user_id_val = student.last_name if (student.last_name and student.last_name.strip()) else f"STU{student.id}"
+                
+                violations_by_attempt[att_id] = {
+                    "id": v.id,
+                    "attempt_id": att_id,
+                    "student_id": student.id,
+                    "student_name": student.first_name if student.first_name else "Candidate",
+                    "student_userid": user_id_val,
+                    "student_email": student.email if student.email else "",
+                    "exam_id": attempt.exam.id,
+                    "exam_title": attempt.exam.title,
+                    "status": attempt.status,
+                    "total_violations": 0,
+                    "latest_event_type": v.event_type,
+                    "event_type": v.event_type,
+                    "latest_confidence": v.confidence,
+                    "confidence": v.confidence,
+                    "latest_timestamp": v.timestamp.isoformat() if v.timestamp else None,
+                    "timestamp": v.timestamp.isoformat() if v.timestamp else None,
+                    "action_taken": "TERMINATE" if attempt.status == "MALPRACTICE_CANCELLED" else v.action_taken,
+                    "violations": []
+                }
+
+            group = violations_by_attempt[att_id]
+            group["total_violations"] += 1
+            if v.action_taken == "TERMINATE" or attempt.status == "MALPRACTICE_CANCELLED":
+                group["action_taken"] = "TERMINATE"
+
+            evidence_url = f"/api/admin/evidence/{v.evidence.id}" if (v.evidence and v.evidence.file_path) else None
+            group["violations"].append({
                 "id": v.id,
-                "attempt_id": attempt.id,
-                "exam_title": attempt.exam.title,
-                "student_name": f"{attempt.student.first_name} {attempt.student.last_name}",
                 "event_type": v.event_type,
                 "confidence": v.confidence,
                 "timestamp": v.timestamp.isoformat() if v.timestamp else None,
-                "action_taken": v.action_taken
+                "action_taken": v.action_taken,
+                "evidence_path": evidence_url
             })
+
+        recent_violations = [violations_by_attempt[aid] for aid in ordered_attempt_ids[:20]]
 
         return jsonify({
             "success": True,
@@ -81,26 +121,79 @@ def get_all_violations():
     try:
         violations = ViolationLog.query.order_by(ViolationLog.timestamp.desc()).all()
         
-        data = []
+        violations_by_attempt = {}
+        ordered_attempt_ids = []
+        total_raw_count = len(violations)
+        phone_count = 0
+        faces_count = 0
+        tabs_count = 0
+
         for v in violations:
             attempt = v.attempt
-            data.append({
+            if not attempt or not attempt.student or not attempt.exam:
+                continue
+
+            ev_type = v.event_type or ""
+            if ev_type == "PHONE_DETECTED":
+                phone_count += 1
+            elif ev_type in ["MULTIPLE_PERSON", "MULTIPLE_FACES"]:
+                faces_count += 1
+            elif ev_type in ["TAB_SWITCH", "FULLSCREEN_EXIT"]:
+                tabs_count += 1
+
+            att_id = attempt.id
+            if att_id not in violations_by_attempt:
+                ordered_attempt_ids.append(att_id)
+                student = attempt.student
+                user_id_val = student.last_name if (student.last_name and student.last_name.strip()) else f"STU{student.id}"
+                
+                violations_by_attempt[att_id] = {
+                    "id": v.id,
+                    "attempt_id": att_id,
+                    "student_id": student.id,
+                    "student_name": student.first_name if student.first_name else "Candidate",
+                    "student_userid": user_id_val,
+                    "student_email": student.email if student.email else "",
+                    "exam_id": attempt.exam.id,
+                    "exam_title": attempt.exam.title,
+                    "status": attempt.status,
+                    "total_violations": 0,
+                    "latest_event_type": v.event_type,
+                    "event_type": v.event_type,
+                    "latest_confidence": v.confidence,
+                    "confidence": v.confidence,
+                    "latest_timestamp": v.timestamp.isoformat() if v.timestamp else None,
+                    "timestamp": v.timestamp.isoformat() if v.timestamp else None,
+                    "action_taken": "TERMINATE" if attempt.status == "MALPRACTICE_CANCELLED" else v.action_taken,
+                    "violations": []
+                }
+
+            group = violations_by_attempt[att_id]
+            group["total_violations"] += 1
+            if v.action_taken == "TERMINATE" or attempt.status == "MALPRACTICE_CANCELLED":
+                group["action_taken"] = "TERMINATE"
+
+            evidence_url = f"/api/admin/evidence/{v.evidence.id}" if (v.evidence and v.evidence.file_path) else None
+            group["violations"].append({
                 "id": v.id,
-                "attempt_id": attempt.id,
-                "student_name": f"{attempt.student.first_name} {attempt.student.last_name}",
-                "student_email": attempt.student.email,
-                "exam_title": attempt.exam.title,
                 "event_type": v.event_type,
                 "confidence": v.confidence,
                 "timestamp": v.timestamp.isoformat() if v.timestamp else None,
-                "severity": v.severity,
                 "action_taken": v.action_taken,
-                "evidence_path": f"/api/admin/evidence/{v.evidence.id}" if v.evidence else None
+                "evidence_path": evidence_url
             })
-            
+
+        data = [violations_by_attempt[aid] for aid in ordered_attempt_ids]
+
         return jsonify({
             "success": True,
-            "violations": data
+            "violations": data,
+            "stats": {
+                "total": total_raw_count,
+                "phone": phone_count,
+                "faces": faces_count,
+                "tabs": tabs_count
+            }
         }), 200
         
     except Exception as e:
@@ -162,11 +255,17 @@ def serve_evidence(evidence_id):
     file_path = base_dir / evidence.file_path
     
     if not file_path.exists():
-         return jsonify({
-            "success": False,
-            "error_code": "FILE_NOT_FOUND",
-            "message": "The physical evidence image file is missing."
-         }), 404
+        # Cross-platform fallback: try direct EVIDENCE_DIR with filename
+        fallback_path = Config.EVIDENCE_DIR / Path(evidence.file_path).name
+        if fallback_path.exists():
+            file_path = fallback_path
+        else:
+            logger.warning(f"Physical evidence file not found at {file_path} or {fallback_path}")
+            return jsonify({
+                "success": False,
+                "error_code": "FILE_NOT_FOUND",
+                "message": "The physical evidence image file is missing."
+            }), 404
 
     return send_file(file_path, mimetype=evidence.content_type)
 
@@ -252,11 +351,13 @@ def get_reports():
             "pass_rate": pass_rate
         }
 
-        # Fetch pending access requests for the selected exam
+        # Fetch all pending access requests across all exams so administrator never misses any candidate request
         from backend.models import ExamAccess
-        pending_access = ExamAccess.query.filter_by(exam_id=exam_id, approved=False).all()
+        pending_access = ExamAccess.query.filter_by(approved=False).order_by(ExamAccess.requested_at.desc()).all()
         pending_data = [{
             "id": pa.id,
+            "exam_id": pa.exam_id,
+            "exam_title": pa.exam.title if pa.exam else "Unknown",
             "student_email": pa.student.email if pa.student else "Unknown",
             "student_username": pa.student.first_name if pa.student else "Unknown",
             "student_userid": pa.student.last_name if pa.student else "Unknown",
@@ -278,6 +379,54 @@ def get_reports():
             "success": False,
             "error_code": "REPORT_COMPILATION_ERROR",
             "message": "Failed to compile exam results reports."
+        }), 500
+
+
+@admin_bp.route("/reports/export-pdf", methods=["GET"])
+@token_required
+@role_required(["admin"])
+def export_marks_pdf():
+    """Generates and streams the Student Examination Marks List PDF report."""
+    try:
+        from backend.services.pdf_generator import StudentExamMarksPDFService
+        exam_id = request.args.get("exam_id", type=int)
+        
+        if not exam_id:
+            first_exam = Exam.query.filter_by(is_deleted=False).first()
+            if not first_exam:
+                return jsonify({
+                    "success": False,
+                    "error_code": "NO_EXAMS_FOUND",
+                    "message": "No examinations found to generate marks report."
+                }), 404
+            exam_id = first_exam.id
+
+        exam = Exam.query.get(exam_id)
+        if not exam:
+            return jsonify({
+                "success": False,
+                "error_code": "EXAM_NOT_FOUND",
+                "message": f"Examination with ID {exam_id} not found."
+            }), 404
+
+        pdf_bytes = StudentExamMarksPDFService.generate_exam_marks_pdf(exam_id)
+
+        # Sanitize exam title for attachment filename
+        clean_title = re.sub(r'[^\w\-_\. ]', '_', exam.title).strip().replace(' ', '_')
+        filename = f"Student_Marks_Report_{clean_title}.pdf"
+
+        return send_file(
+            io.BytesIO(pdf_bytes),
+            mimetype="application/pdf",
+            as_attachment=True,
+            download_name=filename
+        )
+    except Exception as e:
+        logger.error(f"Error generating marks list PDF: {str(e)}", exc_info=True)
+        return jsonify({
+            "success": False,
+            "error_code": "PDF_GENERATION_FAILED",
+            "message": f"Failed to generate marks report PDF: {str(e)}"
         }), 500
 
 
@@ -368,6 +517,31 @@ def approve_all_access(exam_id):
         }), 500
 
 
+@admin_bp.route("/access/approve-all", methods=["POST"])
+@token_required
+@role_required(["admin"])
+def approve_all_pending_access():
+    from backend.models import ExamAccess
+    try:
+        pending = ExamAccess.query.filter_by(approved=False).all()
+        for pa in pending:
+            pa.approved = True
+        db.session.commit()
+        logger.info(f"Admin approved all pending access requests across all exams ({len(pending)} requests approved)")
+        return jsonify({
+            "success": True,
+            "message": f"Successfully approved all {len(pending)} pending student access requests."
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Failed to approve all pending access: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error_code": "APPROVE_ALL_FAILED",
+            "message": "Failed to approve all pending student access requests."
+        }), 500
+
+
 @admin_bp.route("/attempts/<int:attempt_id>/reconduct", methods=["POST"])
 @token_required
 @role_required(["admin"])
@@ -385,22 +559,21 @@ def reconduct_attempt(attempt_id):
     exam_id = attempt.exam_id
 
     try:
-        # Delete attempt (cascades database deletions to violations, answers, results)
-        db.session.delete(attempt)
+        # Delete ALL attempts for this student on this exam (cascades to violations, answers, results)
+        all_attempts = ExamAttempt.query.filter_by(student_id=student_id, exam_id=exam_id).all()
+        for att in all_attempts:
+            db.session.delete(att)
         
-        # Ensure access is granted for re-take
-        access = ExamAccess.query.filter_by(student_id=student_id, exam_id=exam_id).first()
-        if access:
-            access.approved = True
-        else:
-            new_access = ExamAccess(student_id=student_id, exam_id=exam_id, approved=True)
-            db.session.add(new_access)
+        # Clear exam access records so candidate must "Request Access" again
+        accesses = ExamAccess.query.filter_by(student_id=student_id, exam_id=exam_id).all()
+        for acc in accesses:
+            db.session.delete(acc)
             
         db.session.commit()
-        logger.info(f"Admin reset attempt {attempt_id} for student {student_id}. Permitted reconduct of exam {exam_id}.")
+        logger.info(f"Admin reconducted exam {exam_id} for student {student_id}. Cleared {len(all_attempts)} attempt(s) and reset access to Request Access.")
         return jsonify({
             "success": True,
-            "message": "Successfully cleared student attempt session. Candidate is authorized to reconduct the exam."
+            "message": "Successfully cleared student attempt and reset exam access. Candidate can now Request Access again."
         }), 200
     except Exception as e:
         db.session.rollback()
@@ -409,6 +582,146 @@ def reconduct_attempt(attempt_id):
             "success": False,
             "error_code": "RECONDUCT_EXAM_FAILED",
             "message": "Failed to clear student attempt session."
+        }), 500
+
+
+@admin_bp.route("/attempts/<int:attempt_id>/details", methods=["GET"])
+@token_required
+@role_required(["admin"])
+def get_attempt_details(attempt_id):
+    """Returns comprehensive marks, answers audit, questions, and proctoring violations for a student attempt."""
+    try:
+        from backend.models import ExamAttempt, Result, Question, StudentAnswer, ViolationLog
+        attempt = ExamAttempt.query.get(attempt_id)
+        if not attempt:
+            return jsonify({
+                "success": False,
+                "error_code": "ATTEMPT_NOT_FOUND",
+                "message": "Student attempt session not found."
+            }), 404
+
+        exam = attempt.exam
+        student = attempt.student
+        result = Result.query.filter_by(attempt_id=attempt.id).first()
+
+        questions = exam.questions if exam else []
+        answers_map = {a.question_id: a for a in attempt.answers}
+
+        total_questions = len(questions)
+        correct_count = 0
+        wrong_count = 0
+        unanswered_count = 0
+        total_marks = sum(float(q.marks or 1.0) for q in questions)
+
+        def extract_letter(val):
+            if not val:
+                return ""
+            v = str(val).strip().upper()
+            if len(v) >= 2 and v[0].isalpha() and v[1] in [')', '.', '-', ':', ' ']:
+                return v[0]
+            return v
+
+        questions_detail = []
+        for idx, q in enumerate(questions, start=1):
+            ans = answers_map.get(q.id)
+            has_answered = False
+            is_correct = False
+            chosen_str = ""
+
+            if q.question_type in ["MCQ", "MULTIPLE_CHOICE"]:
+                selected = [extract_letter(s) for s in (ans.selected_answers or []) if s] if ans else []
+                correct_str = q.correct_answer or ""
+                correct_list = [extract_letter(c) for c in correct_str.split(",") if c.strip()]
+                if selected:
+                    has_answered = True
+                    chosen_str = ", ".join(selected)
+                    if sorted(selected) == sorted(correct_list):
+                        is_correct = True
+            elif q.question_type == "SHORT_ANSWER":
+                candidate_text = (ans.text_answer or "").strip().lower() if ans else ""
+                if candidate_text:
+                    has_answered = True
+                    chosen_str = ans.text_answer or ""
+                    correct_text = (q.correct_answer or "").strip().lower()
+                    if candidate_text == correct_text:
+                        is_correct = True
+
+            if not has_answered:
+                unanswered_count += 1
+                status = "UNANSWERED"
+            elif is_correct:
+                correct_count += 1
+                status = "CORRECT"
+            else:
+                wrong_count += 1
+                status = "WRONG"
+
+            questions_detail.append({
+                "number": idx,
+                "question_id": q.id,
+                "question_text": q.question_text,
+                "question_type": q.question_type,
+                "marks": float(q.marks or 1.0),
+                "chosen_answer": chosen_str or "No answer recorded",
+                "correct_answer": q.correct_answer or "",
+                "status": status,
+                "is_correct": is_correct
+            })
+
+        obtained_marks = float(result.total_score) if result else 0.0
+        percentage = float(result.percentage) if result else 0.0
+        passed = result.passed if result else (percentage >= 50.0)
+
+        violations_list = []
+        for v in attempt.violations:
+            evidence_url = f"/api/admin/evidence/{v.evidence.id}" if (v.evidence and v.evidence.file_path) else None
+            violations_list.append({
+                "id": v.id,
+                "event_type": v.event_type,
+                "confidence": v.confidence,
+                "timestamp": v.timestamp.isoformat() + "Z" if v.timestamp else None,
+                "action_taken": v.action_taken,
+                "evidence_path": evidence_url,
+                "severity": getattr(v, "severity", 1)
+            })
+
+        return jsonify({
+            "success": True,
+            "attempt": {
+                "id": attempt.id,
+                "student_name": student.first_name if student else "Candidate",
+                "candidate_name": student.first_name if student else "Candidate",
+                "student_username": student.first_name if student else "Candidate",
+                "student_first_name": student.first_name if student else "Candidate",
+                "student_userid": student.last_name if (student and student.last_name) else (f"STU{student.id}" if student else "STU1001"),
+                "student_id": student.last_name if (student and student.last_name) else (f"STU{student.id}" if student else "STU1001"),
+                "user_id": student.last_name if (student and student.last_name) else (f"STU{student.id}" if student else "STU1001"),
+                "student_email": student.email if student else "Unknown",
+                "exam_title": exam.title if exam else "Examination",
+                "exam_id": attempt.exam_id,
+                "status": attempt.status,
+                "started_at": attempt.started_at.isoformat() + "Z" if attempt.started_at else None,
+                "ended_at": attempt.ended_at.isoformat() + "Z" if attempt.ended_at else None,
+                "total_questions": total_questions,
+                "correct_answers": correct_count,
+                "wrong_answers": wrong_count,
+                "unanswered": unanswered_count,
+                "total_marks": total_marks,
+                "obtained_marks": obtained_marks,
+                "percentage": percentage,
+                "result_status": "PASS" if passed else "FAIL",
+                "violations_count": len(attempt.violations),
+                "violations": violations_list,
+                "questions": questions_detail
+            }
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error fetching attempt details: {str(e)}", exc_info=True)
+        return jsonify({
+            "success": False,
+            "error_code": "FETCH_ATTEMPT_DETAILS_FAILED",
+            "message": f"Failed to load attempt details: {str(e)}"
         }), 500
 
 
@@ -441,6 +754,7 @@ def get_registrations():
                 "email": student.email,
                 "first_name": student.first_name, # Candidate Name
                 "last_name": student.last_name,   # User ID
+                "course": student.course or "Python",
                 "registration_status": student.registration_status,
                 "registration_date": student.created_at.isoformat() + "Z" if student.created_at else None,
                 "exams_written_count": written_count,
@@ -559,7 +873,7 @@ def delete_registration(student_id):
     from backend.models.user import User
     from backend.models.attempt import ExamAttempt
     from backend.models.access import ExamAccess
-    from backend.models.audit_log import AuditLog
+    from backend.models import AuditLog
 
     student = User.query.filter_by(id=student_id, role="student").first()
     if not student:
@@ -634,7 +948,20 @@ def get_notifications():
             "link": f"results.html?exam_id={a.exam_id}"
         } for a in pending_access]
 
-        all_notifications = regs_data + access_data
+        # Fetch pending password reset requests
+        from backend.models.password_reset import PasswordResetRequest
+        pending_resets = PasswordResetRequest.query.filter_by(status="PENDING").all()
+        resets_data = [{
+            "id": f"reset-{p.id}",
+            "raw_id": p.id,
+            "type": "password_reset",
+            "title": "Password Reset Request",
+            "message": f"{p.user.first_name if p.user else 'Student'} requested password reset approval.",
+            "timestamp": p.requested_at.isoformat() + "Z" if p.requested_at else None,
+            "link": "registrations.html#resets"
+        } for p in pending_resets]
+
+        all_notifications = regs_data + access_data + resets_data
         # Sort by timestamp desc
         all_notifications.sort(key=lambda x: x["timestamp"] or "", reverse=True)
 
@@ -649,6 +976,121 @@ def get_notifications():
             "success": False,
             "error_code": "FETCH_NOTIFICATIONS_FAILED",
             "message": "Failed to load notifications."
+        }), 500
+
+
+@admin_bp.route("/password-resets", methods=["GET"])
+@token_required
+@role_required(["admin"])
+def get_password_resets():
+    from backend.models.password_reset import PasswordResetRequest
+    try:
+        # Order pending first, then by requested_at desc
+        resets = PasswordResetRequest.query.order_by(
+            PasswordResetRequest.status == "PENDING",
+            PasswordResetRequest.requested_at.desc()
+        ).all()
+        # Sort so PENDING is at the top
+        resets.sort(key=lambda r: 0 if r.status == "PENDING" else 1)
+        
+        return jsonify({
+            "success": True,
+            "resets": [r.to_dict() for r in resets]
+        }), 200
+    except Exception as e:
+        logger.error(f"Failed to fetch password reset requests: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error_code": "FETCH_RESETS_FAILED",
+            "message": "Failed to load password reset requests."
+        }), 500
+
+
+@admin_bp.route("/password-resets/<int:reset_id>/approve", methods=["POST"])
+@token_required
+@role_required(["admin"])
+def approve_password_reset(reset_id):
+    from backend.models import PasswordResetRequest, AuditLog
+    import datetime
+
+    try:
+        reset_req = PasswordResetRequest.query.get(reset_id)
+        if not reset_req:
+            return jsonify({
+                "success": False,
+                "error_code": "RESET_REQUEST_NOT_FOUND",
+                "message": "Password reset request not found."
+            }), 404
+
+        reset_req.status = "APPROVED"
+        reset_req.approved_at = datetime.datetime.utcnow()
+
+        audit = AuditLog(
+            user_id=request.current_user.id,
+            action="ADMIN_APPROVED_PASSWORD_RESET",
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get("User-Agent")
+        )
+        audit.details = {"reset_id": reset_id, "student_id": reset_req.user_id, "student_email": reset_req.user.email if reset_req.user else None}
+        db.session.add(audit)
+        db.session.commit()
+
+        logger.info(f"Admin approved password reset for student: {reset_req.user.email if reset_req.user else reset_req.user_id}")
+        return jsonify({
+            "success": True,
+            "message": f"Successfully approved password reset for candidate {reset_req.user.first_name if reset_req.user else ''}."
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Failed to approve password reset: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error_code": "APPROVE_RESET_FAILED",
+            "message": f"Failed to approve password reset request: {str(e)}"
+        }), 500
+
+
+@admin_bp.route("/password-resets/<int:reset_id>/reject", methods=["POST"])
+@token_required
+@role_required(["admin"])
+def reject_password_reset(reset_id):
+    from backend.models import PasswordResetRequest, AuditLog
+
+    try:
+        reset_req = PasswordResetRequest.query.get(reset_id)
+        if not reset_req:
+            return jsonify({
+                "success": False,
+                "error_code": "RESET_REQUEST_NOT_FOUND",
+                "message": "Password reset request not found."
+            }), 404
+
+        reset_req.status = "REJECTED"
+
+        audit = AuditLog(
+            user_id=request.current_user.id,
+            action="ADMIN_REJECTED_PASSWORD_RESET",
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get("User-Agent")
+        )
+        audit.details = {"reset_id": reset_id, "student_id": reset_req.user_id}
+        db.session.add(audit)
+        db.session.commit()
+
+        logger.info(f"Admin rejected password reset for student: {reset_req.user.email if reset_req.user else reset_req.user_id}")
+        return jsonify({
+            "success": True,
+            "message": f"Password reset request rejected."
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Failed to reject password reset: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error_code": "REJECT_RESET_FAILED",
+            "message": f"Failed to reject password reset request: {str(e)}"
         }), 500
 
 

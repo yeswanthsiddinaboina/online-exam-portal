@@ -14,9 +14,9 @@ class ExamSecurityConfig(db.Model):
     heartbeat_interval = db.Column(db.Integer, nullable=False, default=5)
     network_grace_period = db.Column(db.Integer, nullable=False, default=30)
     
-    phone_confidence = db.Column(db.Float, nullable=False, default=0.7)
-    person_confidence = db.Column(db.Float, nullable=False, default=0.6)
-    face_confidence = db.Column(db.Float, nullable=False, default=0.5)
+    phone_confidence = db.Column(db.Float, nullable=False, default=0.25)
+    person_confidence = db.Column(db.Float, nullable=False, default=0.25)
+    face_confidence = db.Column(db.Float, nullable=False, default=0.35)
 
     def to_dict(self):
         return {
