@@ -1,4 +1,7 @@
-const API_BASE = "http://127.0.0.1:5001/api";
+// Automatically detect API base URL (works on localhost:5001 and in production e.g. https://your-app.onrender.com)
+const API_BASE = (window.location.protocol.startsWith("http") && window.location.host) 
+    ? `${window.location.origin}/api` 
+    : "http://127.0.0.1:5001/api";
 
 const isAdminPage = window.location.pathname.includes("/admin/");
 const tokenKey = isAdminPage ? "admin_token" : "token";
@@ -32,12 +35,17 @@ function getHeaders(contentType = "application/json") {
     return headers;
 }
 
-// Cross-port routing constants
+// Role routing
 const ADMIN_PORT = "5001";
 const STUDENT_PORT = "5001";
 
 function getRoleRedirectUrl(role, path) {
     const loc = window.location;
+    // In production (standard 80/443 or Render where port is empty), stay on same origin
+    if (!loc.port || loc.port === "80" || loc.port === "443") {
+        return path;
+    }
+    // In local development:
     const targetPort = role === "admin" ? ADMIN_PORT : STUDENT_PORT;
     return `${loc.protocol}//${loc.hostname}:${targetPort}${path}`;
 }

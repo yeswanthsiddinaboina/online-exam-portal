@@ -43,6 +43,10 @@ def _resolve_sqlite_uri(env_value, default_uri):
     if env_value is None or str(env_value).strip() == "":
         return default_uri
 
+    # Render / Heroku PostgreSQL connection strings use postgres:// which SQLAlchemy 1.4+ rejects
+    if env_value.startswith("postgres://"):
+        return env_value.replace("postgres://", "postgresql://", 1)
+
     if not env_value.startswith("sqlite:///"):
         return env_value
 
