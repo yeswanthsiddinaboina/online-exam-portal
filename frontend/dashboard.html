@@ -168,7 +168,19 @@
                         if (exam.attempt_status === "IN_PROGRESS") {
                             actionBtn = `<button class="btn btn-primary" onclick="resumeExam(${exam.id}, ${exam.attempt_id}, '${exam.session_token}')" style="padding: 0.5rem 1rem; font-size: 0.9rem; background: var(--accent-warning); border-color: transparent; color: #fff;">Resume Exam</button>`;
                         } else {
-                            actionBtn = `<button class="btn btn-secondary" onclick="window.location.href='result.html?attempt_id=${exam.attempt_id}'" style="padding: 0.5rem 1rem; font-size: 0.9rem; background: rgba(255, 255, 255, 0.05); color: var(--text-secondary); border-color: var(--border-glass);">View Results</button>`;
+                            const isTerm = exam.attempt_status === "MALPRACTICE_CANCELLED";
+                            const badgeTag = isTerm 
+                                ? `<span class="badge badge-danger" style="font-size: 0.76rem; padding: 0.2rem 0.6rem;">TERMINATED</span>`
+                                : `<span class="badge ${exam.passed ? 'badge-success' : 'badge-danger'}" style="font-size: 0.76rem; padding: 0.2rem 0.6rem;">${exam.passed ? 'PASSED' : 'FAILED'}</span>`;
+                            const scoreText = (exam.score_obtained !== undefined && exam.score_obtained !== null) ? `Score: ${exam.score_obtained.toFixed(1)} (${(exam.percentage || 0).toFixed(1)}%)` : '';
+
+                            actionBtn = `
+                                <div style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap; justify-content: flex-end;">
+                                    ${badgeTag}
+                                    ${scoreText ? `<span style="font-size: 0.86rem; font-weight: 700; color: var(--forest-dark); background: #F0FDF4; border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; padding: 2px 8px;">${scoreText}</span>` : ''}
+                                    <button class="btn btn-secondary" onclick="window.location.href='result.html?attempt_id=${exam.attempt_id}'" style="padding: 0.45rem 0.9rem; font-size: 0.85rem; background: rgba(255, 255, 255, 0.05); color: var(--text-secondary); border-color: var(--border-glass);">View Results</button>
+                                </div>
+                            `;
                         }
                     } else if (exam.access_status === "APPROVED") {
                         actionBtn = `<button class="btn btn-primary" onclick="openPrecheck(${exam.id})" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Launch Exam</button>`;

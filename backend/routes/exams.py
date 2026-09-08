@@ -52,6 +52,19 @@ def get_all_exams():
                 d["attempt_id"] = attempt_obj.id if attempt_obj else None
                 d["attempt_status"] = attempt_obj.status if attempt_obj else None
                 d["session_token"] = attempt_obj.session_token if attempt_obj else None
+                if attempt_obj and attempt_obj.status != "IN_PROGRESS":
+                    from backend.models import Result
+                    res_obj = Result.query.filter_by(attempt_id=attempt_obj.id).first()
+                    if not res_obj and attempt_obj.status in ["SUBMITTED", "AUTO_SUBMITTED", "MALPRACTICE_CANCELLED", "EXPIRED"]:
+                        try:
+                            from backend.services.evaluation import EvaluationService
+                            res_obj = EvaluationService.evaluate_attempt(attempt_obj.id)
+                        except Exception:
+                            pass
+                    if res_obj:
+                        d["score_obtained"] = res_obj.total_score
+                        d["percentage"] = res_obj.percentage
+                        d["passed"] = res_obj.passed
             
             # Access permission check: requires per-exam request and admin approval
             access_obj = access_map.get(exam.id)

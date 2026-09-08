@@ -1033,7 +1033,10 @@
             <p id="termination-message" style="line-height: 1.6; margin-bottom: 2rem; color: var(--text-secondary);">
                 Your examination has been terminated because the permitted violation threshold was exceeded.
             </p>
-            <a href="#" class="btn btn-danger" onclick="redirectToDashboard(); return false;" style="width: 100%; display: block; text-decoration: none; box-sizing: border-box; text-align: center; border-radius: 10px; padding: 0.85rem; font-weight: 700;">Return to Dashboard</a>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <a href="#" class="btn btn-primary" onclick="viewTerminatedResults(); return false;" style="width: 100%; display: block; text-decoration: none; box-sizing: border-box; text-align: center; border-radius: 10px; padding: 0.85rem; font-weight: 700; background: var(--primary-green);">View Score & Results</a>
+                <a href="#" class="btn btn-secondary" onclick="redirectToDashboard(); return false;" style="width: 100%; display: block; text-decoration: none; box-sizing: border-box; text-align: center; border-radius: 10px; padding: 0.85rem; font-weight: 700;">Return to Dashboard</a>
+            </div>
         </div>
     </div>
 
@@ -1500,7 +1503,22 @@
             document.getElementById("btn-enter-fullscreen").disabled = true;
         }
 
+        function viewTerminatedResults() {
+            const tempId = currentAttemptId;
+            if (tempId) {
+                localStorage.setItem("last_evaluated_attempt_id", tempId);
+            }
+            localStorage.removeItem("attempt_id");
+            localStorage.removeItem("session_token");
+            localStorage.removeItem("selected_exam_id");
+            localStorage.removeItem("verified_face_profile");
+            window.location.href = tempId ? `result.html?attempt_id=${tempId}` : "result.html";
+        }
+
         function redirectToDashboard() {
+            if (currentAttemptId) {
+                localStorage.setItem("last_evaluated_attempt_id", currentAttemptId);
+            }
             localStorage.removeItem("attempt_id");
             localStorage.removeItem("session_token");
             localStorage.removeItem("selected_exam_id");

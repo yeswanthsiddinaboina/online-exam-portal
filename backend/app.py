@@ -57,7 +57,7 @@ def create_app(config_class=Config):
 
             if 'first_login_completed' not in columns:
                 with engine.connect() as conn:
-                    conn.execute(db.text("ALTER TABLE users ADD COLUMN first_login_completed BOOLEAN DEFAULT 0"))
+                    conn.execute(db.text("ALTER TABLE users ADD COLUMN first_login_completed BOOLEAN DEFAULT FALSE"))
                     conn.commit()
                 logger.info("Database migrated: added first_login_completed column to users table.")
 
@@ -71,7 +71,7 @@ def create_app(config_class=Config):
             exam_columns = [c['name'] for c in inspector.get_columns('exams')]
             if 'is_deleted' not in exam_columns:
                 with engine.connect() as conn:
-                    conn.execute(db.text("ALTER TABLE exams ADD COLUMN is_deleted BOOLEAN DEFAULT 0"))
+                    conn.execute(db.text("ALTER TABLE exams ADD COLUMN is_deleted BOOLEAN DEFAULT FALSE"))
                     conn.commit()
                 logger.info("Database migrated: added is_deleted column to exams table.")
 

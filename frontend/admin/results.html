@@ -415,6 +415,31 @@
             document.getElementById("signout-modal").classList.remove("active");
         }
 
+        function parseDate(ts) {
+            if (!ts) return null;
+            let s = String(ts).trim();
+            if (!s.endsWith("Z") && !s.includes("+") && !s.includes("-", 10)) {
+                s += "Z";
+            }
+            const d = new Date(s);
+            return isNaN(d.getTime()) ? null : d;
+        }
+
+        function formatDateTime(ts) {
+            const d = parseDate(ts);
+            return d ? d.toLocaleString() : (ts || '-');
+        }
+
+        function formatDate(ts) {
+            const d = parseDate(ts);
+            return d ? d.toLocaleDateString() : (ts || '-');
+        }
+
+        function formatTimeOnly(ts) {
+            const d = parseDate(ts);
+            return d ? d.toLocaleTimeString() : (ts || '-');
+        }
+
         let currentExamId = null;
         let cachedAttempts = [];
         let currentFilter = "ALL";
@@ -468,7 +493,7 @@
                         <td><span style="font-weight: 700; color: var(--primary-green);">${req.student_userid || 'STU1001'}</span></td>
                         <td>${req.student_email}</td>
                         <td>${req.exam_title}</td>
-                        <td>${req.requested_at ? new Date(req.requested_at).toLocaleString() : '-'}</td>
+                        <td>${req.requested_at ? formatDateTime(req.requested_at) : '-'}</td>
                         <td style="text-align: right;">
                             <button class="btn btn-primary" onclick="approveAccessRequest(${req.id})" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; margin-right: 0.35rem;">Approve</button>
                             <button class="btn btn-secondary" onclick="rejectAccessRequest(${req.id})" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; color: var(--accent-danger);">Reject</button>
@@ -531,7 +556,7 @@
                         <td>${att.score_obtained !== null && att.score_obtained !== undefined ? att.score_obtained.toFixed(1) : '-'}</td>
                         <td><strong>${pct.toFixed(1)}%</strong></td>
                         <td><span class="badge ${resultBadgeClass}">${resultStatus}</span></td>
-                        <td>${att.ended_at ? new Date(att.ended_at).toLocaleDateString() : (att.started_at ? new Date(att.started_at).toLocaleDateString() : '-')}</td>
+                        <td>${formatDate(att.ended_at || att.started_at)}</td>
                         <td style="text-align: right;">
                             <button class="btn btn-primary" onclick="event.stopPropagation(); openStudentDetailsModal(${att.attempt_id})" style="padding: 0.35rem 0.75rem; font-size: 0.78rem; background: var(--primary-green); color: #FFFFFF; border: none; border-radius: 8px; font-weight: 600; white-space: nowrap; box-shadow: 0 2px 6px rgba(14, 159, 110, 0.25);">
                                 🔍 Details & Reconduct
@@ -614,8 +639,8 @@
                 // 4. Session Log: Timeline (e.g. 3:07:48 PM - 3:08:28 PM)
                 const timelineEl = document.getElementById("audit-timeline-text");
                 if (timelineEl) {
-                    const startStr = att.started_at ? new Date(att.started_at).toLocaleTimeString() : "-";
-                    const endStr = att.ended_at ? new Date(att.ended_at).toLocaleTimeString() : (att.status === 'IN_PROGRESS' ? 'Ongoing' : '-');
+                    const startStr = att.started_at ? formatTimeOnly(att.started_at) : "-";
+                    const endStr = att.ended_at ? formatTimeOnly(att.ended_at) : (att.status === 'IN_PROGRESS' ? 'Ongoing' : '-');
                     timelineEl.innerText = (att.started_at && att.ended_at) ? `${startStr} - ${endStr}` : startStr;
                 }
 
@@ -624,7 +649,7 @@
                 if (vList) {
                     if (att.violations && att.violations.length > 0) {
                         vList.innerHTML = att.violations.map(v => {
-                            const timeStr = v.timestamp ? new Date(v.timestamp).toLocaleTimeString() : "-";
+                            const timeStr = v.timestamp ? formatTimeOnly(v.timestamp) : "-";
                             const eventLabel = (v.event_type || "VIOLATION").replace(/_/g, " ").toUpperCase();
 
                             return `

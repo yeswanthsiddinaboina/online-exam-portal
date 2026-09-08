@@ -54,6 +54,17 @@ def get_dashboard_metrics():
                 student = attempt.student
                 user_id_val = student.last_name if (student.last_name and student.last_name.strip()) else f"STU{student.id}"
                 
+                # Fetch/evaluate candidate score if attempt is completed or terminated
+                res = Result.query.filter_by(attempt_id=att_id).first()
+                if not res and attempt.status in ["SUBMITTED", "AUTO_SUBMITTED", "MALPRACTICE_CANCELLED", "EXPIRED"]:
+                    try:
+                        from backend.services.evaluation import EvaluationService
+                        res = EvaluationService.evaluate_attempt(att_id)
+                    except Exception:
+                        pass
+
+                total_marks_val = sum(float(q.marks or 1.0) for q in attempt.exam.questions) if attempt.exam else 0.0
+
                 violations_by_attempt[att_id] = {
                     "id": v.id,
                     "attempt_id": att_id,
@@ -65,12 +76,16 @@ def get_dashboard_metrics():
                     "exam_title": attempt.exam.title,
                     "status": attempt.status,
                     "total_violations": 0,
+                    "score_obtained": res.total_score if res else 0.0,
+                    "percentage": res.percentage if res else 0.0,
+                    "total_marks": total_marks_val,
+                    "passed": res.passed if res else False,
                     "latest_event_type": v.event_type,
                     "event_type": v.event_type,
                     "latest_confidence": v.confidence,
                     "confidence": v.confidence,
-                    "latest_timestamp": v.timestamp.isoformat() if v.timestamp else None,
-                    "timestamp": v.timestamp.isoformat() if v.timestamp else None,
+                    "latest_timestamp": (v.timestamp.isoformat() + "Z") if v.timestamp else None,
+                    "timestamp": (v.timestamp.isoformat() + "Z") if v.timestamp else None,
                     "action_taken": "TERMINATE" if attempt.status == "MALPRACTICE_CANCELLED" else v.action_taken,
                     "violations": []
                 }
@@ -85,7 +100,7 @@ def get_dashboard_metrics():
                 "id": v.id,
                 "event_type": v.event_type,
                 "confidence": v.confidence,
-                "timestamp": v.timestamp.isoformat() if v.timestamp else None,
+                "timestamp": (v.timestamp.isoformat() + "Z") if v.timestamp else None,
                 "action_taken": v.action_taken,
                 "evidence_path": evidence_url
             })
@@ -147,6 +162,17 @@ def get_all_violations():
                 student = attempt.student
                 user_id_val = student.last_name if (student.last_name and student.last_name.strip()) else f"STU{student.id}"
                 
+                # Fetch/evaluate candidate score if attempt is completed or terminated
+                res = Result.query.filter_by(attempt_id=att_id).first()
+                if not res and attempt.status in ["SUBMITTED", "AUTO_SUBMITTED", "MALPRACTICE_CANCELLED", "EXPIRED"]:
+                    try:
+                        from backend.services.evaluation import EvaluationService
+                        res = EvaluationService.evaluate_attempt(att_id)
+                    except Exception:
+                        pass
+
+                total_marks_val = sum(float(q.marks or 1.0) for q in attempt.exam.questions) if attempt.exam else 0.0
+
                 violations_by_attempt[att_id] = {
                     "id": v.id,
                     "attempt_id": att_id,
@@ -158,12 +184,16 @@ def get_all_violations():
                     "exam_title": attempt.exam.title,
                     "status": attempt.status,
                     "total_violations": 0,
+                    "score_obtained": res.total_score if res else 0.0,
+                    "percentage": res.percentage if res else 0.0,
+                    "total_marks": total_marks_val,
+                    "passed": res.passed if res else False,
                     "latest_event_type": v.event_type,
                     "event_type": v.event_type,
                     "latest_confidence": v.confidence,
                     "confidence": v.confidence,
-                    "latest_timestamp": v.timestamp.isoformat() if v.timestamp else None,
-                    "timestamp": v.timestamp.isoformat() if v.timestamp else None,
+                    "latest_timestamp": (v.timestamp.isoformat() + "Z") if v.timestamp else None,
+                    "timestamp": (v.timestamp.isoformat() + "Z") if v.timestamp else None,
                     "action_taken": "TERMINATE" if attempt.status == "MALPRACTICE_CANCELLED" else v.action_taken,
                     "violations": []
                 }
@@ -178,7 +208,7 @@ def get_all_violations():
                 "id": v.id,
                 "event_type": v.event_type,
                 "confidence": v.confidence,
-                "timestamp": v.timestamp.isoformat() if v.timestamp else None,
+                "timestamp": (v.timestamp.isoformat() + "Z") if v.timestamp else None,
                 "action_taken": v.action_taken,
                 "evidence_path": evidence_url
             })
@@ -309,6 +339,13 @@ def get_reports():
         
         for a in attempts:
             result = Result.query.filter_by(attempt_id=a.id).first()
+            if not result and a.status in ["SUBMITTED", "AUTO_SUBMITTED", "MALPRACTICE_CANCELLED", "EXPIRED"]:
+                try:
+                    from backend.services.evaluation import EvaluationService
+                    result = EvaluationService.evaluate_attempt(a.id)
+                except Exception as eval_err:
+                    logger.error(f"Error auto-evaluating attempt {a.id} in get_reports: {str(eval_err)}")
+
             score = result.total_score if result else 0.0
             percentage = result.percentage if result else 0.0
             passed = result.passed if result else False
@@ -321,6 +358,8 @@ def get_reports():
             # Count violations
             violations_count = len(a.violations)
 
+            total_marks_val = sum(float(q.marks or 1.0) for q in a.exam.questions) if a.exam else 0.0
+
             attempts_data.append({
                 "attempt_id": a.id,
                 "student_email": a.student.email if a.student else "Unknown",
@@ -329,6 +368,7 @@ def get_reports():
                 "status": a.status,
                 "score_obtained": score,
                 "percentage": percentage,
+                "total_marks": total_marks_val,
                 "passed": passed,
                 "violations_count": violations_count,
                 "started_at": a.started_at.isoformat() + "Z" if a.started_at else None,
@@ -603,6 +643,12 @@ def get_attempt_details(attempt_id):
         exam = attempt.exam
         student = attempt.student
         result = Result.query.filter_by(attempt_id=attempt.id).first()
+        if not result and attempt.status in ["SUBMITTED", "AUTO_SUBMITTED", "MALPRACTICE_CANCELLED", "EXPIRED"]:
+            try:
+                from backend.services.evaluation import EvaluationService
+                result = EvaluationService.evaluate_attempt(attempt.id)
+            except Exception as eval_err:
+                logger.error(f"Error evaluating attempt {attempt.id} in get_attempt_details: {str(eval_err)}")
 
         questions = exam.questions if exam else []
         answers_map = {a.question_id: a for a in attempt.answers}
@@ -628,7 +674,7 @@ def get_attempt_details(attempt_id):
             is_correct = False
             chosen_str = ""
 
-            if q.question_type in ["MCQ", "MULTIPLE_CHOICE"]:
+            if q.question_type in ["MCQ", "MULTIPLE_CHOICE", "TF"]:
                 selected = [extract_letter(s) for s in (ans.selected_answers or []) if s] if ans else []
                 correct_str = q.correct_answer or ""
                 correct_list = [extract_letter(c) for c in correct_str.split(",") if c.strip()]

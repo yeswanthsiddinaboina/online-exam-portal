@@ -12,6 +12,17 @@ results_bp = Blueprint("results", __name__)
 def get_results():
     user = request.current_user
     
+    # Auto-evaluate any finished or terminated attempts missing a Result record
+    try:
+        from backend.services.evaluation import EvaluationService
+        unevaluated = ExamAttempt.query.filter(
+            ExamAttempt.status.in_(["SUBMITTED", "AUTO_SUBMITTED", "EXPIRED", "MALPRACTICE_CANCELLED"])
+        ).filter(~ExamAttempt.id.in_(db.session.query(Result.attempt_id))).all()
+        for att in unevaluated:
+            EvaluationService.evaluate_attempt(att.id)
+    except Exception as e:
+        logger.error(f"Error auto-evaluating pending attempts in get_results: {str(e)}")
+
     if user.role == "admin":
         # Admins can query all finished results
         results = Result.query.join(ExamAttempt).all()
@@ -60,10 +71,16 @@ def get_result_details(attempt_id):
             "message": "You do not have permission to view these results."
         }), 403
 
-    # Check if evaluated
+    # Check if evaluated; if not yet evaluated but finished/terminated, evaluate now
     result = Result.query.filter_by(attempt_id=attempt_id).first()
+    if not result and attempt.status in ["SUBMITTED", "AUTO_SUBMITTED", "EXPIRED", "MALPRACTICE_CANCELLED"]:
+        try:
+            from backend.services.evaluation import EvaluationService
+            result = EvaluationService.evaluate_attempt(attempt_id)
+        except Exception as e:
+            logger.error(f"Error auto-evaluating attempt {attempt_id}: {str(e)}")
     
-    # Check if candidate has completed their allotted duration
+    # Check if candidate has completed their allotted duration (answers hidden until timer ends)
     answers_visible = True
     if user.role != "admin" and attempt.started_at:
         exam_end_time = attempt.started_at + timedelta(minutes=attempt.exam.duration_minutes)
@@ -94,7 +111,7 @@ def get_result_details(attempt_id):
     # Compile violation summaries for audit
     violations_summary = [v.to_dict() for v in attempt.violations]
 
-    # Return result block
+    # Return result block - Score is always visible; answers_visible controls question solutions
     result_data = {
         "attempt_id": attempt.id,
         "exam_title": attempt.exam.title,
@@ -105,9 +122,9 @@ def get_result_details(attempt_id):
         "started_at": attempt.started_at.isoformat() + "Z" if attempt.started_at else None,
         "ended_at": attempt.ended_at.isoformat() + "Z" if attempt.ended_at else None,
         "status": attempt.status,
-        "score_obtained": result.total_score if result and answers_visible else 0.0,
-        "percentage": result.percentage if result and answers_visible else 0.0,
-        "passed": result.passed if result and answers_visible else False,
+        "score_obtained": result.total_score if result else 0.0,
+        "percentage": result.percentage if result else 0.0,
+        "passed": result.passed if result else False,
         "answers_visible": answers_visible,
         "questions": questions_data,
         "violations": violations_summary

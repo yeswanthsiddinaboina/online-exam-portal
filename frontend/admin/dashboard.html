@@ -216,7 +216,7 @@
             </div>
 
             <!-- Candidate Info Summary Strip -->
-            <div style="background: #F9FAFB; border: 1px solid var(--border-subtle); border-radius: 14px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; font-size: 0.85rem;">
+            <div style="background: #F9FAFB; border: 1px solid var(--border-subtle); border-radius: 14px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; font-size: 0.85rem;">
                 <div>
                     <span style="color: var(--text-muted); display: block; font-size: 0.75rem; margin-bottom: 0.2rem;">Candidate Name</span>
                     <strong style="color: var(--text-primary);" id="modal-student-name">-</strong>
@@ -232,6 +232,10 @@
                 <div>
                     <span style="color: var(--text-muted); display: block; font-size: 0.75rem; margin-bottom: 0.2rem;">Examination</span>
                     <strong style="color: var(--text-primary);" id="modal-exam-title">-</strong>
+                </div>
+                <div>
+                    <span style="color: var(--text-muted); display: block; font-size: 0.75rem; margin-bottom: 0.2rem;">Score Obtained</span>
+                    <strong style="color: #059669; font-size: 0.95rem;" id="modal-score-text">-</strong>
                 </div>
                 <div>
                     <span style="color: var(--text-muted); display: block; font-size: 0.75rem; margin-bottom: 0.2rem;">Total Violations</span>
@@ -318,6 +322,21 @@
             document.getElementById("signout-modal").classList.remove("active");
         }
 
+        function parseDate(ts) {
+            if (!ts) return null;
+            let s = String(ts).trim();
+            if (!s.endsWith("Z") && !s.includes("+") && !s.includes("-", 10)) {
+                s += "Z";
+            }
+            const d = new Date(s);
+            return isNaN(d.getTime()) ? null : d;
+        }
+
+        function formatDateTime(ts) {
+            const d = parseDate(ts);
+            return d ? d.toLocaleString() : (ts || '-');
+        }
+
         let currentDashboardViolations = [];
 
         function openStudentViolationsModal(attemptId) {
@@ -329,6 +348,14 @@
             document.getElementById("modal-student-userid").innerText = studentData.student_userid || '-';
             document.getElementById("modal-student-email").innerText = studentData.student_email || '-';
             document.getElementById("modal-exam-title").innerText = studentData.exam_title || '-';
+
+            const scoreEl = document.getElementById("modal-score-text");
+            if (scoreEl) {
+                const hasScore = studentData.score_obtained !== undefined && studentData.score_obtained !== null;
+                scoreEl.innerText = hasScore 
+                    ? `${studentData.score_obtained.toFixed(1)} / ${(studentData.total_marks || 0).toFixed(1)} (${(studentData.percentage || 0).toFixed(1)}%)` 
+                    : '-';
+            }
             
             const totalCount = studentData.total_violations || (studentData.violations ? studentData.violations.length : 1);
             document.getElementById("modal-total-violations").innerText = `${totalCount} ${totalCount === 1 ? 'Violation' : 'Violations'}`;
@@ -353,7 +380,7 @@
                                 <strong style="color: var(--accent-danger);">${(v.event_type || '').replace(/_/g, ' ')}</strong>
                             </td>
                             <td>${v.confidence !== undefined && v.confidence !== null ? (v.confidence * 100).toFixed(0) + '%' : '-'}</td>
-                            <td>${v.timestamp ? new Date(v.timestamp).toLocaleString() : '-'}</td>
+                            <td>${formatDateTime(v.timestamp)}</td>
                             <td>
                                 <span class="badge badge-${isTerminate ? 'danger' : 'warning'}">${v.action_taken || 'FLAGGED'}</span>
                             </td>
@@ -462,7 +489,7 @@
                                     <td>
                                         <span style="color: var(--accent-danger); font-weight: 600;">${(v.latest_event_type || v.event_type || '').replace(/_/g, ' ')}</span>
                                     </td>
-                                    <td>${v.latest_timestamp ? new Date(v.latest_timestamp).toLocaleString() : (v.timestamp ? new Date(v.timestamp).toLocaleString() : '-')}</td>
+                                    <td>${formatDateTime(v.latest_timestamp || v.timestamp)}</td>
                                     <td>${statusBadge}</td>
                                     <td style="text-align: right;">
                                         <button class="btn btn-secondary" onclick="event.stopPropagation(); openStudentViolationsModal(${v.attempt_id})" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; color: var(--primary-green); border-color: var(--primary-green); font-weight: 600; white-space: nowrap;">

@@ -26,6 +26,12 @@ class ViolationEngine:
             ViolationLog.severity == 2
         ).scalar() or 0
 
+        fullscreen_count = db.session.query(db.func.sum(ViolationLog.count_incremented)).filter(
+            ViolationLog.attempt_id == attempt_id,
+            ViolationLog.event_type == "FULLSCREEN_EXIT",
+            ViolationLog.severity == 2
+        ).scalar() or 0
+
         total_warning_count = db.session.query(db.func.sum(ViolationLog.count_incremented)).filter(
             ViolationLog.attempt_id == attempt_id,
             ViolationLog.severity == 2
@@ -37,6 +43,7 @@ class ViolationEngine:
             "mobile_count": int(mobile_count),
             "face_count": int(face_count),
             "tab_count": int(tab_count),
+            "fullscreen_count": int(fullscreen_count),
             "total_warning_count": int(total_warning_count),
             "latest_warning": latest_warning
         }
@@ -79,19 +86,36 @@ class ViolationEngine:
             return {"action": "LOG", "message": "Below face confidence threshold."}
 
         now = datetime.datetime.utcnow()
-        last_log = ViolationLog.query.filter_by(
-            attempt_id=attempt_id,
-            event_type=event_type
-        ).order_by(ViolationLog.timestamp.desc()).first()
+        if event_type in ["TAB_SWITCH", "WINDOW_HIDDEN"]:
+            last_log = ViolationLog.query.filter(
+                ViolationLog.attempt_id == attempt_id,
+                ViolationLog.event_type.in_(["TAB_SWITCH", "WINDOW_HIDDEN"])
+            ).order_by(ViolationLog.timestamp.desc()).first()
+        else:
+            last_log = ViolationLog.query.filter_by(
+                attempt_id=attempt_id,
+                event_type=event_type
+            ).order_by(ViolationLog.timestamp.desc()).first()
 
         if last_log:
             elapsed = (now - last_log.timestamp).total_seconds()
-            effective_cooldown = 3 if event_type in ["PHONE_DETECTED", "MULTIPLE_PERSON"] else getattr(config, 'cooldown_seconds', 2)
+            configured_cooldown = getattr(config, 'cooldown_seconds', 2)
+            if event_type in ["PHONE_DETECTED", "MULTIPLE_PERSON"]:
+                effective_cooldown = min(configured_cooldown, 3) if configured_cooldown > 0 else 0
+            elif event_type in ["TAB_SWITCH", "WINDOW_HIDDEN"]:
+                effective_cooldown = min(configured_cooldown, 3) if configured_cooldown > 0 else 0
+            else:
+                effective_cooldown = configured_cooldown
+
             if elapsed < effective_cooldown:
                 logger.info(f"Deduplicated event {event_type} for attempt {attempt_id} (elapsed: {elapsed:.1f}s)")
+                dup_count = db.session.query(db.func.sum(ViolationLog.count_incremented)).filter(
+                    ViolationLog.attempt_id == attempt_id,
+                    ViolationLog.event_type.in_(["TAB_SWITCH", "WINDOW_HIDDEN"]) if event_type in ["TAB_SWITCH", "WINDOW_HIDDEN"] else ViolationLog.event_type == event_type
+                ).scalar() or 0
                 return {
                     "action": last_log.action_taken,
-                    "violation_count": ViolationEngine.get_violation_count(attempt_id, event_type),
+                    "violation_count": int(dup_count),
                     "message": "Duplicate event within cooldown. Action repeated."
                 }
 
@@ -99,10 +123,17 @@ class ViolationEngine:
         mobile_count = warning_summary["mobile_count"] + (1 if event_type == "PHONE_DETECTED" else 0)
         face_count = warning_summary["face_count"] + (1 if event_type in ["HEAD_TURN", "MULTIPLE_PERSON", "FACE_ABSENT", "FACE_MISMATCH"] else 0)
         tab_count = warning_summary["tab_count"] + (1 if event_type in ["TAB_SWITCH", "WINDOW_HIDDEN"] else 0)
+        fullscreen_count = warning_summary["fullscreen_count"] + (1 if event_type == "FULLSCREEN_EXIT" else 0)
         total_warning_count = warning_summary["total_warning_count"] + 1
 
         mismatch_count = ViolationEngine.get_violation_count(attempt_id, "FACE_MISMATCH") + (1 if event_type == "FACE_MISMATCH" else 0)
         multiple_face_count = ViolationEngine.get_violation_count(attempt_id, "MULTIPLE_PERSON") + (1 if event_type == "MULTIPLE_PERSON" else 0)
+
+        tab_limit = getattr(config, 'tab_switch_limit', 3)
+        fullscreen_limit = getattr(config, 'fullscreen_exit_limit', 3)
+        mobile_limit = getattr(config, 'mobile_limit', 2)
+        multiple_person_limit = getattr(config, 'multiple_person_limit', 3)
+        head_turn_limit = getattr(config, 'head_turn_limit', 5)
 
         if event_type == "FACE_MISMATCH" and mismatch_count >= 2:
             severity = 3
@@ -110,13 +141,37 @@ class ViolationEngine:
             message = "Your examination has been terminated: Candidate identity mismatch detected. The person writing the exam does not match the registered candidate."
             attempt.status = "MALPRACTICE_CANCELLED"
             attempt.ended_at = now
-        elif event_type == "MULTIPLE_PERSON" and multiple_face_count >= 3:
+        elif event_type == "MULTIPLE_PERSON" and multiple_face_count >= multiple_person_limit:
             severity = 3
             action_taken = "TERMINATE"
-            message = "Your examination has been terminated: Multiple people were detected in front of the camera."
+            message = f"Your examination has been terminated: Multiple people were detected in front of the camera ({multiple_face_count}/{multiple_person_limit})."
             attempt.status = "MALPRACTICE_CANCELLED"
             attempt.ended_at = now
-        elif mobile_count > 6 or face_count > 6 or tab_count > 6 or total_warning_count > 6:
+        elif event_type in ["TAB_SWITCH", "WINDOW_HIDDEN"] and tab_count >= tab_limit:
+            severity = 3
+            action_taken = "TERMINATE"
+            message = f"Your examination has been terminated: Maximum permitted tab switch limit of {tab_limit} was reached."
+            attempt.status = "MALPRACTICE_CANCELLED"
+            attempt.ended_at = now
+        elif event_type == "FULLSCREEN_EXIT" and fullscreen_count >= fullscreen_limit:
+            severity = 3
+            action_taken = "TERMINATE"
+            message = f"Your examination has been terminated: Fullscreen mode was exited {fullscreen_count} times, exceeding the permitted limit of {fullscreen_limit}."
+            attempt.status = "MALPRACTICE_CANCELLED"
+            attempt.ended_at = now
+        elif event_type == "PHONE_DETECTED" and mobile_count > mobile_limit:
+            severity = 3
+            action_taken = "TERMINATE"
+            message = f"Your examination has been terminated: Mobile phone detection limit ({mobile_limit} warnings) was exceeded."
+            attempt.status = "MALPRACTICE_CANCELLED"
+            attempt.ended_at = now
+        elif event_type in ["HEAD_TURN", "FACE_ABSENT"] and face_count > head_turn_limit:
+            severity = 3
+            action_taken = "TERMINATE"
+            message = f"Your examination has been terminated: Head turn/absence policy threshold ({head_turn_limit} warnings) was exceeded."
+            attempt.status = "MALPRACTICE_CANCELLED"
+            attempt.ended_at = now
+        elif total_warning_count > 6:
             severity = 3
             action_taken = "TERMINATE"
             message = "Your examination has been terminated because the warning policy threshold of 6 violations was exceeded."
@@ -128,24 +183,50 @@ class ViolationEngine:
             message = "Your examination has been automatically terminated because the warning was not resolved within 2 minutes."
             attempt.status = "MALPRACTICE_CANCELLED"
             attempt.ended_at = now
-        elif mobile_count >= 5 or face_count >= 5 or tab_count >= 5 or total_warning_count >= 5:
-            severity = 2
-            action_taken = "WARNING"
-            message = "Warning: Maximum permitted warning limit reached. The system is auto-processing this alert and continuing analysis."
         else:
             severity = 2
             action_taken = "WARNING"
             if event_type == "FACE_MISMATCH":
                 message = "Critical Security Alert: Candidate face mismatch detected! The face writing this exam does not match the candidate verified at check-in."
             elif event_type == "MULTIPLE_PERSON":
-                message = "Warning: Multiple faces detected! Only the registered candidate must be visible in the camera frame."
+                message = f"Warning ({multiple_face_count}/{multiple_person_limit}): Multiple faces detected! Only the registered candidate must be visible in the camera frame."
             elif event_type in ["TAB_SWITCH", "WINDOW_HIDDEN"]:
-                message = "Warning: A tab or window change was detected. The system is automatically continuing analysis."
+                remaining = max(0, tab_limit - tab_count)
+                if tab_count == tab_limit - 1:
+                    message = f"Security Warning ({tab_count}/{tab_limit}): Tab switch detected! FINAL WARNING: You have reached {tab_count} of {tab_limit} permitted switches. Any further tab switch will terminate your exam immediately!"
+                else:
+                    message = f"Security Warning ({tab_count}/{tab_limit}): Tab switch detected! Navigating away from the exam tab is prohibited ({remaining} warning(s) remaining)."
+            elif event_type == "FULLSCREEN_EXIT":
+                remaining = max(0, fullscreen_limit - fullscreen_count)
+                if fullscreen_count == fullscreen_limit - 1:
+                    message = f"Security Warning ({fullscreen_count}/{fullscreen_limit}): Fullscreen exited! FINAL WARNING: Any further exit will terminate your exam immediately!"
+                else:
+                    message = f"Security Warning ({fullscreen_count}/{fullscreen_limit}): Fullscreen exited! Please remain in fullscreen mode ({remaining} warning(s) remaining)."
+            elif event_type == "PHONE_DETECTED":
+                message = f"Security Warning ({mobile_count}/{mobile_limit}): Mobile phone or unauthorized electronic device detected in camera frame."
+            elif event_type in ["HEAD_TURN", "FACE_ABSENT"]:
+                message = f"Security Warning ({face_count}/{head_turn_limit}): Please face the camera and remain focused on your examination screen."
             else:
-                message = "Warning: Examination policy violation detected. The system is automatically reviewing this alert and continuing analysis."
+                message = "Warning: Examination policy violation detected. Please adhere to the exam guidelines."
 
-        current_count = ViolationEngine.get_violation_count(attempt_id, event_type) + 1
-        limit = 6
+        if event_type in ["TAB_SWITCH", "WINDOW_HIDDEN"]:
+            current_count = tab_count
+            limit = tab_limit
+        elif event_type == "FULLSCREEN_EXIT":
+            current_count = fullscreen_count
+            limit = fullscreen_limit
+        elif event_type == "MULTIPLE_PERSON":
+            current_count = multiple_face_count
+            limit = multiple_person_limit
+        elif event_type == "PHONE_DETECTED":
+            current_count = mobile_count
+            limit = mobile_limit
+        elif event_type in ["HEAD_TURN", "FACE_ABSENT"]:
+            current_count = face_count
+            limit = head_turn_limit
+        else:
+            current_count = ViolationEngine.get_violation_count(attempt_id, event_type) + 1
+            limit = 6
 
         try:
             violation = ViolationLog(
@@ -161,6 +242,15 @@ class ViolationEngine:
             db.session.commit()
 
             logger.info(f"Violation logged: Attempt {attempt_id}, Event: {event_type}, Count: {current_count}/{limit}, Action: {action_taken}, Warnings={total_warning_count}")
+
+            # If examination was terminated due to malpractice, evaluate candidate score immediately
+            if action_taken == "TERMINATE":
+                try:
+                    from backend.services.evaluation import EvaluationService
+                    EvaluationService.evaluate_attempt(attempt_id)
+                    logger.info(f"Terminated attempt {attempt_id} evaluated successfully.")
+                except Exception as eval_err:
+                    logger.error(f"Error evaluating terminated attempt {attempt_id}: {str(eval_err)}")
 
             return {
                 "action": action_taken,

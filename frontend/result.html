@@ -88,30 +88,25 @@
             const res = await API.get(`/results/${attemptId}`);
             if (res.success) {
                 const r = res.result;
-                const answersVisible = r.answers_visible !== false;
+                const isTerminated = r.status === "MALPRACTICE_CANCELLED";
+                const answersVisible = r.answers_visible === true;
                 
                 document.getElementById("res-exam-title").innerText = r.exam_title;
                 
-                if (answersVisible) {
-                    document.getElementById("res-score").innerText = `${r.score_obtained.toFixed(1)} / ${r.questions.reduce((a, b) => a + b.marks, 0).toFixed(1)}`;
-                    document.getElementById("res-percentage").innerText = `${r.percentage.toFixed(1)}%`;
-                } else {
-                    document.getElementById("res-score").innerText = "Hidden until timer ends";
-                    document.getElementById("res-percentage").innerText = "Hidden until timer ends";
-                }
+                // Student score is always displayed
+                const totalPossible = (r.questions && r.questions.length > 0) ? r.questions.reduce((a, b) => a + (b.marks || 0), 0) : 0;
+                const obtained = (r.score_obtained !== undefined && r.score_obtained !== null) ? r.score_obtained : 0;
+                const pct = (r.percentage !== undefined && r.percentage !== null) ? r.percentage : 0;
+                document.getElementById("res-score").innerText = `${obtained.toFixed(1)} / ${totalPossible.toFixed(1)}`;
+                document.getElementById("res-percentage").innerText = `${pct.toFixed(1)}%`;
                 
                 const badge = document.getElementById("res-status-badge");
-                if (r.status === "MALPRACTICE_CANCELLED") {
+                if (isTerminated) {
                     badge.innerText = "MALPRACTICE TERMINATED";
                     badge.className = "badge badge-danger";
                 } else {
-                    if (answersVisible) {
-                        badge.innerText = r.passed ? "PASSED" : "FAILED";
-                        badge.className = `badge badge-${r.passed ? 'success' : 'danger'}`;
-                    } else {
-                        badge.innerText = "SUBMITTED";
-                        badge.className = "badge badge-warning";
-                    }
+                    badge.innerText = r.passed ? "PASSED" : "FAILED";
+                    badge.className = `badge badge-${r.passed ? 'success' : 'danger'}`;
                 }
 
                 if (r.ended_at) {
@@ -122,13 +117,20 @@
                 if (r.violations && r.violations.length > 0) {
                     document.getElementById("violations-panel").style.display = "block";
                     const vBody = document.getElementById("violations-body");
-                    vBody.innerHTML = r.violations.map(v => `
+                    vBody.innerHTML = r.violations.map(v => {
+                        let tStr = v.timestamp || "";
+                        if (tStr && !tStr.endsWith("Z") && !tStr.includes("+") && !tStr.includes("-", 10)) {
+                            tStr += "Z";
+                        }
+                        const timeDisplay = tStr ? new Date(tStr).toLocaleTimeString() : '-';
+                        return `
                         <tr>
                             <td><strong style="color: var(--accent-danger);">${v.event_type.replace('_', ' ')}</strong></td>
-                            <td>${new Date(v.timestamp).toLocaleTimeString()}</td>
+                            <td>${timeDisplay}</td>
                             <td><span class="badge badge-${v.severity === 3 ? 'danger' : 'warning'}">${v.action_taken}</span></td>
                         </tr>
-                    `).join('');
+                    `;
+                    }).join('');
                 }
 
                 // Render questions review
@@ -146,7 +148,7 @@
                         <span style="font-size: 1.5rem;">🔒</span>
                         <div>
                             <strong style="color: var(--accent-warning);">Answer Review Restricted</strong><br>
-                            <span style="font-size: 0.9rem; opacity: 0.85;">Correct answers and detailed scores are hidden until the exam duration has fully ended to maintain test integrity.</span>
+                            <span style="font-size: 0.9rem; opacity: 0.85;">Correct answers and question solutions are hidden until the exam duration has fully ended to maintain test integrity.</span>
                         </div>
                     `;
                     container.parentNode.insertBefore(banner, container);

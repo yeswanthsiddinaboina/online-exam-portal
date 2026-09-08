@@ -242,6 +242,12 @@ class StudentExamMarksPDFService:
 
             # Fetch result
             result = Result.query.filter_by(attempt_id=att.id).first()
+            if not result and att.status in ["SUBMITTED", "AUTO_SUBMITTED", "MALPRACTICE_CANCELLED", "EXPIRED"]:
+                try:
+                    from backend.services.evaluation import EvaluationService
+                    result = EvaluationService.evaluate_attempt(att.id)
+                except Exception as eval_err:
+                    logger.error(f"Error evaluating attempt {att.id} in pdf_generator: {str(eval_err)}")
             obtained_marks = result.total_score if result else 0.0
             percentage = result.percentage if result else 0.0
             passed = result.passed if result else (percentage >= 50.0)

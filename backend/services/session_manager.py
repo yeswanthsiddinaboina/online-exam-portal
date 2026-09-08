@@ -103,7 +103,13 @@ class SessionManager:
         
         if time_elapsed > (max_duration + grace_period):
             attempt.status = "EXPIRED"
+            attempt.ended_at = now
             db.session.commit()
+            try:
+                from backend.services.evaluation import EvaluationService
+                EvaluationService.evaluate_attempt(attempt.id)
+            except Exception as e:
+                logger.error(f"Error evaluating expired attempt {attempt.id}: {str(e)}")
             return False, "SESSION_EXPIRED"
 
         return True, attempt
