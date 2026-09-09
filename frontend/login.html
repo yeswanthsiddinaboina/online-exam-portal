@@ -418,6 +418,7 @@
                                 <span class="input-icon-prefix">📚</span>
                                 <select class="form-control" id="reg-course" required style="cursor: pointer; appearance: auto; padding-left: 2.75rem; background-color: #FFFFFF; font-weight: 500;">
                                     <option value="" disabled selected>Select your enrolled course</option>
+                                    <option value="Drive">Drive</option>
                                     <option value="Python">Python</option>
                                     <option value="Java">Java</option>
                                 </select>
@@ -598,7 +599,7 @@
             const confirmPassword = document.getElementById("reg-confirm-password").value;
 
             if (!course) {
-                alert("Please select your enrolled course (Python or Java).");
+                alert("Please select your enrolled course (Drive, Python, or Java).");
                 return;
             }
 

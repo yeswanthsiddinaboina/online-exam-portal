@@ -39,9 +39,7 @@ class SessionManager:
         from backend.models import ExamAccess, User
         student = User.query.get(student_id)
         if student:
-            student_course = (student.course or "").strip()
-            exam_course = (exam.course or "Python & Java").strip()
-            if student_course and exam_course != "Python & Java" and student_course.lower() != exam_course.lower():
+            if not exam.is_accessible_by(student.course):
                 raise PermissionError("EXAM_COURSE_MISMATCH")
 
         # Enforce exam access approval rule

@@ -233,6 +233,14 @@ def face_verification():
             "message": "You have already attempted this examination. Multiple attempts are prohibited."
         }), 400
 
+    exam = Exam.query.get(exam_id)
+    if exam and not exam.is_accessible_by(student.course):
+        return jsonify({
+            "success": False,
+            "error_code": "EXAM_COURSE_MISMATCH",
+            "message": f"This examination is assigned to {exam.course} students only."
+        }), 403
+
     # Check if student has approved access
     from backend.models import ExamAccess
     access = ExamAccess.query.filter_by(student_id=student.id, exam_id=exam_id).first()

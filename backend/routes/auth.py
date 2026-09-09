@@ -47,7 +47,7 @@ def register():
         }), 409
 
     raw_course = data.get("course")
-    course = raw_course.strip() if isinstance(raw_course, str) and raw_course.strip() in ["Python", "Java"] else None
+    course = raw_course.strip() if isinstance(raw_course, str) and raw_course.strip() in ["Python", "Java", "Drive"] else None
     if role == "student" and not course:
         course = "Python"
 
@@ -98,7 +98,7 @@ def register_student():
     
     raw_course = data.get("course", "Python")
     course = raw_course.strip() if isinstance(raw_course, str) else "Python"
-    if course not in ["Python", "Java"]:
+    if course not in ["Python", "Java", "Drive"]:
         course = "Python"
     
     if not all([email, first_name, password]):

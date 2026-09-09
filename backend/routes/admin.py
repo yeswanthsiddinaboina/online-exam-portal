@@ -1022,35 +1022,59 @@ def delete_registration(student_id):
         }), 404
 
     try:
-        # Delete attempts cleanly one by one so cascade delete triggers correctly
+        deleted_email = student.email
+        deleted_name = student.first_name
+
+        # 1. Clean up evidence snapshot photos from disk if present
+        from backend.config import Config
+        from pathlib import Path
         attempts = ExamAttempt.query.filter_by(student_id=student.id).all()
         for attempt in attempts:
+            if hasattr(attempt, 'evidences') and attempt.evidences:
+                for ev in attempt.evidences:
+                    if ev.file_path:
+                        try:
+                            p = Path(ev.file_path)
+                            if not p.is_absolute():
+                                p = Config.PROJECT_ROOT / p
+                            if p.exists() and p.is_file():
+                                p.unlink()
+                        except Exception:
+                            pass
+            # Cascade deletes answers, violations, evidence records, and result
             db.session.delete(attempt)
 
-        # Delete all access permissions
+        # 2. Delete all access permissions
         accesses = ExamAccess.query.filter_by(student_id=student.id).all()
         for access in accesses:
             db.session.delete(access)
 
-        # Delete audit logs
+        # 3. Delete password reset tokens if any
+        try:
+            from backend.models.password_reset import PasswordReset
+            PasswordReset.query.filter_by(user_id=student.id).delete()
+        except Exception:
+            pass
+
+        # 4. Delete audit logs
         AuditLog.query.filter_by(user_id=student.id).delete()
 
-        # Update status to REJECTED so they count under rejected students
-        student.registration_status = "REJECTED"
+        # 5. Completely delete the student user from users table
+        db.session.delete(student)
         db.session.commit()
 
-        logger.info(f"Admin deleted student {student.email} records and set registration status to REJECTED")
+        logger.info(f"Admin permanently deleted student {deleted_email} ({deleted_name}). Account completely removed for fresh re-registration.")
         return jsonify({
             "success": True,
-            "message": "Student records cleared and status set to Rejected successfully."
+            "message": f"Candidate {deleted_name} ({deleted_email}) permanently deleted. They can now register again fresh."
         }), 200
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Failed to delete student user records: {str(e)}")
+        logger.error(f"Failed to permanently delete student user: {str(e)}")
         return jsonify({
             "success": False,
             "error_code": "DELETE_STUDENT_FAILED",
-            "message": "Failed to delete student records from system."
+            "message": f"Failed to permanently delete student: {str(e)}"
         }), 500
 
 
@@ -1230,6 +1254,95 @@ def reject_password_reset(reset_id):
             "error_code": "REJECT_RESET_FAILED",
             "message": f"Failed to reject password reset request: {str(e)}"
         }), 500
+
+
+@admin_bp.route("/system/storage", methods=["GET"])
+@token_required
+@role_required(["admin"])
+def get_storage_metrics():
+    from backend.models import db, User, Exam, Question, ExamAttempt, StudentAnswer, ViolationLog, Evidence
+    from backend.config import Config
+    from sqlalchemy import text
+    import os
+
+    try:
+        engine_name = db.engine.name
+        metrics = {
+            "database_type": engine_name,
+            "max_free_tier_storage": "512 MB (0.5 GB)",
+            "total_db_size": "Unknown",
+            "percent_used": "0%",
+            "tables": {},
+            "evidence_files_count": 0,
+            "evidence_disk_size": "0 KB"
+        }
+
+        # 1. Database Size & Table Breakdown
+        if engine_name == "postgresql":
+            # Postgres (Neon) exact size queries
+            res = db.session.execute(text("SELECT pg_size_pretty(pg_database_size(current_database())), pg_database_size(current_database())")).fetchone()
+            if res:
+                metrics["total_db_size"] = res[0]
+                bytes_used = res[1]
+                metrics["bytes_used"] = bytes_used
+                metrics["percent_used"] = f"{(bytes_used / (512 * 1024 * 1024)) * 100:.2f}%"
+
+            table_query = text("""
+                SELECT c.relname, pg_size_pretty(pg_total_relation_size(c.oid)), c.reltuples::bigint
+                FROM pg_class c
+                JOIN pg_namespace n ON n.oid = c.relnamespace
+                WHERE n.nspname = 'public' AND c.relkind = 'r'
+                ORDER BY pg_total_relation_size(c.oid) DESC
+            """)
+            table_rows = db.session.execute(table_query).fetchall()
+            for row in table_rows:
+                metrics["tables"][row[0]] = {
+                    "size": row[1],
+                    "estimated_rows": row[2]
+                }
+        else:
+            # SQLite local fallback
+            db_path = db.engine.url.database
+            if db_path and os.path.exists(db_path):
+                sz = os.path.getsize(db_path)
+                metrics["total_db_size"] = f"{sz / 1024:.1f} KB"
+                metrics["bytes_used"] = sz
+                metrics["percent_used"] = f"{(sz / (512 * 1024 * 1024)) * 100:.3f}%"
+
+            metrics["tables"] = {
+                "users": {"rows": User.query.count()},
+                "exams": {"rows": Exam.query.count()},
+                "questions": {"rows": Question.query.count()},
+                "exam_attempts": {"rows": ExamAttempt.query.count()},
+                "student_answers": {"rows": StudentAnswer.query.count()},
+                "violation_logs": {"rows": ViolationLog.query.count()},
+                "evidence": {"rows": Evidence.query.count()}
+            }
+
+        # 2. Evidence Files Storage on Disk
+        evidence_dir = Config.EVIDENCE_DIR
+        if evidence_dir.exists():
+            files = list(evidence_dir.glob("*.jpg"))
+            total_bytes = sum(f.stat().st_size for f in files if f.is_file())
+            metrics["evidence_files_count"] = len(files)
+            if total_bytes > 1024 * 1024:
+                metrics["evidence_disk_size"] = f"{total_bytes / (1024 * 1024):.2f} MB"
+            else:
+                metrics["evidence_disk_size"] = f"{total_bytes / 1024:.1f} KB"
+
+        return jsonify({
+            "success": True,
+            "metrics": metrics
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Failed to fetch storage metrics: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error_code": "STORAGE_METRICS_FAILED",
+            "message": f"Failed to calculate storage metrics: {str(e)}"
+        }), 500
+
 
 
 

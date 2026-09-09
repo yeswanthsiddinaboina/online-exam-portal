@@ -20,21 +20,31 @@ def get_all_exams():
     else:
         # Candidates can only see active, non-deleted exams assigned to their course
         student_course = (user.course or "").strip()
-        if student_course.lower() == "python":
+        sc_lower = student_course.lower()
+        if sc_lower == "drive":
             exams = Exam.query.filter(
                 Exam.is_active == True,
                 Exam.is_deleted == False,
-                db.or_(Exam.course == "Python", Exam.course == "Python & Java", Exam.course == None)
+                db.or_(Exam.course == "Drive", Exam.course == "All Courses")
             ).all()
-        elif student_course.lower() == "java":
+        elif sc_lower == "python":
             exams = Exam.query.filter(
                 Exam.is_active == True,
                 Exam.is_deleted == False,
-                db.or_(Exam.course == "Java", Exam.course == "Python & Java", Exam.course == None)
+                db.or_(Exam.course == "Python", Exam.course == "Python & Java", Exam.course == "All Courses", Exam.course == None)
+            ).all()
+        elif sc_lower == "java":
+            exams = Exam.query.filter(
+                Exam.is_active == True,
+                Exam.is_deleted == False,
+                db.or_(Exam.course == "Java", Exam.course == "Python & Java", Exam.course == "All Courses", Exam.course == None)
             ).all()
         else:
             # Fallback for legacy students without course set
             exams = Exam.query.filter_by(is_active=True, is_deleted=False).all()
+
+        # Enforce exact access rule
+        exams = [exam for exam in exams if exam.is_accessible_by(student_course)]
 
         from backend.models import ExamAttempt, ExamAccess
         attempts = ExamAttempt.query.filter_by(student_id=user.id).all()
@@ -103,13 +113,11 @@ def get_exam_by_id(exam_id):
             }), 403
 
         # Check course assignment
-        student_course = (user.course or "").strip()
-        exam_course = (exam.course or "Python & Java").strip()
-        if student_course and exam_course != "Python & Java" and student_course.lower() != exam_course.lower():
+        if not exam.is_accessible_by(user.course):
             return jsonify({
                 "success": False,
                 "error_code": "EXAM_COURSE_MISMATCH",
-                "message": f"This examination is assigned to {exam_course} students only."
+                "message": f"This examination is assigned to {exam.course} students only."
             }), 403
 
     return jsonify({
@@ -131,7 +139,7 @@ def create_exam():
 
     raw_course = data.get("course", "Python & Java")
     course = raw_course.strip() if isinstance(raw_course, str) else "Python & Java"
-    if course not in ["Python", "Java", "Python & Java"]:
+    if course not in ["Drive", "Python", "Java", "Python & Java", "All Courses"]:
         course = "Python & Java"
 
     if not title:
@@ -227,7 +235,7 @@ def update_exam(exam_id):
             exam.is_active = bool(data["is_active"])
         if "course" in data:
             up_course = data["course"].strip() if isinstance(data["course"], str) else "Python & Java"
-            if up_course in ["Python", "Java", "Python & Java"]:
+            if up_course in ["Drive", "Python", "Java", "Python & Java", "All Courses"]:
                 exam.course = up_course
 
         # Update security configs if specified
@@ -404,6 +412,14 @@ def request_exam_access(exam_id):
             "error_code": "EXAM_NOT_FOUND",
             "message": "Exam not found or inactive."
         }), 404
+
+    # Enforce course match
+    if not exam.is_accessible_by(user.course):
+        return jsonify({
+            "success": False,
+            "error_code": "EXAM_COURSE_MISMATCH",
+            "message": f"This examination is assigned to {exam.course} students only."
+        }), 403
 
     # Check if access record already exists
     existing = ExamAccess.query.filter_by(student_id=user.id, exam_id=exam_id).first()

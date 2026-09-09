@@ -72,6 +72,9 @@
                 </div>
 
                 <div class="admin-top-actions">
+                    <button class="btn btn-secondary" onclick="openStorageModal()" style="font-size: 0.85rem; padding: 0.55rem 1.15rem; border-radius: 8px; display: inline-flex; align-items: center; gap: 0.4rem;" title="Check Database & Evidence Storage Consumption">
+                        <span>💾</span> Storage Status
+                    </button>
                     <button class="btn btn-primary" onclick="copyStudentPortalLink()" style="font-size: 0.85rem; padding: 0.55rem 1.15rem; border-radius: 8px;">
                         <span>🔗</span> Copy Student Portal Link
                     </button>
@@ -289,6 +292,71 @@
             </div>
             <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end;">
                 <button class="btn btn-secondary" onclick="closeEvidencePreviewModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- STORAGE USAGE MODAL -->
+    <div class="modal-backdrop" id="storage-modal" style="z-index: 1070;">
+        <div class="modal-content" style="max-width: 660px; width: 95%; border-radius: 16px; padding: 2rem; border-top: 4px solid var(--primary-green);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h3 style="margin: 0; font-size: 1.25rem; font-weight: 800; color: var(--forest-dark); display: flex; align-items: center; gap: 0.5rem;">
+                    <span>💾</span> Storage Consumption Status
+                </h3>
+                <button type="button" onclick="closeStorageModal()" class="btn btn-secondary" style="padding: 0.35rem 0.85rem; border-radius: 8px; font-size: 0.85rem;">Close</button>
+            </div>
+
+            <div id="storage-loading" style="text-align: center; padding: 2.5rem; color: var(--text-secondary);">
+                ⏳ Fetching real-time storage metrics...
+            </div>
+
+            <div id="storage-content" style="display: none;">
+                <!-- Main Storage Meter -->
+                <div style="background: #F9FAFB; border: 1px solid var(--border-subtle); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                        <div>
+                            <span style="font-size: 0.82rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Database Storage (Neon / PostgreSQL)</span>
+                            <div style="font-size: 1.4rem; font-weight: 800; color: var(--forest-dark);" id="storage-total-display">-</div>
+                        </div>
+                        <span id="storage-percent-badge" class="badge badge-active" style="font-size: 0.85rem; padding: 0.3rem 0.75rem;">-</span>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div style="width: 100%; height: 10px; background: #E5E7EB; border-radius: 999px; overflow: hidden; margin-bottom: 0.5rem;">
+                        <div id="storage-progress-bar" style="height: 100%; width: 6%; background: var(--primary-green); border-radius: 999px; transition: width 0.5s ease;"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-secondary);">
+                        <span>Current Used: <strong id="storage-used-subtext">-</strong></span>
+                        <span>Free Tier Limit: <strong>512 MB (0.5 GB)</strong></span>
+                    </div>
+                </div>
+
+                <!-- 2 Grid Cards: Database vs Evidence Files -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+                    <div style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 10px; padding: 1rem;">
+                        <div style="font-size: 0.82rem; font-weight: 700; color: #166534; margin-bottom: 0.45rem;">🗄️ Database Tables</div>
+                        <div style="font-size: 0.82rem; color: #374151; display: flex; flex-direction: column; gap: 0.35rem;" id="storage-tables-list">
+                            <!-- Injected dynamically -->
+                        </div>
+                    </div>
+
+                    <div style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 10px; padding: 1rem;">
+                        <div style="font-size: 0.82rem; font-weight: 700; color: #1E40AF; margin-bottom: 0.45rem;">📸 Violation Snapshots</div>
+                        <div style="font-size: 0.82rem; color: #374151; display: flex; flex-direction: column; gap: 0.35rem;">
+                            <div>Location: <strong>Web Server Disk</strong></div>
+                            <div>Total Files: <strong id="storage-evidence-count">0 files</strong></div>
+                            <div>Disk Size: <strong id="storage-evidence-size">0 KB</strong></div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.35rem; line-height: 1.4;">
+                                Photos are stored on the server's disk, <strong>NOT</strong> inside the 512 MB database limit!
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Explanation Note -->
+                <div style="background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 8px; padding: 0.85rem; font-size: 0.78rem; color: #92400E; line-height: 1.45;">
+                    💡 <strong>Storage Fact:</strong> PostgreSQL reserves ~25–30 MB upon creation for internal system catalogs and transaction logs. Actual exam attempts and answers occupy only ~15 KB per student, meaning 200 concurrent candidates will easily fit within your 512 MB limit!
+                </div>
             </div>
         </div>
     </div>
@@ -516,6 +584,59 @@
             }).catch(err => {
                 prompt("Copy this student link:", url);
             });
+        }
+
+        async function openStorageModal() {
+            const modal = document.getElementById("storage-modal");
+            const loading = document.getElementById("storage-loading");
+            const content = document.getElementById("storage-content");
+            modal.classList.add("active");
+            loading.style.display = "block";
+            content.style.display = "none";
+
+            try {
+                const res = await API.get("/admin/system/storage");
+                if (res.success && res.metrics) {
+                    const m = res.metrics;
+                    document.getElementById("storage-total-display").innerText = `${m.total_db_size} / ${m.max_free_tier_storage}`;
+                    document.getElementById("storage-percent-badge").innerText = `${m.percent_used} used`;
+                    document.getElementById("storage-used-subtext").innerText = m.total_db_size;
+
+                    // Progress bar
+                    const pct = Math.min(100, Math.max(3, parseFloat(m.percent_used) || 5));
+                    document.getElementById("storage-progress-bar").style.width = `${pct}%`;
+
+                    // Evidence snapshots
+                    document.getElementById("storage-evidence-count").innerText = `${m.evidence_files_count} files`;
+                    document.getElementById("storage-evidence-size").innerText = m.evidence_disk_size;
+
+                    // Tables breakdown
+                    const tableList = document.getElementById("storage-tables-list");
+                    const keys = Object.keys(m.tables || {});
+                    if (keys.length > 0) {
+                        tableList.innerHTML = keys.slice(0, 6).map(k => {
+                            const t = m.tables[k];
+                            const sz = t.size ? ` (${t.size})` : '';
+                            const rows = t.rows !== undefined ? `${t.rows} rows` : (t.estimated_rows !== undefined ? `~${t.estimated_rows} rows` : '');
+                            return `<div>• <strong>${k}:</strong> ${rows}${sz}</div>`;
+                        }).join('');
+                    } else {
+                        tableList.innerHTML = `<div>Database online (${m.database_type})</div>`;
+                    }
+
+                    loading.style.display = "none";
+                    content.style.display = "block";
+                } else {
+                    loading.innerHTML = `<span style="color: var(--accent-danger);">Failed to load storage metrics.</span>`;
+                }
+            } catch (err) {
+                console.error("Storage error:", err);
+                loading.innerHTML = `<span style="color: var(--accent-danger);">Error fetching storage status.</span>`;
+            }
+        }
+
+        function closeStorageModal() {
+            document.getElementById("storage-modal").classList.remove("active");
         }
 
         loadMetrics();

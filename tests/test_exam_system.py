@@ -371,5 +371,136 @@ class SecureExamSystemTests(unittest.TestCase):
         self.assertIn(malformed.json["error_code"], {"INVALID_EXCEL_FILE", "EXCEL_READ_FAILED"})
         self.assertIn("message", malformed.json)
 
+    def test_drive_course_registration_and_access_isolation(self):
+        """Tests that students can register with course='Drive' and exams created for Drive are accessible only to them."""
+        # 1. Register student with Drive course
+        res = self.client.post("/api/auth/register-student", json={
+            "first_name": "Drive Candidate",
+            "email": "drive_student@test.com",
+            "course": "Drive",
+            "password": "Password123"
+        })
+        self.assertEqual(res.status_code, 201)
+        
+        drive_user = User.query.filter_by(email="drive_student@test.com").first()
+        self.assertIsNotNone(drive_user)
+        self.assertEqual(drive_user.course, "Drive")
+        drive_user.registration_status = "APPROVED"
+        db.session.commit()
+
+        # 2. Login admin to create Drive exam
+        login_res = self.client.post("/api/auth/login", json={
+            "email": "admin@test.com",
+            "password": "AdminPass123!"
+        })
+        admin_token = login_res.json["token"]
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+
+        # Create Drive exam
+        res_exam = self.client.post("/api/exams", json={
+            "title": "Campus Drive Assessment",
+            "course": "Drive",
+            "duration_minutes": 45
+        }, headers=admin_headers)
+        self.assertEqual(res_exam.status_code, 201)
+        drive_exam_id = res_exam.json["exam"]["id"]
+
+        # Create Python exam
+        res_py_exam = self.client.post("/api/exams", json={
+            "title": "Python Core Exam",
+            "course": "Python",
+            "duration_minutes": 60
+        }, headers=admin_headers)
+        self.assertEqual(res_py_exam.status_code, 201)
+        py_exam_id = res_py_exam.json["exam"]["id"]
+
+        # 3. Login as Drive student and verify exam accessibility
+        drive_login = self.client.post("/api/auth/login", json={
+            "email": "drive_student@test.com",
+            "password": "Password123"
+        })
+        drive_token = drive_login.json["token"]
+        drive_headers = {"Authorization": f"Bearer {drive_token}"}
+
+        # Drive student fetching all exams - should only see Drive exam, not Python exam
+        exams_res = self.client.get("/api/exams", headers=drive_headers)
+        self.assertEqual(exams_res.status_code, 200)
+        accessible_ids = [e["id"] for e in exams_res.json["exams"]]
+        self.assertIn(drive_exam_id, accessible_ids)
+        self.assertNotIn(py_exam_id, accessible_ids)
+
+        # Drive student trying to access Python exam directly by ID -> 403
+        py_detail = self.client.get(f"/api/exams/{py_exam_id}", headers=drive_headers)
+        self.assertEqual(py_detail.status_code, 403)
+        self.assertEqual(py_detail.json["error_code"], "EXAM_COURSE_MISMATCH")
+
+        # Drive student accessing Drive exam -> 200
+        drive_detail = self.client.get(f"/api/exams/{drive_exam_id}", headers=drive_headers)
+        self.assertEqual(drive_detail.status_code, 200)
+
+        # 4. Standard Python student attempting to access Drive exam -> 403
+        self.student.course = "Python"
+        self.student.registration_status = "APPROVED"
+        db.session.commit()
+
+        py_login = self.client.post("/api/auth/login", json={
+            "email": "student@test.com",
+            "password": "StudentPass123!"
+        })
+        py_token = py_login.json["token"]
+        py_headers = {"Authorization": f"Bearer {py_token}"}
+
+        # Python student fetching exams - should NOT see Drive exam
+        py_exams = self.client.get("/api/exams", headers=py_headers)
+        py_accessible_ids = [e["id"] for e in py_exams.json["exams"]]
+        self.assertNotIn(drive_exam_id, py_accessible_ids)
+
+        # Python student attempting to fetch Drive exam directly -> 403
+        forbidden_drive = self.client.get(f"/api/exams/{drive_exam_id}", headers=py_headers)
+        self.assertEqual(forbidden_drive.status_code, 403)
+        self.assertEqual(forbidden_drive.json["error_code"], "EXAM_COURSE_MISMATCH")
+
+    def test_delete_student_and_allow_re_registration(self):
+        """Tests that deleting a student permanently removes their record and allows re-registration."""
+        # 1. Register a student
+        reg_res = self.client.post("/api/auth/register-student", json={
+            "first_name": "Temporary Student",
+            "email": "temp_student@test.com",
+            "course": "Python",
+            "password": "Password123"
+        })
+        self.assertEqual(reg_res.status_code, 201)
+        temp_user = User.query.filter_by(email="temp_student@test.com").first()
+        self.assertIsNotNone(temp_user)
+        user_id = temp_user.id
+
+        # 2. Login admin to delete the student
+        login_res = self.client.post("/api/auth/login", json={
+            "email": "admin@test.com",
+            "password": "AdminPass123!"
+        })
+        admin_token = login_res.json["token"]
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+
+        del_res = self.client.delete(f"/api/admin/registrations/{user_id}", headers=admin_headers)
+        self.assertEqual(del_res.status_code, 200)
+
+        # 3. Verify user is completely removed from DB
+        deleted_user = User.query.filter_by(email="temp_student@test.com").first()
+        self.assertIsNone(deleted_user)
+
+        # 4. Verify candidate can register again with the same email
+        rereg_res = self.client.post("/api/auth/register-student", json={
+            "first_name": "Re-registered Student",
+            "email": "temp_student@test.com",
+            "course": "Drive",
+            "password": "NewPassword456"
+        })
+        self.assertEqual(rereg_res.status_code, 201)
+        fresh_user = User.query.filter_by(email="temp_student@test.com").first()
+        self.assertIsNotNone(fresh_user)
+        self.assertEqual(fresh_user.first_name, "Re-registered Student")
+        self.assertEqual(fresh_user.course, "Drive")
+
 if __name__ == "__main__":
     unittest.main()

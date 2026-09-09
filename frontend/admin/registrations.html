@@ -658,7 +658,7 @@
                         <td class="col-userid">${r.last_name || 'Not Assigned'}</td>
                         <td class="col-candidate">${r.first_name || 'Candidate'}</td>
                         <td class="col-course">
-                            <span class="badge" style="background: #E0F2FE; color: #0369A1; font-weight: 700; font-size: 0.74rem; padding: 0.2rem 0.5rem; border-radius: 6px;">
+                            <span class="badge" style="${(r.course || '').toLowerCase() === 'drive' ? 'background: #F5F3FF; color: #7C3AED; border: 1px solid #DDD6FE; font-weight: 700;' : 'background: #E0F2FE; color: #0369A1; font-weight: 700;'} font-size: 0.74rem; padding: 0.2rem 0.5rem; border-radius: 6px;">
                                 📚 ${r.course || 'Python'}
                             </span>
                         </td>
@@ -672,16 +672,15 @@
                                 ${r.registration_status === "PENDING" ? `
                                     <button class="btn-action-approve" onclick="approveStudent(${r.id})" title="Approve Student Account">Approve</button>
                                     <button class="btn-action-reject" onclick="rejectStudent(${r.id})" title="Reject Student Account">Reject</button>
-                                ` : `
-                                    <button class="btn btn-delete btn-delete-icon" onclick="deleteStudent(${r.id})" title="Delete Candidate" style="width: 28px; height: 28px; min-width: 28px;">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <polyline points="3 6 5 6 21 6"></polyline>
-                                             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                            <line x1="10" y1="11" x2="10" y2="17"></line>
-                                            <line x1="14" y1="11" x2="14" y2="17"></line>
-                                        </svg>
-                                    </button>
-                                `}
+                                ` : ''}
+                                <button class="btn btn-delete btn-delete-icon" onclick="deleteStudent(${r.id})" title="Delete Candidate (Allows Re-registration)" style="width: 28px; height: 28px; min-width: 28px;">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                                    </svg>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -708,9 +707,10 @@
         }
 
         async function deleteStudent(studentId) {
-            if (confirm("Are you sure you want to delete this candidate? All their exam history and records will be deleted!")) {
+            if (confirm("Are you sure you want to permanently delete this candidate?\n\nThe user will be completely removed from the system so they can register again fresh.")) {
                 const res = await API.delete(`/admin/registrations/${studentId}`);
                 if (res.success) {
+                    alert(res.message || "Candidate deleted successfully. They can now register again.");
                     await refreshAll();
                 } else {
                     alert(res.message || "Failed to delete student.");

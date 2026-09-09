@@ -137,7 +137,13 @@
         document.getElementById("profile-userid").innerText = currentUser.last_name;
         const profileCourseEl = document.getElementById("profile-course");
         if (profileCourseEl) {
-            profileCourseEl.innerText = currentUser.course || 'Python';
+            const cName = currentUser.course || 'Python';
+            profileCourseEl.innerText = cName;
+            if (cName.toLowerCase() === 'drive') {
+                profileCourseEl.style.color = '#7C3AED';
+                profileCourseEl.style.background = '#F5F3FF';
+                profileCourseEl.style.border = '1px solid #DDD6FE';
+            }
         }
 
         // Check first login welcome modal status
@@ -193,7 +199,7 @@
                         <div class="glass-panel" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
                             <div>
                                 <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.65rem; flex-wrap: wrap;">
-                                    <span style="font-size: 0.78rem; font-weight: 700; color: #0369A1; background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 6px; padding: 2px 8px;">📚 ${exam.course || 'Python & Java'}</span>
+                                    <span style="font-size: 0.78rem; font-weight: 700; ${(exam.course || '').toLowerCase() === 'drive' ? 'color: #7C3AED; background: #F5F3FF; border: 1px solid #DDD6FE;' : 'color: #0369A1; background: #F0F9FF; border: 1px solid #BAE6FD;'} border-radius: 6px; padding: 2px 8px;">📚 ${exam.course || 'Python & Java'}</span>
                                     <span style="font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); background: #F3F4F6; border: 1px solid var(--border-subtle); border-radius: 6px; padding: 2px 8px;">⏳ ${exam.duration_minutes} Mins</span>
                                 </div>
                                 <h4 style="margin-bottom: 0.5rem; font-size: 1.2rem; color: var(--text-primary);">${exam.title}</h4>
