@@ -245,6 +245,22 @@ def update_exam(exam_id):
             cfg.phone_confidence = sec_cfg.get("phone_confidence", cfg.phone_confidence)
             cfg.person_confidence = sec_cfg.get("person_confidence", cfg.person_confidence)
             cfg.face_confidence = sec_cfg.get("face_confidence", cfg.face_confidence)
+        elif sec_cfg and not exam.security_config:
+            cfg = ExamSecurityConfig(
+                exam_id=exam.id,
+                head_turn_limit=sec_cfg.get("head_turn_limit", 5),
+                tab_switch_limit=sec_cfg.get("tab_switch_limit", 3),
+                multiple_person_limit=sec_cfg.get("multiple_person_limit", 3),
+                mobile_limit=sec_cfg.get("mobile_limit", 2),
+                fullscreen_exit_limit=sec_cfg.get("fullscreen_exit_limit", 3),
+                cooldown_seconds=sec_cfg.get("cooldown_seconds", 2),
+                heartbeat_interval=sec_cfg.get("heartbeat_interval", 5),
+                network_grace_period=sec_cfg.get("network_grace_period", 30),
+                phone_confidence=sec_cfg.get("phone_confidence", 0.7),
+                person_confidence=sec_cfg.get("person_confidence", 0.6),
+                face_confidence=sec_cfg.get("face_confidence", 0.5)
+            )
+            db.session.add(cfg)
 
         # Log audit trail
         audit = AuditLog(

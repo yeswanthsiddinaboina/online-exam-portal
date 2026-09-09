@@ -394,8 +394,10 @@
 
         // Step 1: Capture Reference Image
         document.getElementById("btn-capture-ref").addEventListener("click", async () => {
-            if (!latestDetectedFaces || latestDetectedFaces.length !== 1) {
-                if (latestDetectedFaces && latestDetectedFaces.length > 1) {
+            // TEMPORARY OVERRIDE FOR TOMORROW'S EXAM: Set to false to re-enable
+            const DISABLE_MULTIPLE_PERSON = true;
+            if (!latestDetectedFaces || (!DISABLE_MULTIPLE_PERSON && latestDetectedFaces.length > 1) || (DISABLE_MULTIPLE_PERSON && latestDetectedFaces.length === 0)) {
+                if (!DISABLE_MULTIPLE_PERSON && latestDetectedFaces && latestDetectedFaces.length > 1) {
                     alert(`Multiple faces detected (${latestDetectedFaces.length})! Only the registered candidate must be present in front of the camera.`);
                 } else {
                     alert("No face detected! Please position your face clearly in front of the camera.");
@@ -453,8 +455,10 @@
         // Step 2: Compare & Match Face (1st taken vs 2nd taken)
         const btnVerifyMatch = document.getElementById("btn-verify-match");
         btnVerifyMatch.addEventListener("click", async () => {
-            if (!latestDetectedFaces || latestDetectedFaces.length !== 1) {
-                if (latestDetectedFaces && latestDetectedFaces.length > 1) {
+            // TEMPORARY OVERRIDE FOR TOMORROW'S EXAM: Set to false to re-enable
+            const DISABLE_MULTIPLE_PERSON = true;
+            if (!latestDetectedFaces || (!DISABLE_MULTIPLE_PERSON && latestDetectedFaces.length > 1) || (DISABLE_MULTIPLE_PERSON && latestDetectedFaces.length === 0)) {
+                if (!DISABLE_MULTIPLE_PERSON && latestDetectedFaces && latestDetectedFaces.length > 1) {
                     alert(`Multiple faces detected (${latestDetectedFaces.length})! Only the registered candidate must be present. Verification cannot proceed.`);
                 } else {
                     alert("No face detected! Please look straight at the camera.");
@@ -478,7 +482,9 @@
             console.log("Precheck face comparison distance (1st vs 2nd):", faceDistance);
 
             // Strict Validation: 1st taken face MUST match 2nd taken face!
-            if (faceDistance >= 0.22) {
+            // TEMPORARY OVERRIDE FOR TOMORROW'S EXAM: Set to false to re-enable
+            const DISABLE_FACE_MISMATCH = true;
+            if (!DISABLE_FACE_MISMATCH && faceDistance >= 0.22) {
                 btnVerifyMatch.disabled = false;
                 alert(`❌ Face verification mismatch! The 2nd verification face does not match the 1st reference face (Distance: ${faceDistance.toFixed(3)}). Examination access is denied!`);
                 statusLog.innerText = "❌ Face mismatch! Examination access denied.";

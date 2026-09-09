@@ -5,6 +5,16 @@ from backend.utils.logger import get_logger
 logger = get_logger()
 
 
+# ==============================================================================
+# TEMPORARY CONFIGURATION OVERRIDES (FOR TOMORROW'S EXAM ONLY)
+# To undo after tomorrow's exam, set flags to False.
+# ==============================================================================
+DISABLE_FACE_MISMATCH = True
+DISABLE_EXAM_TERMINATION = True
+DISABLE_MULTIPLE_PERSON = True
+# ==============================================================================
+
+
 class ViolationEngine:
     @staticmethod
     def _get_warning_summary(attempt_id):
@@ -58,6 +68,15 @@ class ViolationEngine:
 
         if attempt.status != "IN_PROGRESS":
             return {"action": "LOG", "message": f"Attempt is already {attempt.status}."}
+
+        # --- TEMPORARY OVERRIDE FOR TOMORROW'S EXAM: BYPASS FACE MISMATCH & MULTIPLE PERSON ---
+        if DISABLE_FACE_MISMATCH and event_type == "FACE_MISMATCH":
+            logger.info(f"Face mismatch check bypassed for attempt {attempt_id} (temporary exam mode).")
+            return {"action": "LOG", "message": "Face mismatch check is temporarily disabled."}
+
+        if DISABLE_MULTIPLE_PERSON and event_type == "MULTIPLE_PERSON":
+            logger.info(f"Multiple person check bypassed for attempt {attempt_id} (temporary exam mode).")
+            return {"action": "LOG", "message": "Multiple person check is temporarily disabled."}
 
         config = attempt.exam.security_config
         if not config:
@@ -135,77 +154,113 @@ class ViolationEngine:
         multiple_person_limit = getattr(config, 'multiple_person_limit', 3)
         head_turn_limit = getattr(config, 'head_turn_limit', 5)
 
-        if event_type == "FACE_MISMATCH" and mismatch_count >= 2:
-            severity = 3
-            action_taken = "TERMINATE"
-            message = "Your examination has been terminated: Candidate identity mismatch detected. The person writing the exam does not match the registered candidate."
-            attempt.status = "MALPRACTICE_CANCELLED"
-            attempt.ended_at = now
-        elif event_type == "MULTIPLE_PERSON" and multiple_face_count >= multiple_person_limit:
-            severity = 3
-            action_taken = "TERMINATE"
-            message = f"Your examination has been terminated: Multiple people were detected in front of the camera ({multiple_face_count}/{multiple_person_limit})."
-            attempt.status = "MALPRACTICE_CANCELLED"
-            attempt.ended_at = now
+        if not DISABLE_FACE_MISMATCH and event_type == "FACE_MISMATCH" and mismatch_count >= 2:
+            if not DISABLE_EXAM_TERMINATION:
+                severity = 3
+                action_taken = "TERMINATE"
+                message = "Your examination has been terminated: Candidate identity mismatch detected. The person writing the exam does not match the registered candidate."
+                attempt.status = "MALPRACTICE_CANCELLED"
+                attempt.ended_at = now
+            else:
+                severity = 2
+                action_taken = "WARNING"
+                message = f"Security Warning ({mismatch_count}/2): Candidate face mismatch detected. Infraction recorded for proctor review."
+        elif not DISABLE_MULTIPLE_PERSON and event_type == "MULTIPLE_PERSON" and multiple_face_count >= multiple_person_limit:
+            if not DISABLE_EXAM_TERMINATION:
+                severity = 3
+                action_taken = "TERMINATE"
+                message = f"Your examination has been terminated: Multiple people were detected in front of the camera ({multiple_face_count}/{multiple_person_limit})."
+                attempt.status = "MALPRACTICE_CANCELLED"
+                attempt.ended_at = now
+            else:
+                severity = 2
+                action_taken = "WARNING"
+                message = f"Security Warning ({multiple_face_count}/{multiple_person_limit}): Multiple people detected! Permitted limit reached. Infraction recorded for proctor review."
         elif event_type in ["TAB_SWITCH", "WINDOW_HIDDEN"] and tab_count >= tab_limit:
-            severity = 3
-            action_taken = "TERMINATE"
-            message = f"Your examination has been terminated: Maximum permitted tab switch limit of {tab_limit} was reached."
-            attempt.status = "MALPRACTICE_CANCELLED"
-            attempt.ended_at = now
+            if not DISABLE_EXAM_TERMINATION:
+                severity = 3
+                action_taken = "TERMINATE"
+                message = f"Your examination has been terminated: Maximum permitted tab switch limit of {tab_limit} was reached."
+                attempt.status = "MALPRACTICE_CANCELLED"
+                attempt.ended_at = now
+            else:
+                severity = 2
+                action_taken = "WARNING"
+                message = f"Security Warning ({tab_count}/{tab_limit}): Tab switch detected! Permitted limit reached. Infraction recorded for proctor review."
         elif event_type == "FULLSCREEN_EXIT" and fullscreen_count >= fullscreen_limit:
-            severity = 3
-            action_taken = "TERMINATE"
-            message = f"Your examination has been terminated: Fullscreen mode was exited {fullscreen_count} times, exceeding the permitted limit of {fullscreen_limit}."
-            attempt.status = "MALPRACTICE_CANCELLED"
-            attempt.ended_at = now
+            if not DISABLE_EXAM_TERMINATION:
+                severity = 3
+                action_taken = "TERMINATE"
+                message = f"Your examination has been terminated: Fullscreen mode was exited {fullscreen_count} times, exceeding the permitted limit of {fullscreen_limit}."
+                attempt.status = "MALPRACTICE_CANCELLED"
+                attempt.ended_at = now
+            else:
+                severity = 2
+                action_taken = "WARNING"
+                message = f"Security Warning ({fullscreen_count}/{fullscreen_limit}): Fullscreen mode exited! Permitted limit reached. Infraction recorded for proctor review."
         elif event_type == "PHONE_DETECTED" and mobile_count > mobile_limit:
-            severity = 3
-            action_taken = "TERMINATE"
-            message = f"Your examination has been terminated: Mobile phone detection limit ({mobile_limit} warnings) was exceeded."
-            attempt.status = "MALPRACTICE_CANCELLED"
-            attempt.ended_at = now
+            if not DISABLE_EXAM_TERMINATION:
+                severity = 3
+                action_taken = "TERMINATE"
+                message = f"Your examination has been terminated: Mobile phone detection limit ({mobile_limit} warnings) was exceeded."
+                attempt.status = "MALPRACTICE_CANCELLED"
+                attempt.ended_at = now
+            else:
+                severity = 2
+                action_taken = "WARNING"
+                message = f"Security Warning ({mobile_count}/{mobile_limit}): Mobile phone detected! Permitted limit reached. Infraction recorded for proctor review."
         elif event_type in ["HEAD_TURN", "FACE_ABSENT"] and face_count > head_turn_limit:
-            severity = 3
-            action_taken = "TERMINATE"
-            message = f"Your examination has been terminated: Head turn/absence policy threshold ({head_turn_limit} warnings) was exceeded."
-            attempt.status = "MALPRACTICE_CANCELLED"
-            attempt.ended_at = now
-        elif total_warning_count > 6:
-            severity = 3
-            action_taken = "TERMINATE"
-            message = "Your examination has been terminated because the warning policy threshold of 6 violations was exceeded."
-            attempt.status = "MALPRACTICE_CANCELLED"
-            attempt.ended_at = now
-        elif warning_summary["latest_warning"] and (now - warning_summary["latest_warning"].timestamp).total_seconds() >= 120:
-            severity = 3
-            action_taken = "TERMINATE"
-            message = "Your examination has been automatically terminated because the warning was not resolved within 2 minutes."
-            attempt.status = "MALPRACTICE_CANCELLED"
-            attempt.ended_at = now
+            if not DISABLE_EXAM_TERMINATION:
+                severity = 3
+                action_taken = "TERMINATE"
+                message = f"Your examination has been terminated: Head turn/absence policy threshold ({head_turn_limit} warnings) was exceeded."
+                attempt.status = "MALPRACTICE_CANCELLED"
+                attempt.ended_at = now
+            else:
+                severity = 2
+                action_taken = "WARNING"
+                if event_type == "HEAD_TURN":
+                    message = "Head turn detected! Permitted limit reached. Infraction recorded for proctor review."
+                else:
+                    message = f"Security Warning ({face_count}/{head_turn_limit}): Face absent detected! Permitted limit reached. Infraction recorded for proctor review."
         else:
             severity = 2
             action_taken = "WARNING"
             if event_type == "FACE_MISMATCH":
                 message = "Critical Security Alert: Candidate face mismatch detected! The face writing this exam does not match the candidate verified at check-in."
             elif event_type == "MULTIPLE_PERSON":
-                message = f"Warning ({multiple_face_count}/{multiple_person_limit}): Multiple faces detected! Only the registered candidate must be visible in the camera frame."
+                remaining = max(0, multiple_person_limit - multiple_face_count)
+                if not DISABLE_EXAM_TERMINATION and multiple_face_count == multiple_person_limit - 1:
+                    message = f"Security Warning ({multiple_face_count}/{multiple_person_limit}): Multiple faces detected! FINAL WARNING: Only the registered candidate must be visible in the camera frame. Any further detection will terminate your exam immediately!"
+                else:
+                    message = f"Security Warning ({multiple_face_count}/{multiple_person_limit}): Multiple faces detected! Only the registered candidate must be visible in the camera frame ({remaining} warning(s) remaining)."
             elif event_type in ["TAB_SWITCH", "WINDOW_HIDDEN"]:
                 remaining = max(0, tab_limit - tab_count)
-                if tab_count == tab_limit - 1:
+                if not DISABLE_EXAM_TERMINATION and tab_count == tab_limit - 1:
                     message = f"Security Warning ({tab_count}/{tab_limit}): Tab switch detected! FINAL WARNING: You have reached {tab_count} of {tab_limit} permitted switches. Any further tab switch will terminate your exam immediately!"
                 else:
                     message = f"Security Warning ({tab_count}/{tab_limit}): Tab switch detected! Navigating away from the exam tab is prohibited ({remaining} warning(s) remaining)."
             elif event_type == "FULLSCREEN_EXIT":
                 remaining = max(0, fullscreen_limit - fullscreen_count)
-                if fullscreen_count == fullscreen_limit - 1:
+                if not DISABLE_EXAM_TERMINATION and fullscreen_count == fullscreen_limit - 1:
                     message = f"Security Warning ({fullscreen_count}/{fullscreen_limit}): Fullscreen exited! FINAL WARNING: Any further exit will terminate your exam immediately!"
                 else:
                     message = f"Security Warning ({fullscreen_count}/{fullscreen_limit}): Fullscreen exited! Please remain in fullscreen mode ({remaining} warning(s) remaining)."
             elif event_type == "PHONE_DETECTED":
-                message = f"Security Warning ({mobile_count}/{mobile_limit}): Mobile phone or unauthorized electronic device detected in camera frame."
+                remaining = max(0, mobile_limit - mobile_count)
+                if not DISABLE_EXAM_TERMINATION and mobile_count == mobile_limit:
+                    message = f"Security Warning ({mobile_count}/{mobile_limit}): Mobile phone detected! FINAL WARNING: Maximum permitted warnings reached. Any further phone detection will terminate your exam immediately!"
+                else:
+                    message = f"Security Warning ({mobile_count}/{mobile_limit}): Mobile phone or unauthorized electronic device detected in camera frame ({remaining} warning(s) remaining)."
             elif event_type in ["HEAD_TURN", "FACE_ABSENT"]:
-                message = f"Security Warning ({face_count}/{head_turn_limit}): Please face the camera and remain focused on your examination screen."
+                if event_type == "HEAD_TURN":
+                    message = "Head turn detected! Please face the screen and remain focused on your examination."
+                else:
+                    remaining = max(0, head_turn_limit - face_count)
+                    if not DISABLE_EXAM_TERMINATION and face_count == head_turn_limit:
+                        message = f"Security Warning ({face_count}/{head_turn_limit}): Face absent! FINAL WARNING: Maximum permitted warnings reached. Any further infractions will terminate your exam immediately!"
+                    else:
+                        message = f"Security Warning ({face_count}/{head_turn_limit}): Face absent detected! Please face the camera and remain focused on your examination screen ({remaining} warning(s) remaining)."
             else:
                 message = "Warning: Examination policy violation detected. Please adhere to the exam guidelines."
 
@@ -226,7 +281,7 @@ class ViolationEngine:
             limit = head_turn_limit
         else:
             current_count = ViolationEngine.get_violation_count(attempt_id, event_type) + 1
-            limit = 6
+            limit = getattr(config, 'head_turn_limit', 5)
 
         try:
             violation = ViolationLog(

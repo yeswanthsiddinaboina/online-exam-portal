@@ -884,11 +884,22 @@
         }
 
         async function approveAllStudentsAccess() {
-            if (!currentExamId) return;
+            if (!currentExamId) {
+                if (confirm("Are you sure you want to approve all pending exam access requests across ALL examinations?")) {
+                    const res = await API.post("/admin/access/approve-all");
+                    if (res.success) {
+                        alert(`✓ ${res.message}`);
+                        loadReports();
+                    } else {
+                        alert(res.message || "Failed to approve all requests.");
+                    }
+                }
+                return;
+            }
             if (confirm("Are you sure you want to approve all pending exam access requests for this examination?")) {
                 const res = await API.post(`/admin/access/exam/${currentExamId}/approve-all`);
                 if (res.success) {
-                    alert(res.message);
+                    alert(`✓ ${res.message}`);
                     loadReports();
                 } else {
                     alert(res.message || "Failed to approve all requests.");

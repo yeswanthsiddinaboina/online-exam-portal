@@ -190,7 +190,7 @@
                     return `
                         <div class="glass-panel" style="margin-bottom: 1.5rem; padding: 1.5rem; border-color: ${borderCol};">
                             <h4 style="margin-bottom: 1rem; color: var(--text-secondary);">Question ${idx + 1} (${q.marks} Marks)</h4>
-                            <p style="font-weight: 500; font-size: 1.05rem; margin-bottom: 1.5rem;">${q.question_text}</p>
+                            <p style="font-weight: 500; font-size: 1.05rem; margin-bottom: 1.5rem;">${escapeHtml(q.question_text)}</p>
                             
                             ${isMcq ? `
                                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
@@ -209,7 +209,7 @@
                                         }
                                         return `
                                             <div style="border: 1px solid; border-radius: 8px; padding: 0.75rem; font-size: 0.95rem; ${borderStyle}">
-                                                <strong>${opt.option_letter}.</strong> ${opt.option_text}
+                                                <strong>${escapeHtml(opt.option_letter)}.</strong> ${escapeHtml(opt.option_text)}
                                             </div>
                                         `;
                                     }).join('')}
@@ -219,11 +219,11 @@
                             <div style="display: flex; gap: 2rem; border-top: 1px solid var(--border-glass); padding-top: 1rem; font-size: 0.95rem;">
                                 <div>
                                     <span style="color: var(--text-secondary);">Your Response:</span>
-                                    <span style="font-weight: 700; color: ${!studentAnsStr ? 'var(--accent-danger)' : statusColor};">${studentAnsStr || '[Skipped - No Answer]'}</span>
+                                    <span style="font-weight: 700; color: ${!studentAnsStr ? 'var(--accent-danger)' : statusColor};">${escapeHtml(studentAnsStr || '[Skipped - No Answer]')}</span>
                                 </div>
                                 <div>
                                     <span style="color: var(--text-secondary);">Correct Response:</span>
-                                    <span style="font-weight: 700; color: var(--accent-success);">${answersVisible ? correctAnsStr : '[Hidden until exam duration ends]'}</span>
+                                    <span style="font-weight: 700; color: var(--accent-success);">${answersVisible ? escapeHtml(correctAnsStr) : '[Hidden until exam duration ends]'}</span>
                                 </div>
                             </div>
                         </div>

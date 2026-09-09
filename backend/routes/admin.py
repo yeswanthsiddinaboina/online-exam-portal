@@ -582,6 +582,37 @@ def approve_all_pending_access():
         }), 500
 
 
+@admin_bp.route("/access/pending", methods=["GET"])
+@token_required
+@role_required(["admin"])
+def get_pending_access_requests():
+    from backend.models import ExamAccess
+    try:
+        pending_access = ExamAccess.query.filter_by(approved=False).order_by(ExamAccess.requested_at.desc()).all()
+        data = [{
+            "id": pa.id,
+            "exam_id": pa.exam_id,
+            "exam_title": pa.exam.title if pa.exam else "Unknown",
+            "student_id": pa.student_id,
+            "student_email": pa.student.email if pa.student else "Unknown",
+            "student_username": pa.student.first_name if pa.student else "Unknown",
+            "student_userid": pa.student.last_name if pa.student else "Unknown",
+            "requested_at": pa.requested_at.isoformat() + "Z" if pa.requested_at else None
+        } for pa in pending_access]
+        return jsonify({
+            "success": True,
+            "pending_access": data,
+            "count": len(data)
+        }), 200
+    except Exception as e:
+        logger.error(f"Failed to fetch pending access requests: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error_code": "FETCH_PENDING_ACCESS_FAILED",
+            "message": "Failed to fetch pending access requests."
+        }), 500
+
+
 @admin_bp.route("/attempts/<int:attempt_id>/reconduct", methods=["POST"])
 @token_required
 @role_required(["admin"])
@@ -818,6 +849,67 @@ def get_registrations():
             "success": False,
             "error_code": "FETCH_REGISTRATIONS_FAILED",
             "message": "Failed to fetch student registration records."
+        }), 500
+
+
+@admin_bp.route("/registrations/approve-all", methods=["POST"])
+@token_required
+@role_required(["admin"])
+def approve_all_registrations():
+    from backend.models.user import User
+    import random
+    import string
+
+    try:
+        pending_students = User.query.filter_by(role="student", registration_status="PENDING").all()
+        if not pending_students:
+            return jsonify({
+                "success": True,
+                "message": "No pending registrations found to approve.",
+                "approved_count": 0
+            }), 200
+
+        # Fetch all existing User IDs to avoid collisions
+        existing_ids = set(r[0] for r in db.session.query(User.last_name).filter(User.last_name != "Not Assigned").all() if r[0])
+
+        approved_count = 0
+        for student in pending_students:
+            # Assign unique User ID if not assigned
+            if not student.last_name or student.last_name == "Not Assigned":
+                candidate_id = None
+                for _ in range(100):
+                    suffix = "".join(random.choices(string.ascii_uppercase + string.digits, k=5))
+                    potential_id = f"STU{suffix}"
+                    if potential_id not in existing_ids:
+                        candidate_id = potential_id
+                        existing_ids.add(candidate_id)
+                        break
+                
+                if not candidate_id:
+                    suffix = "".join(random.choices(string.ascii_uppercase + string.digits, k=7))
+                    candidate_id = f"STU{suffix}"
+                    existing_ids.add(candidate_id)
+
+                student.last_name = candidate_id
+
+            student.registration_status = "APPROVED"
+            approved_count += 1
+
+        db.session.commit()
+        logger.info(f"Admin approved all pending student registrations: {approved_count} candidates approved.")
+        return jsonify({
+            "success": True,
+            "message": f"Successfully approved all {approved_count} pending student registration(s).",
+            "approved_count": approved_count
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Failed to approve all student registrations: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error_code": "APPROVE_ALL_REGISTRATIONS_FAILED",
+            "message": "Failed to approve all student registrations."
         }), 500
 
 

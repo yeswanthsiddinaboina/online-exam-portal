@@ -23,6 +23,13 @@ let heartbeatTimer = null;
 let examTimer = null;
 let mediaStream = null;
 
+// Global HTML sanitization helper to safely render user text, code snippets, and tags
+function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>\'"]/g, character => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", "\'": "&#39;", '"': "&quot;"
+    }[character]));
+}
+
 // Configure API request headers
 function getHeaders(contentType = "application/json") {
     const headers = {};
@@ -446,9 +453,11 @@ class SandboxEnforcer {
         });
         
         if (res.success) {
-            if (res.action === "TERMINATE") {
+            // TEMPORARY OVERRIDE FOR TOMORROW'S EXAM: Set to false to re-enable
+            const DISABLE_EXAM_TERMINATION = true;
+            if (res.action === "TERMINATE" && !DISABLE_EXAM_TERMINATION) {
                 this.onTerminate(res.message);
-            } else if (res.action === "WARNING") {
+            } else if (res.action === "WARNING" || res.action === "TERMINATE") {
                 this.onWarning(res.message, res.violation_log_id);
             }
         }
@@ -728,10 +737,14 @@ class AIProctorEngine {
         }
 
         // Update Top Face Verified Badge UI
+        // TEMPORARY OVERRIDE FOR TOMORROW'S EXAM: Set to false to re-enable
+        const DISABLE_MULTIPLE_PERSON = true;
+
+        // Update Top Face Verified Badge UI
         const faceStatusPill = document.getElementById("face-verified-pill");
         const faceStatusText = document.getElementById("face-status-text");
         if (faceStatusPill && faceStatusText) {
-            if (isMultiPerson) {
+            if (!DISABLE_MULTIPLE_PERSON && isMultiPerson) {
                 faceStatusPill.style.background = "#FEE2E2";
                 faceStatusPill.style.borderColor = "#EF4444";
                 faceStatusPill.style.color = "#DC2626";
@@ -767,7 +780,7 @@ class AIProctorEngine {
                 this.ctx.fillStyle = "#FFFFFF";
                 this.ctx.font = "bold 11px sans-serif";
                 this.ctx.fillText(`🚨 ${pred.class.toUpperCase()} ${(pred.score * 100).toFixed(0)}%`, x + 6, Math.max(15, y - 6));
-            } else if (isPerson && isMultiPerson) {
+            } else if (isPerson && isMultiPerson && !DISABLE_MULTIPLE_PERSON) {
                 // Red box for second person / unauthorized presence
                 this.ctx.strokeStyle = "#DC2626";
                 this.ctx.lineWidth = 2.5;
@@ -791,7 +804,7 @@ class AIProctorEngine {
         }
 
         // 2. Multiple person check (Face or Body presence)
-        if (isMultiPerson) {
+        if (!DISABLE_MULTIPLE_PERSON && isMultiPerson) {
             this.consecutiveMismatches = 0;
             const now = Date.now();
             if (now - this.lastMultiPersonAlertTime > 3500) {
@@ -803,8 +816,10 @@ class AIProctorEngine {
         }
 
         // 3. Face Biometric Identity Verification (Comparing against Step 1 & 2 verified candidate)
+        // TEMPORARY OVERRIDE FOR TOMORROW'S EXAM: Set to false to re-enable
+        const DISABLE_FACE_MISMATCH = true;
         const landmarks = faces[0];
-        if (this.verifiedProfile) {
+        if (!DISABLE_FACE_MISMATCH && this.verifiedProfile) {
             const currentProfile = FaceBiometrics.normalize(landmarks);
             if (currentProfile) {
                 const distance = FaceBiometrics.compare(this.verifiedProfile, currentProfile);
@@ -826,19 +841,86 @@ class AIProctorEngine {
         }
 
         // 4. Head pose / Gaze tracking estimation
+        // TEMPORARY OVERRIDE FOR TOMORROW'S EXAM: Only show head violation when head turns to 75 degrees or more from camera angle
         // Landmarks: 4 (Nose Tip), 33 (Left Eye boundary), 263 (Right Eye boundary), 152 (Chin), 10 (Forehead)
         const nose = landmarks[4];
         const leftEye = landmarks[33];
         const rightEye = landmarks[263];
+        const chin = landmarks[152];
+        const forehead = landmarks[10];
 
-        // Horizontal ratio: position of nose relative to eyes
-        const eyeDistance = rightEye.x - leftEye.x;
-        if (eyeDistance > 0) {
-            const noseRelX = (nose.x - leftEye.x) / eyeDistance;
-            
-            // Looking too far right (ratio < 0.33) or too far left (ratio > 0.67)
-            if (noseRelX < 0.33 || noseRelX > 0.67) {
-                this.triggerEvent("HEAD_TURN", 0.85);
+        // 75 degrees angle threshold from camera angle for tomorrow's exam
+        const HEAD_TURN_ANGLE_THRESHOLD = 75;
+
+        if (nose && leftEye && rightEye && chin && forehead) {
+            const W = this.canvas.width || 640;
+            const H = this.canvas.height || 480;
+
+            const pLeft = { x: leftEye.x * W, y: leftEye.y * H, z: (leftEye.z || 0) * W };
+            const pRight = { x: rightEye.x * W, y: rightEye.y * H, z: (rightEye.z || 0) * W };
+            const pChin = { x: chin.x * W, y: chin.y * H, z: (chin.z || 0) * W };
+            const pForehead = { x: forehead.x * W, y: forehead.y * H, z: (forehead.z || 0) * W };
+            const pNose = { x: nose.x * W, y: nose.y * H, z: (nose.z || 0) * W };
+
+            // Horizontal vector across the eyes
+            const u = {
+                x: pRight.x - pLeft.x,
+                y: pRight.y - pLeft.y,
+                z: pRight.z - pLeft.z
+            };
+
+            // Vertical vector down the face (Forehead to Chin)
+            const v = {
+                x: pChin.x - pForehead.x,
+                y: pChin.y - pForehead.y,
+                z: pChin.z - pForehead.z
+            };
+
+            // 3D Face normal vector via cross product (u x v)
+            const Nx = u.y * v.z - u.z * v.y;
+            const Ny = u.z * v.x - u.x * v.z;
+            const Nz = u.x * v.y - u.y * v.x;
+            const norm = Math.sqrt(Nx * Nx + Ny * Ny + Nz * Nz);
+
+            let angle3D = 0;
+            let yawDeg = 0;
+            let pitchDeg = 0;
+
+            if (norm > 0.0001) {
+                const cosAngle = Math.min(1.0, Math.max(-1.0, Math.abs(Nz) / norm));
+                angle3D = Math.acos(cosAngle) * (180 / Math.PI);
+                yawDeg = Math.abs(Math.atan2(Nx, Math.abs(Nz))) * (180 / Math.PI);
+                pitchDeg = Math.abs(Math.atan2(Ny, Math.abs(Nz))) * (180 / Math.PI);
+            }
+
+            // 2D horizontal projection ratio check (corroborating metric)
+            const eyeDistX = pRight.x - pLeft.x;
+            let angle2D = 0;
+            if (eyeDistX > 0) {
+                const noseRelX = (pNose.x - pLeft.x) / eyeDistX;
+                // Center is ~0.50. Deviation ranges from 0.0 (facing camera) to 1.0 (~75°-90°)
+                const deviation2D = Math.min(1.0, Math.abs(noseRelX - 0.5) * 2.0);
+                angle2D = Math.asin(deviation2D) * (180 / Math.PI);
+            }
+
+            // The effective head turn angle from camera axis
+            const measuredAngle = Math.max(angle3D, yawDeg, angle2D);
+
+            // Trigger violation ONLY when head turns to 75 degrees or more from camera angle
+            if (measuredAngle >= HEAD_TURN_ANGLE_THRESHOLD) {
+                this.consecutiveHeadTurnFrames = (this.consecutiveHeadTurnFrames || 0) + 1;
+
+                // Require 2 consecutive frames (~360ms) to ensure deliberate head turn and prevent sensor flutter
+                if (this.consecutiveHeadTurnFrames >= 2) {
+                    this.triggerEvent("HEAD_TURN", 0.85);
+
+                    // On-screen proctoring status
+                    this.ctx.fillStyle = "rgba(239, 68, 68, 0.9)";
+                    this.ctx.font = "bold 13px sans-serif";
+                    this.ctx.fillText("⚠️ HEAD TURNED", 10, 45);
+                }
+            } else {
+                this.consecutiveHeadTurnFrames = 0;
             }
         }
         
@@ -880,9 +962,11 @@ class AIProctorEngine {
         });
 
         if (res.success) {
-            if (res.action === "TERMINATE") {
+            // TEMPORARY OVERRIDE FOR TOMORROW'S EXAM: Set to false to re-enable
+            const DISABLE_EXAM_TERMINATION = true;
+            if (res.action === "TERMINATE" && !DISABLE_EXAM_TERMINATION) {
                 this.onTerminate(res.message);
-            } else if (res.action === "WARNING") {
+            } else if (res.action === "WARNING" || res.action === "TERMINATE") {
                 this.onWarning(res.message, res.violation_log_id);
                 // Capture frame and upload as evidence
                 this.captureAndUploadEvidence(eventType, res.violation_log_id);

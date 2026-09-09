@@ -12,6 +12,14 @@ import datetime
 logger = get_logger()
 proctoring_bp = Blueprint("proctoring", __name__)
 
+# ==============================================================================
+# TEMPORARY CONFIGURATION OVERRIDES (FOR TOMORROW'S EXAM ONLY)
+# To undo after tomorrow's exam, set flags to False.
+# ==============================================================================
+DISABLE_FACE_MISMATCH = True
+DISABLE_MULTIPLE_PERSON = True
+# ==============================================================================
+
 @proctoring_bp.route("/exam/heartbeat", methods=["POST"])
 @token_required
 def heartbeat():
@@ -392,7 +400,7 @@ def save_temp_reference():
                         "message": "No face detected in reference photo. Please align your face clearly in the camera and try again."
                     }), 400
 
-                if len(results.multi_face_landmarks) > 1:
+                if not DISABLE_MULTIPLE_PERSON and len(results.multi_face_landmarks) > 1:
                     if dest_path.exists():
                         dest_path.unlink()
                     return jsonify({
@@ -497,7 +505,7 @@ def compare_faces_and_start():
             coords1, count1 = extract_landmarks(ref_path)
             coords2, count2 = extract_landmarks(ver_path)
 
-            if count2 > 1:
+            if not DISABLE_MULTIPLE_PERSON and count2 > 1:
                 if ver_path.exists():
                     ver_path.unlink()
                 return jsonify({
@@ -539,7 +547,9 @@ def compare_faces_and_start():
             dist = float(np.mean(np.linalg.norm(c1_normalized - c2_normalized, axis=1)))
             
             # Lower value = closer match. Empirically, threshold < 0.22 is very reliable
-            is_match = dist < 0.22
+            # TEMPORARY OVERRIDE FOR TOMORROW'S EXAM: Set to False to re-enable precheck face mismatch check
+            DISABLE_FACE_MISMATCH = True
+            is_match = True if DISABLE_FACE_MISMATCH else (dist < 0.22)
 
             if not is_match:
                 if ver_path.exists():

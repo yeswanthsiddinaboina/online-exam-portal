@@ -1175,8 +1175,8 @@
                         <div class="answer-radio-circle">
                             <div class="answer-radio-inner-dot"></div>
                         </div>
-                        <span class="answer-letter-label">${opt.option_letter}.</span>
-                        <span class="answer-text-content">${cleanOptionText(opt.option_text)}</span>
+                        <span class="answer-letter-label">${escapeHtml(opt.option_letter)}.</span>
+                        <span class="answer-text-content">${escapeHtml(cleanOptionText(opt.option_text))}</span>
                     `;
                     
                     card.addEventListener("click", () => handleOptionSelection(opt.option_letter, card));
@@ -1402,7 +1402,10 @@
 
         // Setup browser focus/fullscreen security locks
         function setupSecuritySandbox() {
-            SandboxEnforcer.init(currentAttemptId, currentSessionToken, showWarningModal, triggerTermination);
+            // TEMPORARY OVERRIDE FOR TOMORROW'S EXAM: Set to false to re-enable termination
+            const DISABLE_EXAM_TERMINATION = true;
+            const onTerminateAction = DISABLE_EXAM_TERMINATION ? showWarningModal : triggerTermination;
+            SandboxEnforcer.init(currentAttemptId, currentSessionToken, showWarningModal, onTerminateAction);
         }
 
         // Setup MediaPipe webcam streams
@@ -1414,7 +1417,10 @@
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 400, height: 300 } });
                 video.srcObject = stream;
                 
-                AIProctorEngine.init(video, canvas, currentAttemptId, currentSessionToken, showWarningModal, triggerTermination);
+                // TEMPORARY OVERRIDE FOR TOMORROW'S EXAM: Set to false to re-enable termination
+                const DISABLE_EXAM_TERMINATION = true;
+                const onTerminateAction = DISABLE_EXAM_TERMINATION ? showWarningModal : triggerTermination;
+                AIProctorEngine.init(video, canvas, currentAttemptId, currentSessionToken, showWarningModal, onTerminateAction);
                 AIProctorEngine.start();
             } catch (e) {
                 console.error("Webcam init error:", e);
@@ -1439,20 +1445,20 @@
                 if (res.success) {
                     timeRemaining = res.time_remaining_seconds;
                     
-                    if (res.status === "MALPRACTICE_CANCELLED") {
+                    // TEMPORARY OVERRIDE FOR TOMORROW'S EXAM: Set to false to re-enable termination
+                    const DISABLE_EXAM_TERMINATION = true;
+                    if (!DISABLE_EXAM_TERMINATION && (res.status === "MALPRACTICE_CANCELLED" || res.action === "TERMINATE")) {
                         triggerTermination(res.message);
                         return;
                     }
                     
-                    if (res.action === "TERMINATE") {
-                        triggerTermination(res.message);
-                    } else if (res.action === "WARNING") {
+                    if (res.action === "TERMINATE" || res.action === "WARNING" || res.status === "MALPRACTICE_CANCELLED") {
                         showWarningModal(res.message, res.violation_log_id);
                     }
                 } else if (res.error_code === "SESSION_EXPIRED") {
                     triggerTermination("Your examination session has expired.");
                 }
-            }, 5000);
+            }, 15000); // Optimized for 200+ concurrent users: cuts heartbeat load from 40 req/s to 13 req/s
         }
 
         // Local UI Countdown Clock
@@ -1476,7 +1482,15 @@
         }
 
         function showWarningModal(message, logId) {
-            document.getElementById("warning-message").innerText = message;
+            let displayMsg = message || "";
+            if (displayMsg.toLowerCase().includes("head turn")) {
+                displayMsg = displayMsg.replace(/Security Warning \(\d+\/\d+\):\s*/gi, "");
+                displayMsg = displayMsg.replace(/Security Warning:\s*/gi, "");
+                displayMsg = displayMsg.replace(/\s*\([^)]*75°[^)]*\)/gi, "");
+                displayMsg = displayMsg.replace(/\s*\(>75°\)/gi, "");
+                displayMsg = displayMsg.replace(/away from camera\s*/gi, "");
+            }
+            document.getElementById("warning-message").innerText = displayMsg;
             document.getElementById("warning-modal").classList.add("active");
 
             clearTimeout(window.warningAutoHideTimer);

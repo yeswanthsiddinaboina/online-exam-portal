@@ -75,6 +75,20 @@ class Config:
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+    # Production connection pool optimizations for high concurrent traffic (e.g. Render / PostgreSQL)
+    if SQLALCHEMY_DATABASE_URI.startswith("postgresql"):
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            "pool_size": 15,
+            "max_overflow": 25,
+            "pool_recycle": 300,
+            "pool_pre_ping": True,
+        }
+    else:
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            "pool_recycle": 300,
+            "pool_pre_ping": True,
+        }
+
     EVIDENCE_DIR = _resolve_project_path(
         os.environ.get("EVIDENCE_DIR"),
         project_root / "evidence"
