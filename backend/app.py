@@ -67,6 +67,12 @@ def create_app(config_class=Config):
                     conn.commit()
                 logger.info("Database migrated: added course column to users table.")
 
+            if 'phone' not in columns:
+                with engine.connect() as conn:
+                    conn.execute(db.text("ALTER TABLE users ADD COLUMN phone VARCHAR(25) DEFAULT NULL"))
+                    conn.commit()
+                logger.info("Database migrated: added phone column to users table.")
+
             # Self-healing migration for exams table
             exam_columns = [c['name'] for c in inspector.get_columns('exams')]
             if 'is_deleted' not in exam_columns:

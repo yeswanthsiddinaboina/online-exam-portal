@@ -335,6 +335,7 @@
                             <div class="form-group">
                                 <label class="form-label" for="course">Course</label>
                                 <select class="form-control" id="course" required style="cursor: pointer; appearance: auto; background-color: #FFFFFF; font-weight: 500;">
+                                    <option value="Aptitude">Aptitude</option>
                                     <option value="Drive">Drive</option>
                                     <option value="Python">Python</option>
                                     <option value="Java">Java</option>
@@ -465,7 +466,7 @@
                             <!-- Bottom Row: Meta Pills (Left) + Actions (Right) -->
                             <div class="exam-card-footer">
                                 <div class="exam-meta-group">
-                                    <span class="exam-meta-pill" style="${(exam.course || '').toLowerCase() === 'drive' ? 'color: #7C3AED; background: #F5F3FF; border-color: #DDD6FE; font-weight: 700;' : 'color: #0369A1; background: #F0F9FF; border-color: #BAE6FD;'}">📚 ${escapeHtml(exam.course || 'Python & Java')}</span>
+                                    <span class="exam-meta-pill" style="${['drive', 'aptitude'].includes((exam.course || '').toLowerCase()) ? 'color: #7C3AED; background: #F5F3FF; border-color: #DDD6FE; font-weight: 700;' : 'color: #0369A1; background: #F0F9FF; border-color: #BAE6FD;'}">📚 ${escapeHtml(exam.course || 'Python & Java')}</span>
                                     <span class="exam-meta-pill">⏱️ ${exam.duration_minutes} Mins</span>
                                     <span class="exam-meta-pill">❓ ${exam.question_count || 0} Questions</span>
                                 </div>

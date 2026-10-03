@@ -445,18 +445,7 @@
         let currentFilter = "ALL";
 
         async function init() {
-            const res = await API.get("/admin/reports");
-            if (res.success && res.exams && res.exams.length > 0) {
-                const selector = document.getElementById("exam-selector");
-                selector.innerHTML = res.exams.map(e => `
-                    <option value="${e.id}" ${e.id === res.selected_exam_id ? 'selected' : ''}>${e.title}</option>
-                `).join('');
-                currentExamId = res.selected_exam_id || res.exams[0].id;
-                processReportData(res);
-            } else {
-                document.getElementById("exam-selector").innerHTML = `<option value="">No examinations found</option>`;
-                document.getElementById("attempts-table-body").innerHTML = `<tr><td colspan="9" style="color: var(--text-secondary); text-align: center; padding: 2rem;">No examination records found.</td></tr>`;
-            }
+            await loadReports();
         }
 
         function changeExam(examId) {
@@ -465,14 +454,25 @@
         }
 
         async function loadReports() {
-            if (!currentExamId) return;
-
-            const res = await API.get(`/admin/reports?exam_id=${currentExamId}`);
+            const url = currentExamId ? `/admin/reports?exam_id=${currentExamId}` : `/admin/reports`;
+            const res = await API.get(url);
             if (res.success) {
+                const selector = document.getElementById("exam-selector");
+                if (res.exams && res.exams.length > 0) {
+                    // Fall back to selected_exam_id or first available exam if currentExamId was deleted or not found
+                    const validMatch = res.exams.find(e => e.id == res.selected_exam_id) || res.exams.find(e => e.id == currentExamId) || res.exams[0];
+                    currentExamId = validMatch.id;
+                    selector.innerHTML = res.exams.map(e => `
+                        <option value="${e.id}" ${e.id == currentExamId ? 'selected' : ''}>${e.title}</option>
+                    `).join('');
+                } else {
+                    currentExamId = null;
+                    selector.innerHTML = `<option value="">No examinations found</option>`;
+                }
                 processReportData(res);
             } else {
                 console.error("Failed to load report data:", res.message);
-                document.getElementById("attempts-table-body").innerHTML = `<tr><td colspan="9" style="color: var(--accent-danger); text-align: center; padding: 2rem;">Failed to load examination reports.</td></tr>`;
+                document.getElementById("attempts-table-body").innerHTML = `<tr><td colspan="10" style="color: var(--accent-danger); text-align: center; padding: 2rem;">Failed to load examination reports.</td></tr>`;
             }
         }
 

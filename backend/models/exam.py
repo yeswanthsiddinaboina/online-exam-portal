@@ -37,11 +37,15 @@ class Exam(db.Model):
         if not sc:
             return True
 
-        # Drive exams are ONLY for Drive students
-        if ec == "drive":
-            return sc == "drive"
+        # Aptitude exams are ONLY for Aptitude students
+        if ec == "aptitude":
+            return sc == "aptitude"
 
-        # Python & Java exams are for Python and Java students (NOT Drive)
+        # Drive exams are for Drive students (and Aptitude students)
+        if ec == "drive":
+            return sc in ["drive", "aptitude"]
+
+        # Python & Java exams are for Python and Java students (NOT Drive or Aptitude)
         if ec in ["python & java", "python and java"]:
             return sc in ["python", "java"]
 

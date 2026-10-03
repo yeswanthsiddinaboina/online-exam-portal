@@ -21,11 +21,11 @@ def get_all_exams():
         # Candidates can only see active, non-deleted exams assigned to their course
         student_course = (user.course or "").strip()
         sc_lower = student_course.lower()
-        if sc_lower == "drive":
+        if sc_lower in ["drive", "aptitude"]:
             exams = Exam.query.filter(
                 Exam.is_active == True,
                 Exam.is_deleted == False,
-                db.or_(Exam.course == "Drive", Exam.course == "All Courses")
+                db.or_(Exam.course == student_course, Exam.course == "Drive", Exam.course == "Aptitude", Exam.course == "All Courses")
             ).all()
         elif sc_lower == "python":
             exams = Exam.query.filter(
@@ -139,7 +139,7 @@ def create_exam():
 
     raw_course = data.get("course", "Python & Java")
     course = raw_course.strip() if isinstance(raw_course, str) else "Python & Java"
-    if course not in ["Drive", "Python", "Java", "Python & Java", "All Courses"]:
+    if course not in ["Aptitude", "Drive", "Python", "Java", "Python & Java", "All Courses"]:
         course = "Python & Java"
 
     if not title:
@@ -235,7 +235,7 @@ def update_exam(exam_id):
             exam.is_active = bool(data["is_active"])
         if "course" in data:
             up_course = data["course"].strip() if isinstance(data["course"], str) else "Python & Java"
-            if up_course in ["Drive", "Python", "Java", "Python & Java", "All Courses"]:
+            if up_course in ["Aptitude", "Drive", "Python", "Java", "Python & Java", "All Courses"]:
                 exam.course = up_course
 
         # Update security configs if specified
@@ -350,7 +350,7 @@ def toggle_exam_status(exam_id):
 @role_required(["admin"])
 def delete_exam(exam_id):
     user = request.current_user
-    exam = Exam.query.filter_by(id=exam_id, is_deleted=False).first()
+    exam = Exam.query.get(exam_id)
     
     if not exam:
         return jsonify({
@@ -360,12 +360,50 @@ def delete_exam(exam_id):
         }), 404
 
     try:
-        # Perform soft delete
+        import os
+        from backend.models import (
+            ExamAttempt, StudentAnswer, ViolationLog, EvidenceRecord,
+            Result, ExamAccess, Question, QuestionOption, ExamSecurityConfig
+        )
+
         title = exam.title
-        exam.is_deleted = True
-        exam.is_active = False
-        
-        # Log audit trail
+
+        # 1. Fetch and cascade delete all student attempt data for this exam
+        attempts = ExamAttempt.query.filter_by(exam_id=exam.id).all()
+        for attempt in attempts:
+            # Safely remove physical snapshot images from disk
+            evidences = EvidenceRecord.query.filter_by(attempt_id=attempt.id).all()
+            for ev in evidences:
+                try:
+                    if ev.file_path and os.path.exists(ev.file_path):
+                        os.remove(ev.file_path)
+                except Exception as file_err:
+                    logger.warning(f"Could not remove evidence file {ev.file_path}: {file_err}")
+                db.session.delete(ev)
+
+            # Cascade delete attempt's violations, answers, results
+            ViolationLog.query.filter_by(attempt_id=attempt.id).delete(synchronize_session=False)
+            StudentAnswer.query.filter_by(attempt_id=attempt.id).delete(synchronize_session=False)
+            Result.query.filter_by(attempt_id=attempt.id).delete(synchronize_session=False)
+            db.session.delete(attempt)
+
+        # 2. Delete all student access requests for this exam
+        ExamAccess.query.filter_by(exam_id=exam.id).delete(synchronize_session=False)
+
+        # 3. Delete questions and options
+        questions = Question.query.filter_by(exam_id=exam.id).all()
+        for q in questions:
+            QuestionOption.query.filter_by(question_id=q.id).delete(synchronize_session=False)
+            db.session.delete(q)
+
+        # 4. Delete security config
+        ExamSecurityConfig.query.filter_by(exam_id=exam.id).delete(synchronize_session=False)
+
+        # 5. Delete the exam record itself
+        # Note: Registered student User records in the users table are NEVER touched or deleted.
+        db.session.delete(exam)
+
+        # 6. Log audit trail
         audit = AuditLog(
             user_id=user.id,
             action="EXAM_DELETED",
@@ -376,16 +414,16 @@ def delete_exam(exam_id):
         db.session.add(audit)
         
         db.session.commit()
-        logger.info(f"Exam soft-deleted by admin {user.email}: {title} (ID: {exam_id})")
+        logger.info(f"Exam and all associated student attempt data deleted by admin {user.email}: {title} (ID: {exam_id}). Student registrations preserved.")
         
         return jsonify({
             "success": True,
-            "message": "Exam deleted successfully."
+            "message": "Exam and all associated attempt data deleted successfully."
         }), 200
 
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Error deleting exam: {str(e)}")
+        logger.error(f"Error deleting exam: {str(e)}", exc_info=True)
         return jsonify({
             "success": False,
             "error_code": "EXAM_DELETION_FAILED",

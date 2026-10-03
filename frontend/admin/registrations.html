@@ -128,6 +128,12 @@
             white-space: nowrap;
         }
 
+        .col-phone {
+            white-space: nowrap;
+            font-size: 0.8rem;
+            color: var(--text-primary);
+        }
+
         .col-date {
             white-space: nowrap;
             color: var(--text-secondary);
@@ -335,7 +341,7 @@
                 <!-- Registrations Table Card -->
                 <div class="glass-panel">
                     <div class="search-bar-box">
-                        <input class="form-control" type="text" id="reg-search" placeholder="🔍 Search by Candidate Name, User ID, or Gmail ID..." oninput="filterRegistrations(this.value)" style="flex: 1; min-width: 280px;">
+                        <input class="form-control" type="text" id="reg-search" placeholder="🔍 Search by Candidate Name, User ID, Gmail ID, or Phone..." oninput="filterRegistrations(this.value)" style="flex: 1; min-width: 280px;">
                     </div>
 
                     <div class="table-container">
@@ -346,6 +352,7 @@
                                     <th class="col-candidate">Candidate</th>
                                     <th class="col-course">Course</th>
                                     <th class="col-email">Gmail ID</th>
+                                    <th class="col-phone">Phone</th>
                                     <th class="col-date" title="Registration Date">Reg Date</th>
                                     <th class="col-written" title="Exams Written">Written</th>
                                     <th class="col-pending" title="Exams Pending">Pending</th>
@@ -355,7 +362,7 @@
                             </thead>
                             <tbody id="registrations-body">
                                 <tr>
-                                    <td colspan="9" style="color: var(--text-secondary); text-align: center; padding: 2rem;">Loading student registrations...</td>
+                                    <td colspan="10" style="color: var(--text-secondary); text-align: center; padding: 2rem;">Loading student registrations...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -638,13 +645,14 @@
                     (r.first_name && r.first_name.toLowerCase().includes(searchTerm)) ||
                     (r.email && r.email.toLowerCase().includes(searchTerm)) ||
                     (r.last_name && r.last_name.toLowerCase().includes(searchTerm)) ||
-                    (r.course && r.course.toLowerCase().includes(searchTerm))
+                    (r.course && r.course.toLowerCase().includes(searchTerm)) ||
+                    (r.phone && r.phone.toLowerCase().includes(searchTerm))
                 );
             }
 
             const tbody = document.getElementById("registrations-body");
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" style="color: var(--text-secondary); text-align: center; padding: 2rem;">No matching candidate registrations found.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="10" style="color: var(--text-secondary); text-align: center; padding: 2rem;">No matching candidate registrations found.</td></tr>`;
                 return;
             }
 
@@ -658,11 +666,12 @@
                         <td class="col-userid">${r.last_name || 'Not Assigned'}</td>
                         <td class="col-candidate">${r.first_name || 'Candidate'}</td>
                         <td class="col-course">
-                            <span class="badge" style="${(r.course || '').toLowerCase() === 'drive' ? 'background: #F5F3FF; color: #7C3AED; border: 1px solid #DDD6FE; font-weight: 700;' : 'background: #E0F2FE; color: #0369A1; font-weight: 700;'} font-size: 0.74rem; padding: 0.2rem 0.5rem; border-radius: 6px;">
+                            <span class="badge" style="${['drive', 'aptitude'].includes((r.course || '').toLowerCase()) ? 'background: #F5F3FF; color: #7C3AED; border: 1px solid #DDD6FE; font-weight: 700;' : 'background: #E0F2FE; color: #0369A1; font-weight: 700;'} font-size: 0.74rem; padding: 0.2rem 0.5rem; border-radius: 6px;">
                                 📚 ${r.course || 'Python'}
                             </span>
                         </td>
                         <td class="col-email" title="${r.email}">${r.email}</td>
+                        <td class="col-phone" style="font-family: monospace; font-size: 0.82rem; font-weight: 600; color: var(--text-primary); white-space: nowrap;">${r.phone || '-'}</td>
                         <td class="col-date">${r.registration_date ? new Date(r.registration_date).toLocaleDateString() : '-'}</td>
                         <td class="col-written"><span style="font-weight: 700; color: var(--forest-dark);">${r.exams_written_count || 0}</span></td>
                         <td class="col-pending"><span style="font-weight: 700; color: var(--accent-warning);">${r.exams_not_attempted_count || 0}</span></td>

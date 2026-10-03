@@ -502,5 +502,191 @@ class SecureExamSystemTests(unittest.TestCase):
         self.assertEqual(fresh_user.first_name, "Re-registered Student")
         self.assertEqual(fresh_user.course, "Drive")
 
+    def test_student_phone_registration_and_admin_view(self):
+        """Tests that phone number is recorded during registration and displayed in admin registrations."""
+        # 1. Register candidate with phone number
+        reg_res = self.client.post("/api/auth/register-student", json={
+            "first_name": "Phone Test Student",
+            "email": "phone_test@test.com",
+            "phone": "9876543210",
+            "course": "Python",
+            "password": "Password123"
+        })
+        self.assertEqual(reg_res.status_code, 201)
+        user = User.query.filter_by(email="phone_test@test.com").first()
+        self.assertIsNotNone(user)
+        self.assertEqual(user.phone, "9876543210")
+
+        # 2. Login admin and fetch registrations list
+        login_res = self.client.post("/api/auth/login", json={
+            "email": "admin@test.com",
+            "password": "AdminPass123!"
+        })
+        admin_token = login_res.json["token"]
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+
+        admin_res = self.client.get("/api/admin/registrations", headers=admin_headers)
+        self.assertEqual(admin_res.status_code, 200)
+        found = next((r for r in admin_res.json["registrations"] if r["email"] == "phone_test@test.com"), None)
+        self.assertIsNotNone(found)
+        self.assertEqual(found["phone"], "9876543210")
+
+    def test_export_marks_pdf_replaces_percentage_with_violations_count(self):
+        """Tests that the exported Marks List PDF includes the candidate's violation count instead of percentage."""
+        from backend.services.pdf_generator import StudentExamMarksPDFService
+        
+        # 1. Create completed attempt with violations and candidate phone
+        self.student.phone = "9876543210"
+        db.session.commit()
+
+        attempt = ExamAttempt(
+            student_id=self.student.id,
+            exam_id=self.exam.id,
+            status="SUBMITTED"
+        )
+        db.session.add(attempt)
+        db.session.commit()
+
+        v1 = ViolationLog(
+            attempt_id=attempt.id,
+            violation_type="HEAD_POSE_RIGHT",
+            severity="MEDIUM"
+        )
+        v2 = ViolationLog(
+            attempt_id=attempt.id,
+            violation_type="TAB_SWITCH",
+            severity="HIGH"
+        )
+        db.session.add_all([v1, v2])
+        db.session.commit()
+
+        # 2. Test PDF service generation directly
+        pdf_bytes = StudentExamMarksPDFService.generate_exam_marks_pdf(self.exam.id)
+        self.assertIsInstance(pdf_bytes, bytes)
+        self.assertTrue(pdf_bytes.startswith(b"%PDF-"))
+        self.assertIn(b"Violations", pdf_bytes)
+        self.assertIn(b"Phone", pdf_bytes)
+        self.assertIn(b"9876543210", pdf_bytes)
+
+        # 3. Test HTTP export endpoint
+        login_res = self.client.post("/api/auth/login", json={
+            "email": "admin@test.com",
+            "password": "AdminPass123!"
+        })
+        admin_token = login_res.json["token"]
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+
+        resp = self.client.get(f"/api/admin/reports/export-pdf?exam_id={self.exam.id}", headers=admin_headers)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content_type, "application/pdf")
+        self.assertTrue(resp.data.startswith(b"%PDF-"))
+
+    def test_student_aptitude_course_registration(self):
+        """Tests that students can register for Aptitude course and are stored correctly."""
+        reg_res = self.client.post("/api/auth/register-student", json={
+            "first_name": "Aptitude Candidate",
+            "email": "aptitude_candidate@test.com",
+            "phone": "9123456780",
+            "course": "Aptitude",
+            "password": "Password123"
+        })
+        self.assertEqual(reg_res.status_code, 201)
+        user = User.query.filter_by(email="aptitude_candidate@test.com").first()
+        self.assertIsNotNone(user)
+        self.assertEqual(user.course, "Aptitude")
+        self.assertEqual(user.phone, "9123456780")
+
+    def test_presentation_download_endpoints(self):
+        """Tests that the presentation download endpoints (PDF, PPTX, HTML) stream files successfully."""
+        # 1. Download Presentation PDF
+        pdf_res = self.client.get("/api/admin/presentation/download-pdf")
+        self.assertEqual(pdf_res.status_code, 200)
+        self.assertEqual(pdf_res.content_type, "application/pdf")
+        self.assertTrue(pdf_res.data.startswith(b"%PDF-"))
+        self.assertIn(b"AI-Proctored Secure Examination System", pdf_res.data)
+
+        # 2. Download Presentation HTML
+        html_res = self.client.get("/api/admin/presentation/download-html")
+        self.assertEqual(html_res.status_code, 200)
+        self.assertIn("text/html", html_res.content_type)
+        self.assertIn(b"SecureExam", html_res.data)
+
+        # 3. Download Presentation PPTX (returns PPTX or PDF fallback)
+        pptx_res = self.client.get("/api/admin/presentation/download-pptx")
+        self.assertEqual(pptx_res.status_code, 200)
+        self.assertTrue(len(pptx_res.data) > 0)
+
+    def test_delete_exam_cascades_exam_data_while_preserving_student_registrations(self):
+        """
+        Tests that deleting an exam:
+        1. Cascades and deletes all attempts, student answers, violation logs, results, and access requests for that exam.
+        2. Removes the exam from the admin reports 'exams' dropdown list.
+        3. Preserves the student User record in the registrations/students section completely intact.
+        """
+        # 1. Admin Login
+        login_res = self.client.post("/api/auth/login", json={
+            "email": "admin@test.com",
+            "password": "AdminPass123!"
+        })
+        admin_token = login_res.json["token"]
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+
+        # 2. Create student attempt, answer, violation, result, and access request
+        from backend.models import ExamAccess, StudentAnswer, EvidenceRecord
+        access = ExamAccess(student_id=self.student.id, exam_id=self.exam.id, approved=True)
+        db.session.add(access)
+
+        attempt = ExamAttempt(student_id=self.student.id, exam_id=self.exam.id, status="SUBMITTED")
+        db.session.add(attempt)
+        db.session.commit()
+
+        ans = StudentAnswer(attempt_id=attempt.id, question_id=self.q1.id, chosen_option="B", is_correct=True, marks_awarded=2.0)
+        viol = ViolationLog(attempt_id=attempt.id, violation_type="TAB_SWITCH", severity="HIGH")
+        res_obj = Result(attempt_id=attempt.id, total_score=2.0, percentage=100.0, passed=True)
+        db.session.add_all([ans, viol, res_obj])
+        db.session.commit()
+
+        # Verify reports initially contains the exam and attempt
+        reports_before = self.client.get(f"/api/admin/reports?exam_id={self.exam.id}", headers=admin_headers)
+        self.assertEqual(reports_before.status_code, 200)
+        exam_ids_before = [e["id"] for e in reports_before.json["exams"]]
+        self.assertIn(self.exam.id, exam_ids_before)
+        self.assertEqual(len(reports_before.json["attempts"]), 1)
+
+        # 3. Delete the exam
+        del_res = self.client.delete(f"/api/exams/{self.exam.id}", headers=admin_headers)
+        self.assertEqual(del_res.status_code, 200)
+        self.assertTrue(del_res.json["success"])
+
+        # 4. Verify all student exam-related data for this exam is deleted
+        self.assertIsNone(Exam.query.get(self.exam.id))
+        self.assertEqual(ExamAttempt.query.filter_by(exam_id=self.exam.id).count(), 0)
+        self.assertEqual(StudentAnswer.query.filter_by(attempt_id=attempt.id).count(), 0)
+        self.assertEqual(ViolationLog.query.filter_by(attempt_id=attempt.id).count(), 0)
+        self.assertEqual(Result.query.filter_by(attempt_id=attempt.id).count(), 0)
+        self.assertEqual(ExamAccess.query.filter_by(exam_id=self.exam.id).count(), 0)
+
+        # 5. Verify the deleted exam is NOT present in /api/admin/reports exam selector
+        reports_after = self.client.get("/api/admin/reports", headers=admin_headers)
+        self.assertEqual(reports_after.status_code, 200)
+        exam_ids_after = [e["id"] for e in reports_after.json["exams"]]
+        self.assertNotIn(self.exam.id, exam_ids_after)
+
+        # 6. Verify export PDF for deleted exam fails
+        pdf_res = self.client.get(f"/api/admin/reports/export-pdf?exam_id={self.exam.id}", headers=admin_headers)
+        self.assertEqual(pdf_res.status_code, 404)
+
+        # 7. CRITICAL: Verify student registration record in users table is STILL INTACT
+        student_user = User.query.get(self.student.id)
+        self.assertIsNotNone(student_user)
+        self.assertEqual(student_user.email, "student@test.com")
+        self.assertEqual(student_user.role, "student")
+
+        # Verify student still appears in registrations endpoint
+        reg_res = self.client.get("/api/admin/registrations", headers=admin_headers)
+        self.assertEqual(reg_res.status_code, 200)
+        student_emails = [s["email"] for s in reg_res.json["registrations"]]
+        self.assertIn("student@test.com", student_emails)
+
 if __name__ == "__main__":
     unittest.main()

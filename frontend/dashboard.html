@@ -27,6 +27,7 @@
             <div style="font-size: 0.95rem; display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: center;">
                 <div><strong style="color: var(--text-primary);">Student:</strong> <span id="profile-name" style="color: var(--text-secondary); font-weight: 500;">-</span></div>
                 <div><strong style="color: var(--text-primary);">Email:</strong> <span id="profile-email" style="color: var(--text-secondary); font-weight: 500;">-</span></div>
+                <div><strong style="color: var(--text-primary);">Phone:</strong> <span id="profile-phone" style="color: var(--text-secondary); font-weight: 500;">-</span></div>
                 <div><strong style="color: var(--text-primary);">User ID:</strong> <span id="profile-userid" style="color: var(--primary-green); font-weight: 700; background: var(--mint-soft); padding: 2px 8px; border-radius: 6px;">-</span></div>
                 <div><strong style="color: var(--text-primary);">Enrolled Course:</strong> <span id="profile-course" style="color: #0369A1; font-weight: 700; background: #E0F2FE; padding: 2px 8px; border-radius: 6px;">-</span></div>
             </div>
@@ -134,12 +135,14 @@
         document.getElementById("user-display").innerText = `Candidate: ${currentUser.first_name}`;
         document.getElementById("profile-name").innerText = currentUser.first_name;
         document.getElementById("profile-email").innerText = currentUser.email;
+        const profilePhoneEl = document.getElementById("profile-phone");
+        if (profilePhoneEl) profilePhoneEl.innerText = currentUser.phone || '-';
         document.getElementById("profile-userid").innerText = currentUser.last_name;
         const profileCourseEl = document.getElementById("profile-course");
         if (profileCourseEl) {
             const cName = currentUser.course || 'Python';
             profileCourseEl.innerText = cName;
-            if (cName.toLowerCase() === 'drive') {
+            if (['drive', 'aptitude'].includes(cName.toLowerCase())) {
                 profileCourseEl.style.color = '#7C3AED';
                 profileCourseEl.style.background = '#F5F3FF';
                 profileCourseEl.style.border = '1px solid #DDD6FE';

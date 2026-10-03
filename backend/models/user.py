@@ -14,6 +14,7 @@ class User(db.Model):
     registration_status = db.Column(db.String(20), nullable=False, default="PENDING")
     first_login_completed = db.Column(db.Boolean, default=False, nullable=False)
     course = db.Column(db.String(50), nullable=True, default=None)
+    phone = db.Column(db.String(25), nullable=True, default=None)
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     
     attempts = db.relationship("ExamAttempt", backref="student", lazy=True, cascade="all, delete-orphan")
@@ -38,6 +39,7 @@ class User(db.Model):
             "last_name": self.last_name,
             "role": self.role,
             "course": self.course,
+            "phone": self.phone,
             "registration_status": self.registration_status,
             "first_login_completed": self.first_login_completed,
             "created_at": self.created_at.isoformat() if self.created_at else None

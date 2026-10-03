@@ -305,21 +305,32 @@ def serve_evidence(evidence_id):
 @role_required(["admin"])
 def get_reports():
     try:
-        # Get exam list for selection
-        exams = Exam.query.all()
+        # Get exam list for selection (strictly non-deleted examinations)
+        exams = Exam.query.filter_by(is_deleted=False).all()
         exams_data = [{"id": e.id, "title": e.title} for e in exams]
 
         exam_id = request.args.get("exam_id", type=int)
+        valid_exam_ids = [e.id for e in exams]
         
-        # If no exam selected, use the first one if any exist
-        if not exam_id and exams:
-            exam_id = exams[0].id
+        # If no exam selected or requested exam is deleted/not found, use the first valid one if any exist
+        if not exam_id or exam_id not in valid_exam_ids:
+            exam_id = valid_exam_ids[0] if valid_exam_ids else None
 
         if not exam_id:
             return jsonify({
                 "success": True,
                 "exams": [],
-                "statistics": {},
+                "selected_exam_id": None,
+                "statistics": {
+                    "total_students": 0,
+                    "submitted_count": 0,
+                    "cancelled_count": 0,
+                    "attending_count": 0,
+                    "average_percentage": 0.0,
+                    "max_percentage": 0.0,
+                    "min_percentage": 0.0,
+                    "pass_rate": 0.0
+                },
                 "attempts": [],
                 "pending_access": []
             }), 200
@@ -391,7 +402,7 @@ def get_reports():
             "pass_rate": pass_rate
         }
 
-        # Fetch all pending access requests across all exams so administrator never misses any candidate request
+        # Fetch all pending access requests across all active non-deleted exams
         from backend.models import ExamAccess
         pending_access = ExamAccess.query.filter_by(approved=False).order_by(ExamAccess.requested_at.desc()).all()
         pending_data = [{
@@ -402,7 +413,7 @@ def get_reports():
             "student_username": pa.student.first_name if pa.student else "Unknown",
             "student_userid": pa.student.last_name if pa.student else "Unknown",
             "requested_at": pa.requested_at.isoformat() + "Z" if pa.requested_at else None
-        } for pa in pending_access]
+        } for pa in pending_access if pa.exam and not getattr(pa.exam, 'is_deleted', False)]
 
         return jsonify({
             "success": True,
@@ -441,7 +452,7 @@ def export_marks_pdf():
                 }), 404
             exam_id = first_exam.id
 
-        exam = Exam.query.get(exam_id)
+        exam = Exam.query.filter_by(id=exam_id, is_deleted=False).first()
         if not exam:
             return jsonify({
                 "success": False,
@@ -468,6 +479,79 @@ def export_marks_pdf():
             "error_code": "PDF_GENERATION_FAILED",
             "message": f"Failed to generate marks report PDF: {str(e)}"
         }), 500
+
+
+@admin_bp.route("/presentation/download-pdf", methods=["GET"])
+def download_presentation_pdf():
+    """Streams the 12-slide executive presentation PDF."""
+    try:
+        from backend.services.presentation_generator import PresentationService
+        pdf_bytes = PresentationService.generate_presentation_pdf()
+        return send_file(
+            io.BytesIO(pdf_bytes),
+            mimetype="application/pdf",
+            as_attachment=True,
+            download_name="AI_Proctored_Exam_System_Presentation.pdf"
+        )
+    except Exception as e:
+        logger.error(f"Error downloading presentation PDF: {str(e)}", exc_info=True)
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@admin_bp.route("/presentation/download-pptx", methods=["GET"])
+def download_presentation_pptx():
+    """Generates and streams the PowerPoint (.pptx) presentation."""
+    try:
+        from pathlib import Path
+        project_root = Path(__file__).resolve().parent.parent.parent
+        pptx_path = project_root / "client_presentation.pptx"
+        
+        # If file doesn't exist, try generating it via scripts.generate_pptx
+        if not pptx_path.exists():
+            try:
+                from scripts.generate_pptx import create_presentation
+                create_presentation()
+            except Exception as gen_err:
+                logger.warning(f"Could not generate PPTX: {str(gen_err)}")
+
+        if pptx_path.exists():
+            return send_file(
+                str(pptx_path),
+                mimetype="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                as_attachment=True,
+                download_name="AI_Proctored_Exam_System_Presentation.pptx"
+            )
+        else:
+            # Fallback to streaming the PDF presentation
+            from backend.services.presentation_generator import PresentationService
+            pdf_bytes = PresentationService.generate_presentation_pdf()
+            return send_file(
+                io.BytesIO(pdf_bytes),
+                mimetype="application/pdf",
+                as_attachment=True,
+                download_name="AI_Proctored_Exam_System_Presentation.pdf"
+            )
+    except Exception as e:
+        logger.error(f"Error downloading presentation PPTX: {str(e)}", exc_info=True)
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@admin_bp.route("/presentation/download-html", methods=["GET"])
+def download_presentation_html():
+    """Streams the standalone interactive HTML presentation file."""
+    try:
+        from pathlib import Path
+        project_root = Path(__file__).resolve().parent.parent.parent
+        html_path = project_root / "frontend" / "client_presentation.html"
+        return send_file(
+            str(html_path),
+            mimetype="text/html",
+            as_attachment=True,
+            download_name="AI_Proctored_Exam_System_Presentation.html"
+        )
+    except Exception as e:
+        logger.error(f"Error downloading presentation HTML: {str(e)}", exc_info=True)
+        return jsonify({"success": False, "message": str(e)}), 500
 
 
 @admin_bp.route("/access/<int:access_id>/approve", methods=["POST"])
@@ -814,8 +898,8 @@ def get_registrations():
         # Get all students
         students = User.query.filter_by(role="student").order_by(User.created_at.desc()).all()
         
-        # Get count of active exams
-        active_exams_count = Exam.query.filter_by(is_active=True).count()
+        # Get count of active, non-deleted exams
+        active_exams_count = Exam.query.filter_by(is_active=True, is_deleted=False).count()
         
         data = []
         for student in students:
@@ -832,6 +916,7 @@ def get_registrations():
                 "first_name": student.first_name, # Candidate Name
                 "last_name": student.last_name,   # User ID
                 "course": student.course or "Python",
+                "phone": student.phone or "-",
                 "registration_status": student.registration_status,
                 "registration_date": student.created_at.isoformat() + "Z" if student.created_at else None,
                 "exams_written_count": written_count,

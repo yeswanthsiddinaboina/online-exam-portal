@@ -1,7 +1,7 @@
 import io
 import zlib
 import datetime
-from backend.models import Exam, ExamAttempt, Question, StudentAnswer, Result
+from backend.models import Exam, ExamAttempt, Question, StudentAnswer, Result, ViolationLog
 from backend.utils.logger import get_logger
 
 logger = get_logger()
@@ -176,7 +176,7 @@ class StudentExamMarksPDFService:
         Student Examination Marks List PDF report for the given exam.
         """
         exam = Exam.query.get(exam_id)
-        if not exam:
+        if not exam or getattr(exam, "is_deleted", False):
             raise ValueError(f"Examination with ID {exam_id} not found.")
 
         # Gather questions and total questions / marks
@@ -194,6 +194,7 @@ class StudentExamMarksPDFService:
             student_id_str = (student.last_name or f"STU{student.id:04d}") if student else "N/A"
             student_name = (student.first_name or "Unknown Student") if student else "Unknown"
             student_email = (student.email or "-") if student else "-"
+            student_phone = (student.phone or "-") if student else "-"
 
             # Analyze answers
             answers_map = {ans.question_id: ans for ans in att.answers}
@@ -254,11 +255,15 @@ class StudentExamMarksPDFService:
             result_status = "PASSED" if passed else "FAILED"
             exam_status = att.status or "SUBMITTED"
 
+            # Calculate violation count for attempt
+            violation_count = len(att.violations) if (hasattr(att, 'violations') and att.violations is not None) else (ViolationLog.query.filter_by(attempt_id=att.id).count() if att.id else 0)
+
             records.append({
                 "s_no": idx,
                 "student_id": student_id_str,
                 "student_name": student_name,
                 "email": student_email,
+                "phone": student_phone,
                 "exam_name": exam.title,
                 "total_questions": total_questions,
                 "correct_answers": correct_count,
@@ -266,7 +271,7 @@ class StudentExamMarksPDFService:
                 "unanswered": unanswered_count,
                 "total_marks": f"{total_marks:.1f}",
                 "obtained_marks": f"{obtained_marks:.1f}",
-                "percentage": f"{percentage:.1f}%",
+                "violations": str(violation_count),
                 "result_status": result_status,
                 "exam_status": exam_status
             })
@@ -277,22 +282,23 @@ class StudentExamMarksPDFService:
         gen_datetime_str = now.strftime("%d %B %Y, %I:%M %p")
         exam_date_str = exam.created_at.strftime("%d %B %Y") if exam.created_at else gen_date_str
 
-        # Define 14 columns and their exact widths (Total = 782 pt)
+        # Define 15 columns and their exact widths (Total = 782 pt)
         columns = [
-            {"key": "s_no", "header": "S.No", "width": 30, "align": "center"},
-            {"key": "student_id", "header": "Student ID", "width": 54, "align": "center"},
-            {"key": "student_name", "header": "Student Name", "width": 78, "align": "left"},
-            {"key": "email", "header": "Email", "width": 110, "align": "left"},
-            {"key": "exam_name", "header": "Exam Name", "width": 82, "align": "left"},
-            {"key": "total_questions", "header": "Total Qs", "width": 42, "align": "center"},
-            {"key": "correct_answers", "header": "Correct", "width": 40, "align": "center"},
-            {"key": "wrong_answers", "header": "Wrong", "width": 38, "align": "center"},
-            {"key": "unanswered", "header": "Unans", "width": 40, "align": "center"},
-            {"key": "total_marks", "header": "Total Mks", "width": 50, "align": "center"},
-            {"key": "obtained_marks", "header": "Obt Mks", "width": 50, "align": "center"},
-            {"key": "percentage", "header": "Percent", "width": 48, "align": "center"},
-            {"key": "result_status", "header": "Result", "width": 56, "align": "center"},
-            {"key": "exam_status", "header": "Exam Status", "width": 64, "align": "center"}
+            {"key": "s_no", "header": "S.No", "width": 25, "align": "center"},
+            {"key": "student_id", "header": "Student ID", "width": 52, "align": "center"},
+            {"key": "student_name", "header": "Student Name", "width": 74, "align": "left"},
+            {"key": "email", "header": "Email", "width": 96, "align": "left"},
+            {"key": "phone", "header": "Phone", "width": 58, "align": "center"},
+            {"key": "exam_name", "header": "Exam Name", "width": 74, "align": "left"},
+            {"key": "total_questions", "header": "Total Qs", "width": 38, "align": "center"},
+            {"key": "correct_answers", "header": "Correct", "width": 36, "align": "center"},
+            {"key": "wrong_answers", "header": "Wrong", "width": 36, "align": "center"},
+            {"key": "unanswered", "header": "Unans", "width": 36, "align": "center"},
+            {"key": "total_marks", "header": "Total Mks", "width": 48, "align": "center"},
+            {"key": "obtained_marks", "header": "Obt Mks", "width": 48, "align": "center"},
+            {"key": "violations", "header": "Violations", "width": 46, "align": "center"},
+            {"key": "result_status", "header": "Result", "width": 54, "align": "center"},
+            {"key": "exam_status", "header": "Exam Status", "width": 61, "align": "center"}
         ]
 
         pdf = PDFWriter(page_width=842, page_height=595)
@@ -460,6 +466,10 @@ class StudentExamMarksPDFService:
                         elif k == "student_name":
                             font_style = "F2"
                             cr, cg, cb = 0.05, 0.1, 0.2
+                        elif k == "phone":
+                            font_style = "F1"
+                            font_sz = 6.8
+                            cr, cg, cb = 0.2, 0.25, 0.35
                         elif k == "correct_answers":
                             font_style = "F2"
                             cr, cg, cb = 0.05, 0.6, 0.35 # Green
@@ -468,8 +478,16 @@ class StudentExamMarksPDFService:
                             cr, cg, cb = 0.85, 0.2, 0.2 # Red
                         elif k == "obtained_marks":
                             font_style = "F2"
-                        elif k == "percentage":
+                        elif k == "violations":
                             font_style = "F2"
+                            try:
+                                v_cnt = int(val)
+                            except (ValueError, TypeError):
+                                v_cnt = 0
+                            if v_cnt > 0:
+                                cr, cg, cb = 0.85, 0.2, 0.2 # Red
+                            else:
+                                cr, cg, cb = 0.05, 0.6, 0.35 # Green
                         elif k == "result_status":
                             font_style = "F2"
                             if val == "PASSED":

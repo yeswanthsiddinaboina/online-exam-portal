@@ -47,9 +47,12 @@ def register():
         }), 409
 
     raw_course = data.get("course")
-    course = raw_course.strip() if isinstance(raw_course, str) and raw_course.strip() in ["Python", "Java", "Drive"] else None
+    course = raw_course.strip() if isinstance(raw_course, str) and raw_course.strip() in ["Python", "Java", "Aptitude", "Drive"] else None
     if role == "student" and not course:
         course = "Python"
+
+    raw_phone = data.get("phone") or data.get("phone_number")
+    phone = raw_phone.strip() if isinstance(raw_phone, str) and raw_phone.strip() else None
 
     try:
         user = User(
@@ -57,7 +60,8 @@ def register():
             first_name=first_name,
             last_name=last_name,
             role=role,
-            course=course
+            course=course,
+            phone=phone
         )
         user.set_password(password)
         db.session.add(user)
@@ -98,14 +102,17 @@ def register_student():
     
     raw_course = data.get("course", "Python")
     course = raw_course.strip() if isinstance(raw_course, str) else "Python"
-    if course not in ["Python", "Java", "Drive"]:
+    if course not in ["Python", "Java", "Aptitude", "Drive"]:
         course = "Python"
+
+    raw_phone = data.get("phone") or data.get("phone_number")
+    phone = raw_phone.strip() if isinstance(raw_phone, str) and raw_phone.strip() else None
     
     if not all([email, first_name, password]):
         return jsonify({
             "success": False,
             "error_code": "INVALID_INPUT",
-            "message": "All fields (Full Name, Gmail ID, Course, and Password) are required."
+            "message": "All fields (Full Name, Gmail ID, Course, Phone Number, and Password) are required."
         }), 400
         
     first_name = first_name.strip()
@@ -124,11 +131,12 @@ def register_student():
                 existing_by_email.first_name = first_name
                 existing_by_email.last_name = "Not Assigned"
                 existing_by_email.course = course
+                existing_by_email.phone = phone
                 existing_by_email.registration_status = "PENDING"
                 existing_by_email.first_login_completed = False
                 existing_by_email.set_password(password)
                 db.session.commit()
-                logger.info(f"Rejected student re-registered: {email} (Course: {course})")
+                logger.info(f"Rejected student re-registered: {email} (Course: {course}, Phone: {phone})")
                 return jsonify({
                     "success": True,
                     "message": "Student registration request submitted successfully. Please wait for administrator approval."
@@ -155,6 +163,7 @@ def register_student():
             last_name="Not Assigned",
             role="student",
             course=course,
+            phone=phone,
             registration_status="PENDING",
             first_login_completed=False
         )
@@ -162,7 +171,7 @@ def register_student():
         db.session.add(student)
         db.session.commit()
         
-        logger.info(f"Student registration request submitted: {email} (Course: {course})")
+        logger.info(f"Student registration request submitted: {email} (Course: {course}, Phone: {phone})")
         return jsonify({
             "success": True,
             "message": "Student registration request submitted successfully. Please wait for administrator approval."

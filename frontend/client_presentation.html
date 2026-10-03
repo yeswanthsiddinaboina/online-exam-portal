@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Proctored Secure Examination System | Client Presentation Deck</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --forest-dark: #062C25;
+            --forest-deep: #031D18;
+            --sidebar-dark: #062F28;
+            --primary-green: #0E9F6E;
+            --primary-green-hover: #059669;
+            --emerald-accent: #10B981;
+            --mint-soft: #ECFDF5;
+            --mint-card-tint: #F0FDF4;
+            --navy-dark: #0F172A;
+            --navy-card: #1E293B;
+            --bg-slide: #0A1118;
+            --bg-card: rgba(255, 255, 255, 0.05);
+            --border-card: rgba(255, 255, 255, 0.1);
+            --text-main: #F8FAFC;
+            --text-sub: #94A3B8;
+            --text-accent: #34D399;
+            --font-heading: 'Outfit', sans-serif;
+            --font-body: 'Inter', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-slide);
+            color: var(--text-main);
+            font-family: var(--font-body);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        /* Top Presenter Bar */
+        .deck-header {
+            background: rgba(6, 44, 37, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(16, 185, 129, 0.2);
+            padding: 0.75rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .deck-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-family: var(--font-heading);
+            font-weight: 800;
+            font-size: 1.15rem;
+            color: #FFFFFF;
+            letter-spacing: -0.02em;
+        }
+
+        .deck-logo-badge {
+            background: linear-gradient(135deg, #10B981, #059669);
+            color: white;
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .deck-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .btn-ctrl {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #FFFFFF;
+            padding: 0.45rem 0.85rem;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn-ctrl:hover {
+            background: var(--primary-green);
+            border-color: var(--primary-green);
+            transform: translateY(-1px);
+        }
+
+        .btn-ctrl.active {
+            background: var(--primary-green);
+            border-color: var(--primary-green);
+        }
+
+        .slide-counter {
+            font-family: var(--font-heading);
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--emerald-accent);
+            padding: 0 0.5rem;
+        }
+
+        /* Presentation Canvas */
+        .stage-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1.5rem;
+            position: relative;
+        }
+
+        .slide-viewport {
+            width: 100%;
+            max-width: 1200px;
+            aspect-ratio: 16 / 9;
+            background: radial-gradient(circle at 85% 15%, rgba(16, 185, 129, 0.12) 0%, transparent 60%),
+                        radial-gradient(circle at 15% 85%, rgba(6, 44, 37, 0.5) 0%, transparent 60%),
+                        #0B131B;
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            border-radius: 20px;
+            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 30px rgba(16, 185, 129, 0.1);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            padding: 3rem 4rem;
+        }
+
+        /* Slide Items */
+        .slide {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .slide.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .slide-tag {
+            font-family: var(--font-heading);
+            font-size: 0.85rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--emerald-accent);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .slide-tag::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: var(--emerald-accent);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--emerald-accent);
+        }
+
+        .slide-title {
+            font-family: var(--font-heading);
+            font-size: 2.35rem;
+            font-weight: 800;
+            color: #FFFFFF;
+            line-height: 1.15;
+            margin-bottom: 1.75rem;
+            letter-spacing: -0.02em;
+        }
+
+        .slide-title span {
+            color: var(--emerald-accent);
+        }
+
+        .slide-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* Layout Grids */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            height: 100%;
+            align-items: stretch;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            height: 100%;
+        }
+
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.25rem;
+        }
+
+        /* Cards & Components */
+        .feature-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            background: rgba(16, 185, 129, 0.06);
+            border-color: rgba(16, 185, 129, 0.3);
+            transform: translateY(-3px);
+        }
+
+        .card-icon {
+            font-size: 1.75rem;
+            background: rgba(16, 185, 129, 0.15);
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            color: var(--emerald-accent);
+        }
+
+        .card-title {
+            font-family: var(--font-heading);
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #FFFFFF;
+        }
+
+        .card-desc {
+            font-size: 0.88rem;
+            color: var(--text-sub);
+            line-height: 1.5;
+        }
+
+        .highlight-bullet {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.85rem;
+            margin-bottom: 1rem;
+        }
+
+        .bullet-icon {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--emerald-accent);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .bullet-text strong {
+            color: #FFFFFF;
+            display: block;
+            font-size: 0.98rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .bullet-text p {
+            font-size: 0.86rem;
+            color: var(--text-sub);
+            line-height: 1.45;
+        }
+
+        /* Metric Pill / KPI Card */
+        .kpi-box {
+            background: linear-gradient(145deg, rgba(6, 44, 37, 0.6), rgba(10, 20, 30, 0.7));
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 14px;
+            padding: 1.5rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .kpi-num {
+            font-family: var(--font-heading);
+            font-size: 2.8rem;
+            font-weight: 900;
+            color: var(--emerald-accent);
+            line-height: 1;
+            margin-bottom: 0.4rem;
+        }
+
+        .kpi-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #E2E8F0;
+        }
+
+        .kpi-sub {
+            font-size: 0.75rem;
+            color: var(--text-sub);
+            margin-top: 0.3rem;
+        }
+
+        /* Bottom Slide Footer */
+        .slide-footer {
+            margin-top: auto;
+            padding-top: 1.25rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.78rem;
+            color: var(--text-sub);
+        }
+
+        .footer-tagline {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .footer-dot {
+            width: 5px;
+            height: 5px;
+            background: var(--emerald-accent);
+            border-radius: 50%;
+        }
+
+        /* Presenter Notes Drawer */
+        .notes-drawer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(6, 30, 25, 0.97);
+            border-top: 2px solid var(--emerald-accent);
+            padding: 1.25rem 2.5rem;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 200;
+            box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
+            max-height: 38vh;
+            overflow-y: auto;
+        }
+
+        .notes-drawer.open {
+            transform: translateY(0);
+        }
+
+        .notes-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .notes-title {
+            font-family: var(--font-heading);
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: var(--emerald-accent);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .notes-body {
+            font-size: 0.92rem;
+            color: #E2E8F0;
+            line-height: 1.6;
+        }
+
+        .notes-body strong {
+            color: #FFFFFF;
+        }
+
+        /* Navigation Arrows on Slide */
+        .nav-hit-left, .nav-hit-right {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 44px;
+            height: 44px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            z-index: 50;
+        }
+
+        .nav-hit-left:hover, .nav-hit-right:hover {
+            background: var(--primary-green);
+            border-color: var(--primary-green);
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .nav-hit-left { left: 1rem; }
+        .nav-hit-right { right: 1rem; }
+
+        /* Print Style for PDF Export */
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+            }
+            .deck-header, .nav-hit-left, .nav-hit-right, .notes-drawer {
+                display: none !important;
+            }
+            .stage-container {
+                padding: 0 !important;
+            }
+            .slide-viewport {
+                border: none !important;
+                box-shadow: none !important;
+                aspect-ratio: auto !important;
+                width: 100% !important;
+                height: 100vh !important;
+                page-break-after: always;
+                background: white !important;
+                color: #111827 !important;
+                padding: 2.5rem !important;
+            }
+            .slide {
+                display: flex !important;
+            }
+            .slide-title {
+                color: #0F172A !important;
+            }
+            .feature-card {
+                background: #F8FAFC !important;
+                border: 1px solid #E2E8F0 !important;
+            }
+            .card-title, .bullet-text strong {
+                color: #0F172A !important;
+            }
+            .card-desc, .bullet-text p, .slide-footer {
+                color: #475569 !important;
+            }
+            .kpi-box {
+                background: #F0FDF4 !important;
+                border: 1px solid #BBF7D0 !important;
+            }
+            .kpi-num {
+                color: #059669 !important;
+            }
+            .kpi-label {
+                color: #065F46 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TOP CONTROL BAR -->
+    <header class="deck-header">
+        <div class="deck-logo">
+            <span>🛡️</span>
+            <span>SecureExam<span style="color: var(--emerald-accent);">AI</span></span>
+            <span class="deck-logo-badge">Client Presentation</span>
+        </div>
+
+        <div class="deck-controls">
+            <button class="btn-ctrl" onclick="prevSlide()" title="Previous (Left Arrow)">◀ Prev</button>
+            <span class="slide-counter" id="slide-num">01 / 12</span>
+            <button class="btn-ctrl" onclick="nextSlide()" title="Next (Right Arrow / Space)">Next ▶</button>
+            <button class="btn-ctrl" id="btn-notes" onclick="toggleNotes()" title="Toggle Speaker Script (Key: N)">🎙️ Speaker Notes</button>
+            <button class="btn-ctrl" onclick="toggleFullscreen()" title="Fullscreen Mode (Key: F)">⛶ Fullscreen</button>
+            
+            <!-- Download Options -->
+            <div style="display: flex; gap: 0.35rem; background: rgba(0, 0, 0, 0.4); padding: 3px 4px; border-radius: 10px; border: 1px solid rgba(16, 185, 129, 0.35); align-items: center;">
+                <span style="font-size: 0.72rem; font-weight: 800; color: var(--emerald-accent); padding: 0 4px; text-transform: uppercase; letter-spacing: 0.05em;">Download:</span>
+                <a href="/api/admin/presentation/download-pptx" download="AI_Proctored_Exam_System_Presentation.pptx" class="btn-ctrl" style="text-decoration: none; background: rgba(16, 185, 129, 0.2); border-color: var(--primary-green); color: #A7F3D0; padding: 0.35rem 0.65rem;" title="Download PowerPoint Presentation (.pptx)">
+                    <span>📊</span> <strong>.PPTX</strong>
+                </a>
+                <a href="/api/admin/presentation/download-pdf" download="AI_Proctored_Exam_System_Presentation.pdf" class="btn-ctrl" style="text-decoration: none; background: rgba(2, 132, 199, 0.2); border-color: #0284C7; color: #BAE6FD; padding: 0.35rem 0.65rem;" title="Download PDF Presentation (.pdf)">
+                    <span>📄</span> <strong>.PDF</strong>
+                </a>
+                <a href="/api/admin/presentation/download-html" download="AI_Proctored_Exam_System_Presentation.html" class="btn-ctrl" style="text-decoration: none; padding: 0.35rem 0.65rem;" title="Download Offline Single-File HTML Presentation">
+                    <span>🌐</span> <strong>.HTML</strong>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN PRESENTATION STAGE -->
+    <main class="stage-container">
+        
+        <button class="nav-hit-left" onclick="prevSlide()" aria-label="Previous Slide">❮</button>
+        <button class="nav-hit-right" onclick="nextSlide()" aria-label="Next Slide">❯</button>
+
+        <div class="slide-viewport">
+
+            <!-- SLIDE 1: TITLE SLIDE -->
+            <section class="slide active" data-title="Title" data-notes="Welcome everyone. Today, I am proud to introduce our Next-Generation AI-Proctored Secure Examination System. In modern education and corporate hiring, remote assessments are essential, but remote cheating is reaching an all-time high. Our platform eliminates malpractice autonomously using lightweight, edge-based computer vision without requiring candidates to download clunky, intrusive software. Let us walk you through how we achieve uncompromised academic integrity at scale.">
+                <div class="slide-tag">Enterprise Assessment Architecture</div>
+                <h1 class="slide-title" style="font-size: 2.85rem; margin-bottom: 1.25rem;">
+                    AI-Proctored Secure<br>
+                    <span>Examination & Assessment</span> System
+                </h1>
+                <p style="font-size: 1.15rem; color: #94A3B8; max-width: 780px; line-height: 1.6; margin-bottom: 2.5rem;">
+                    Empowering universities, corporate enterprises, and recruitment drives with autonomous real-time proctoring, calibrated 3D head pose tracking, and frictionless browser-based lockdown.
+                </p>
+
+                <div class="grid-4" style="margin-top: auto;">
+                    <div class="kpi-box">
+                        <div class="kpi-num">100%</div>
+                        <div class="kpi-label">Browser-Based</div>
+                        <div class="kpi-sub">Zero local app installs</div>
+                    </div>
+                    <div class="kpi-box">
+                        <div class="kpi-num">75°</div>
+                        <div class="kpi-label">Calibrated Yaw</div>
+                        <div class="kpi-sub">Zero false positive fatigue</div>
+                    </div>
+                    <div class="kpi-box">
+                        <div class="kpi-num">&lt; 0.5s</div>
+                        <div class="kpi-label">AI Edge Latency</div>
+                        <div class="kpi-sub">Real-time local detection</div>
+                    </div>
+                    <div class="kpi-box">
+                        <div class="kpi-num">85%</div>
+                        <div class="kpi-label">Cost Reduction</div>
+                        <div class="kpi-sub">Over manual human invigilation</div>
+                    </div>
+                </div>
+
+                <div class="slide-footer">
+                    <div class="footer-tagline"><span>Confidential Client Deck</span> <span class="footer-dot"></span> <span>Enterprise AI Proctoring Solution</span></div>
+                    <div>Press <strong>[Space / ➔]</strong> for next slide | <strong>[N]</strong> for Speaker Notes</div>
+                </div>
+            </section>
+
+            <!-- SLIDE 2: THE PROBLEM -->
+            <section class="slide" data-title="Industry Problem" data-notes="Let's look at why remote assessments fail today. First, cheating has evolved: candidates use dual monitors, screen shares, secondary smartphones, or peers in the room. Second, human proctors are expensive, costing $10 to $20 per candidate hour, yet humans suffer from fatigue. Third, existing software solutions require invasive kernel-level desktop apps that candidates hate installing and that crash frequently. Finally, when someone is flagged, administrators lack concrete forensic evidence, leading to endless appeals and complaints. Our system fixes every single one of these bottlenecks.">
+                <div class="slide-tag">Market Need &amp; Industry Challenges</div>
+                <h2 class="slide-title">The Remote Assessment <span>Integrity Crisis</span></h2>
+                
+                <div class="grid-2">
+                    <div style="display: flex; flex-direction: column; gap: 1rem; justify-content: center;">
+                        <div class="highlight-bullet">
+                            <div class="bullet-icon" style="background: rgba(239, 68, 68, 0.2); color: #EF4444;">✕</div>
+                            <div class="bullet-text">
+                                <strong>Rampant Unsupervised Malpractice</strong>
+                                <p>Candidates leverage secondary phones, unauthorized notes, off-screen assistance, and browser tab jumping without detection.</p>
+                            </div>
+                        </div>
+
+                        <div class="highlight-bullet">
+                            <div class="bullet-icon" style="background: rgba(239, 68, 68, 0.2); color: #EF4444;">✕</div>
+                            <div class="bullet-text">
+                                <strong>Prohibitive Human Proctoring Costs</strong>
+                                <p>Hiring invigilators costs $8–$15 per candidate hour and introduces human error, scheduling friction, and severe monitoring fatigue.</p>
+                            </div>
+                        </div>
+
+                        <div class="highlight-bullet">
+                            <div class="bullet-icon" style="background: rgba(239, 68, 68, 0.2); color: #EF4444;">✕</div>
+                            <div class="bullet-text">
+                                <strong>Invasive Desktop Software Hurdles</strong>
+                                <p>Legacy tools require heavy, invasive .exe software downloads that raise privacy alarms, trigger firewalls, and cause exam-day dropouts.</p>
+                            </div>
+                        </div>
+
+                        <div class="highlight-bullet">
+                            <div class="bullet-icon" style="background: rgba(239, 68, 68, 0.2); color: #EF4444;">✕</div>
+                            <div class="bullet-text">
+                                <strong>Disputed Outcomes &amp; Zero Forensic Audit</strong>
+                                <p>Without timestamped snapshot evidence and infraction tallies, universities face legal backlash and endless student grade disputes.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; justify-content: center; gap: 1rem;">
+                        <div class="feature-card" style="border-left: 4px solid #EF4444; background: rgba(239, 68, 68, 0.05);">
+                            <div style="font-size: 0.95rem; font-weight: 700; color: #F87171;">The Cost of Compromised Integrity</div>
+                            <p class="card-desc">When certificates or job offers are handed out based on fraudulent assessments, institutional reputation crashes and recruiting bad hires costs companies an average of $15,000+ per employee.</p>
+                        </div>
+                        <div class="feature-card" style="border-left: 4px solid var(--emerald-accent); background: rgba(16, 185, 129, 0.05);">
+                            <div style="font-size: 0.95rem; font-weight: 700; color: var(--emerald-accent);">Our Philosophy: Frictionless Trust</div>
+                            <p class="card-desc">An assessment system must protect integrity without treating honest students like criminals. Our AI is subtle, responsive, calibrated to avoid false alarms, and 100% web-native.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="slide-footer">
+                    <div class="footer-tagline"><span>Market Need</span> <span class="footer-dot"></span> <span>Addressing Fundamental Vulnerabilities</span></div>
+                    <div>Slide 02 / 12</div>
+                </div>
+            </section>
+
+            <!-- SLIDE 3: SOLUTION OVERVIEW -->
+            <section class="slide" data-title="Solution Overview" data-notes="Here is our complete solution: An end-to-end cloud platform providing real-time AI computer vision proctoring, multi-course candidate isolation, automatic grading, and one-click forensic PDF reports. Candidates take their exam in any standard modern web browser with zero downloads. The admin gets full control over exam scheduling, approvals, live monitoring, and permanent data wiping.">
+                <div class="slide-tag">Autonomous Solution</div>
+                <h2 class="slide-title">End-to-End <span>Assessment Ecosystem</span></h2>
+
+                <div class="grid-3">
+                    <div class="feature-card">
+                        <div class="card-icon">👁️</div>
+                        <div class="card-title">Real-Time AI Proctor</div>
+                        <div class="card-desc">
+                            MediaPipe 3D face mesh calculates head orientation, tracking yaw/pitch angles up to 75°. Instantly flags unauthorized multiple faces or candidate absence without streaming raw video to servers.
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="card-icon">🔒</div>
+                        <div class="card-title">Browser Lockdown</div>
+                        <div class="card-desc">
+                            Enforces fullscreen environment with instant auto-pause on window blur or tab switching. Detects developer tools, blocks right-click, cut/copy/paste, and multi-display setups.
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="card-icon">🎯</div>
+                        <div class="card-title">Course-Based Isolation</div>
+                        <div class="card-desc">
+                            Strict role and course isolation (e.g. Python, Java, Drive). Candidates registered for specific streams only see and access their designated exam papers with zero cross-contamination.
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="card-icon">⚡</div>
+                        <div class="card-title">Instant Auto-Grading</div>
+                        <div class="card-desc">
+                            Automated evaluation engine scores MCQs, True/False, and Short Answers instantly upon submission, calculating raw scores, negative marks, and pass/fail thresholds.
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="card-icon">📊</div>
+                        <div class="card-title">Forensic Audit PDF</div>
+                        <div class="card-desc">
+                            Custom pure-Python PDF engine exports official 14-column marks lists showing candidate details, raw marks, and individual <strong>Violation Counts</strong> highlighted in high-contrast red/green.
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="card-icon">🛡️</div>
+                        <div class="card-title">Admin Command Center</div>
+                        <div class="card-desc">
+                            Single-click bulk approval of registrations and exam requests, cascade permanent candidate wiping with disk snapshot purge, and instant candidate re-registration workflows.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="slide-footer">
+                    <div class="footer-tagline"><span>Solution Architecture</span> <span class="footer-dot"></span> <span>6 Pillars of Comprehensive Integrity</span></div>
+                    <div>Slide 03 / 12</div>
+                </div>
+            </section>
+
+            <!-- SLIDE 4: ARCHITECTURE & TECH STACK -->
+            <section class="slide" data-title="Architecture" data-notes="Let's touch on the technical foundation. We built this with an enterprise-ready tech stack. On the client side, we use WebRTC and Google's MediaPipe Face Mesh running directly in the browser via WebAssembly. This means the heavy computer vision runs on the candidate's machine, keeping cloud bandwidth and server costs near zero. On the backend, we use Python Flask with SQLAlchemy and Neon Serverless PostgreSQL. Authentication uses signed JWT tokens, and all endpoints enforce strict Role-Based Access Control.">
+                <div class="slide-tag">Technical Engineering</div>
+                <h2 class="slide-title">System Architecture &amp; <span>Technology Stack</span></h2>
+
+                <div class="grid-2">
+                    <div style="display: flex; flex-direction: column; gap: 1rem; justify-content: center;">
+                        <div class="feature-card">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div class="card-title">Client-Side Edge AI (Browser)</div>
+                                <span style="background: rgba(16, 185, 129, 0.2); color: var(--emerald-accent); padding: 2px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 700;">LOW BANDWIDTH</span>
+                            </div>
+                            <p class="card-desc">HTML5, WebRTC camera feed, MediaPipe Face Mesh (468 3D landmarks), Canvas API. Edge execution analyzes 30 fps video locally without streaming high-bandwidth video across the network.</p>
+                        </div>
+
+                        <div class="feature-card">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div class="card-title">Backend API &amp; Security Services</div>
+                                <span style="background: rgba(14, 165, 233, 0.2); color: #38BDF8; padding: 2px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 700;">HIGH CONCURRENCY</span>
+                            </div>
+                            <p class="card-desc">Python 3, Flask RESTful API, PyJWT token authentication, PBKDF2/Argon2 password hashing, and active heartbeat session managers that prevent multi-tab sessions.</p>
+                        </div>
+
+                        <div class="feature-card">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div class="card-title">Database &amp; Storage Layer</div>
+                                <span style="background: rgba(168, 85, 247, 0.2); color: #C084FC; padding: 2px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 700;">CLOUD READY</span>
+                            </div>
+                            <p class="card-desc">Neon Serverless PostgreSQL with auto-scaling connection pooling (with local SQLite fallback), self-healing migrations, and disk snapshot evidence management.</p>
+                        </div>
+                    </div>
+
+                    <div style="background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px; padding: 1.75rem; display: flex; flex-direction: column; justify-content: center; gap: 1rem;">
+                        <div style="font-family: var(--font-heading); font-size: 1.15rem; font-weight: 800; color: #FFFFFF; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 0.75rem;">
+                            Key Architectural Advantages
+                        </div>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 0.85rem; font-size: 0.88rem;">
+                            <div>
+                                <span style="color: var(--emerald-accent); font-weight: 700;">✓ Pure-Python PDF Generation:</span>
+                                <span style="color: var(--text-sub);"> Zero external dependencies (no ReportLab/wkhtmltopdf). Generates high-fidelity PDF 1.4 directly from memory in &lt;100ms.</span>
+                            </div>
+                            <div>
+                                <span style="color: var(--emerald-accent); font-weight: 700;">✓ Edge Vision Scalability:</span>
+                                <span style="color: var(--text-sub);"> Because video processing is performed client-side, 10,000 students can test concurrently on a modest cloud server without CPU spikes.</span>
+                            </div>
+                            <div>
+                                <span style="color: var(--emerald-accent); font-weight: 700;">✓ Self-Healing Schemas:</span>
+                                <span style="color: var(--text-sub);"> Dynamic column additions (e.g. phone numbers, course categories) migrate automatically across local and production DBs.</span>
+                            </div>
+                            <div>
+                                <span style="color: var(--emerald-accent); font-weight: 700;">✓ Complete Cascade Cleanup:</span>
+                                <span style="color: var(--text-sub);"> Deleting an attempt or student purges all foreign keys, results, logs, and disk images to prevent database bloat.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="slide-footer">
+                    <div class="footer-tagline"><span>System Design</span> <span class="footer-dot"></span> <span>Scalable Edge AI Architecture</span></div>
+                    <div>Slide 04 / 12</div>
+                </div>
+            </section>
+
+            <!-- SLIDE 5: COMPUTER VISION & 75 DEGREE CALIBRATION -->
+            <section class="slide" data-title="AI Vision Deep Dive" data-notes="Now let's highlight our star computer vision feature: Calibrated 3D Head Pose Estimation. Most proctoring tools fail because they flag a student the second their eyes dart across a large screen, creating false alarm frustration. We solved this. Using 468 3D landmarks, our mathematical model projects facial rotation in 3 axes: Yaw, Pitch, and Roll. We calibrated the head-turn warning threshold to 75 degrees. This gives honest candidates the natural freedom to read questions without annoyance, but the moment someone turns to look at notes or a helper, a violation is recorded and evidenced.">
+                <div class="slide-tag">Computer Vision Innovation</div>
+                <h2 class="slide-title">Calibrated 3D Head Pose &amp; <span>Face Intelligence</span></h2>
+
+                <div class="grid-2">
+                    <div style="display: flex; flex-direction: column; gap: 1rem; justify-content: center;">
+                        <div class="feature-card" style="border-left: 4px solid var(--emerald-accent);">
+                            <div class="card-title">468 3D Landmark Mesh</div>
+                            <p class="card-desc">Tracks key facial anchors (nose tip, chin, eye corners, mouth bounds) in real time at 30 fps. Solves Perspective-n-Point (PnP) pose calculations to determine exact head angles.</p>
+                        </div>
+
+                        <div class="feature-card" style="border-left: 4px solid var(--emerald-accent);">
+                            <div class="card-title">The 75° Calibrated Threshold</div>
+                            <p class="card-desc">Specifically tuned to eliminate false positives. Natural eye scanning across ultra-wide monitors is tolerated; looking away at an accomplice or second monitor past 75° triggers a non-intrusive violation warning.</p>
+                        </div>
+
+                        <div class="feature-card" style="border-left: 4px solid var(--emerald-accent);">
+                            <div class="card-title">Face Verification &amp; Anti-Impersonation</div>
+                            <p class="card-desc">Pre-exam webcam snapshot matches the registered candidate photo. Continuous facial presence checks guarantee no unauthorized substitute takes over mid-exam.</p>
+                        </div>
+                    </div>
+
+                    <div style="background: rgba(16, 185, 129, 0.04); border: 1px dashed rgba(16, 185, 129, 0.3); border-radius: 16px; padding: 2rem; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+                        <div style="font-size: 3.5rem; margin-bottom: 1rem;">📐 ➔ 👤</div>
+                        <div style="font-family: var(--font-heading); font-size: 1.35rem; font-weight: 800; color: #FFFFFF; margin-bottom: 0.5rem;">
+                            Precision Angle Detection
+                        </div>
+                        <p style="font-size: 0.9rem; color: var(--text-sub); line-height: 1.5; max-width: 380px; margin-bottom: 1.5rem;">
+                            Our mathematical rotation vector calculates Euler Yaw (&psi;). Infractions are triggered strictly when <code>|Yaw| &gt; 75°</code>.
+                        </p>
+                        <div style="background: rgba(0, 0, 0, 0.5); padding: 0.75rem 1.25rem; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); font-family: monospace; font-size: 0.85rem; color: var(--emerald-accent);">
+                            Status: Real-Time Stream Monitoring (Active)
+                        </div>
+                    </div>
+                </div>
+
+                <div class="slide-footer">
+                    <div class="footer-tagline"><span>AI &amp; Computer Vision</span> <span class="footer-dot"></span> <span>Zero False Positives via 75° Angle Calibration</span></div>
+                    <div>Slide 05 / 12</div>
+                </div>
+            </section>
+
+            <!-- SLIDE 6: BROWSER LOCKDOWN & ANTI-TAMPER -->
+            <section class="slide" data-title="Lockdown Engine" data-notes="Beyond vision, how do we prevent digital cheating? Our browser lockdown engine provides multi-layered client security. When the student clicks 'Start Exam', the exam forces strict Fullscreen mode. If they press Esc or switch tabs, the exam screen immediately blurs and freezes, displaying a violation warning. The system tracks tab-switch counts and automatically submits or terminates the exam if the configured violation limit (e.g. 5 warnings) is reached. Copy-pasting, right-clicking, and devtools are completely disabled.">
+                <div class="slide-tag">Security &amp; Integrity Enforcement</div>
+                <h2 class="slide-title">Environmental <span>Lockdown &amp; Anti-Tamper</span></h2>
+
+                <div class="grid-3">
+                    <div class="feature-card">
+                        <div class="card-icon">🖥️</div>
+                        <div class="card-title">Fullscreen Enforcement</div>
+                        <div class="card-desc">
+                            Candidate cannot view questions without entering fullscreen. Exiting fullscreen triggers an immediate modal lockout and logs a security infraction.
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="card-icon">🔀</div>
+                        <div class="card-title">Tab-Switch Interception</div>
+                        <div class="card-desc">
+                            Page visibility API and window blur events intercept any attempt to search Google, open ChatGPT, or switch applications.
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="card-icon">🛑</div>
+                        <div class="card-title">Automated Termination</div>
+                        <div class="card-desc">
+                            Configurable violation strike limits (e.g., 5 strikes). Upon exceeding limits, the exam is instantly terminated and marked MALPRACTICE_CANCELLED.
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="card-icon">📋</div>
+                        <div class="card-title">Clipboard Protection</div>
+                        <div class="card-desc">
+                            Right-click context menu, text selection, copy (Ctrl+C), paste (Ctrl+V), and developer inspection shortcuts (F12, Ctrl+Shift+I) are intercepted and suppressed.
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="card-icon">💓</div>
+                        <div class="card-title">Active Heartbeat Polling</div>
+                        <div class="card-desc">
+                            Continuous cryptographic heartbeats sent every 10 seconds. Disconnecting or running parallel browser sessions terminates the candidate's session token.
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="card-icon">📸</div>
+                        <div class="card-title">Instant Evidence Snapshots</div>
+                        <div class="card-desc">
+                            Every logged violation captures an encrypted timestamped webcam frame stored securely for post-exam review and administrative audit.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="slide-footer">
+                    <div class="footer-tagline"><span>Anti-Tamper Layer</span> <span class="footer-dot"></span> <span>Zero External Cheating / Zero Leakage</span></div>
+                    <div>Slide 06 / 12</div>
+                </div>
+            </section>
+
+            <!-- SLIDE 7: COURSE SEGREGATION & CANDIDATE REGISTRATION -->
+            <section class="slide" data-title="Candidate Management" data-notes="Let's look at how candidates and courses are organized. Many organizations run specialized hiring drives or separate batches like Python, Java, or our specialized Drive batch. We engineered Course-Based Isolation. When a student registers with their phone number, email, and chosen course, our system ensures they can ONLY see and request access to examinations assigned to their track. A Drive candidate will never see Python papers, preventing confusion or exam paper leaks.">
+                <div class="slide-tag">Domain Isolation &amp; Onboarding</div>
+                <h2 class="slide-title">Course-Based Isolation &amp; <span>Candidate Control</span></h2>
+
+                <div class="grid-2">
+                    <div style="display: flex; flex-direction: column; gap: 1rem; justify-content: center;">
+                        <div class="highlight-bullet">
+                            <div class="bullet-icon">1</div>
+                            <div class="bullet-text">
+                                <strong>Streamlined Candidate Registration</strong>
+                                <p>Candidates register with Full Name, Verified Gmail, 10-digit Phone Number, and their designated course (Python, Java, Drive). Phone numbers are stored with self-healing DB migrations.</p>
+                            </div>
+                        </div>
+
+                        <div class="highlight-bullet">
+                            <div class="bullet-icon">2</div>
+                            <div class="bullet-text">
+                                <strong>Airtight Exam Isolation (Exam.is_accessible_by)</strong>
+                                <p>Exams created for 'Drive' are accessible strictly to Drive students. Direct URL manipulation or API tampering is rejected with <code>403 EXAM_COURSE_MISMATCH</code>.</p>
+                            </div>
+                        </div>
+
+                        <div class="highlight-bullet">
+                            <div class="bullet-icon">3</div>
+                            <div class="bullet-text">
+                                <strong>Distinctive Visual Badging</strong>
+                                <p>Streamlined purple badges for 'Drive' candidates and exams across both Student and Admin portals ensure zero administrative mix-ups during multi-track recruitment drives.</p>
+                            </div>
+                        </div>
+
+                        <div class="highlight-bullet">
+                            <div class="bullet-icon">4</div>
+                            <div class="bullet-text">
+                                <strong>Granular Access Request Lifecycle</strong>
+                                <p>Approved students request access to designated exams. Admins approve access individually or with our bulk 'Approve All' feature.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; justify-content: center; gap: 1.25rem;">
+                        <div class="feature-card" style="background: rgba(124, 58, 237, 0.08); border-color: rgba(124, 58, 237, 0.3);">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                                <div style="font-weight: 800; color: #C084FC;">Example: "Drive" Campus Recruitment</div>
+                                <span style="background: #7C3AED; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 800;">DRIVE BATCH</span>
+                            </div>
+                            <p class="card-desc">Enables hiring companies to run private corporate drives in parallel with regular academic testing without sharing question banks or candidate rosters.</p>
+                        </div>
+
+                        <div class="feature-card">
+                            <div style="font-weight: 800; color: #FFFFFF; margin-bottom: 0.5rem;">Instant Re-Registration Workflow</div>
+                            <p class="card-desc">Admins can permanently delete any candidate. Our cascade deletion clears the student user, exam attempts, answers, violations, access permissions, and disk photos, allowing the student to re-register fresh immediately with the same email.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="slide-footer">
+                    <div class="footer-tagline"><span>Candidate Onboarding</span> <span class="footer-dot"></span> <span>Zero Conflict Multi-Tenant Architecture</span></div>
+                    <div>Slide 07 / 12</div>
+                </div>
+            </section>
+
+            <!-- SLIDE 8: ADMIN COMMAND SUITE -->
+            <section class="slide" data-title="Admin Suite" data-notes="Administrators need speed and simplicity. In this system, everything is designed for high efficiency. We built 'Approve All' buttons for both candidate registrations and exam access requests, allowing an admin to clear a batch of 500 candidates in a single click. The admin dashboard features live scoreboard stats, search filters by candidate phone number, and real-time monitoring of currently active sessions.">
+                <div class="slide-tag">Administrative Efficiency</div>
+                <h2 class="slide-title">Administrative <span>Command &amp; Control</span></h2>
+
+                <div class="grid-3">
+                    <div class="feature-card">
+                        <div class="card-icon">⚡</div>
+                        <div class="card-title">1-Click Bulk Approvals</div>
+                        <div class="card-desc">
+                            "Approve All" buttons for both Student Registrations and Exam Access requests. Instantly grant permissions to entire cohorts in milliseconds.
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="card-icon">📱</div>
+                        <div class="card-title">Phone &amp; Detail Search</div>
+                        <div class="card-desc">
+                            Live instant search across registered students by Name, Gmail, User ID, Course, and Phone Number with real-time DOM filtering.
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="card-icon">🗑️</div>
+                        <div class="card-title">Permanent Cascade Deletion</div>
+                        <div class="card-desc">
+                            Full purge of users, attempts, answers, violations, and evidence files from disk. Frees database storage and allows clean student re-registration.
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="card-icon">📈</div>
+                        <div class="card-title">Real-Time Metrics Grid</div>
+                        <div class="card-desc">
+                            Four live stat cards: Total Results, Passed/Completed, Failed/Terminated, and Attending (Active) candidates with instant status filters.
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="card-icon">📝</div>
+                        <div class="card-title">Dynamic Exam Creation</div>
+                        <div class="card-desc">
+                            Create MCQ, True/False, and Short Answer exams with customizable duration, pass percentage, negative marks, and course eligibility.
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="card-icon">🔍</div>
+                        <div class="card-title">Candidate Audit Modal</div>
+                        <div class="card-desc">
+                            Deep drill-down modal showing exact candidate responses, correct answers, time taken, and timestamped infraction logs with evidence.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="slide-footer">
+                    <div class="footer-tagline"><span>Administration</span> <span class="footer-dot"></span> <span>Zero-Friction Management at High Scale</span></div>
+                    <div>Slide 08 / 12</div>
+                </div>
+            </section>
+
+            <!-- SLIDE 9: MARKS REPORT & VIOLATION COUNT PDF -->
+            <section class="slide" data-title="PDF Marks Report" data-notes="Now look at our official reporting output. At the end of the exam, the administrator can download an official, tamper-proof Student Examination Marks Report PDF. Notice this key feature: In response to institutional demands, we replaced standard percentages with the exact count of proctoring violations recorded for that student. If a student has zero violations, it is highlighted in bold green. If they had infractions, it is highlighted in bold red. The PDF is generated dynamically via our pure-Python engine in landscape format, ready for distribution to deans or hiring managers.">
+                <div class="slide-tag">Forensic Reporting &amp; Compliance</div>
+                <h2 class="slide-title">Official Marks Report &amp; <span>Violation Audit</span></h2>
+
+                <div class="grid-2">
+                    <div style="display: flex; flex-direction: column; gap: 1rem; justify-content: center;">
+                        <div class="feature-card" style="border-left: 4px solid var(--emerald-accent);">
+                            <div class="card-title">14-Column Landscape Table (A4)</div>
+                            <p class="card-desc">Features S.No, Student ID, Name, Email, Exam Name, Total Qs, Correct, Wrong, Unanswered, Total Marks, Obtained Marks, <strong>Violations Count</strong>, Result Status, and Exam Status.</p>
+                        </div>
+
+                        <div class="feature-card" style="border-left: 4px solid var(--emerald-accent);">
+                            <div class="card-title">High-Contrast Color Coding</div>
+                            <p class="card-desc">
+                                <span style="color: #10B981; font-weight: 700;">Violations = 0 (Green):</span> Verified honest, clean attempt.<br>
+                                <span style="color: #EF4444; font-weight: 700;">Violations &gt; 0 (Red):</span> Immediate flag for administrative review.
+                            </p>
+                        </div>
+
+                        <div class="feature-card" style="border-left: 4px solid var(--emerald-accent);">
+                            <div class="card-title">Zero Dependency Pure-Python Engine</div>
+                            <p class="card-desc">Custom PDF 1.4 binary stream generator. Runs without external C-libraries or headless browsers, guaranteeing 100% reliable PDF exports across Windows, Linux, and Cloud containers.</p>
+                        </div>
+                    </div>
+
+                    <!-- PDF Preview Mockup -->
+                    <div style="background: #FFFFFF; color: #111827; border-radius: 12px; padding: 1.25rem; font-family: sans-serif; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <div style="background: #17213C; color: white; padding: 0.5rem 0.75rem; border-radius: 4px; display: flex; justify-content: space-between; font-size: 0.72rem; font-weight: bold; margin-bottom: 0.5rem;">
+                                <span>SECURE AI-PROCTORED EXAMINATION SYSTEM</span>
+                                <span style="color: #10B981;">OFFICIAL MARKS REPORT</span>
+                            </div>
+                            <div style="font-size: 0.95rem; font-weight: 800; color: #111827; margin-bottom: 0.5rem;">STUDENT EXAMINATION MARKS LIST</div>
+                            <div style="font-size: 0.68rem; background: #F8FAFC; border: 1px solid #E2E8F0; padding: 0.4rem; border-radius: 4px; margin-bottom: 0.75rem; display: flex; justify-content: space-between;">
+                                <span><strong>Exam:</strong> Python Core Midterm</span>
+                                <span><strong>Candidates:</strong> 42 Students</span>
+                                <span><strong>Pass Rate:</strong> 88.1%</span>
+                            </div>
+                            <!-- Sample Mini Table -->
+                            <div style="font-size: 0.65rem; border: 1px solid #CBD5E1; border-radius: 4px; overflow: hidden;">
+                                <div style="background: #1E2942; color: white; display: grid; grid-template-columns: 35px 65px 1fr 50px 55px 55px; padding: 4px; font-weight: bold; text-align: center;">
+                                    <span>S.No</span><span>ID</span><span style="text-align: left;">Name</span><span>Obt Mks</span><span>Violations</span><span>Result</span>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 35px 65px 1fr 50px 55px 55px; padding: 4px; text-align: center; border-bottom: 1px solid #F1F5F9; background: #FFFFFF;">
+                                    <span>1</span><span>STU1001</span><span style="text-align: left;">Alex Johnson</span><span>18.5</span><span style="color: #059669; font-weight: bold;">0</span><span style="color: #059669; font-weight: bold;">PASSED</span>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 35px 65px 1fr 50px 55px 55px; padding: 4px; text-align: center; background: #F8FAFC;">
+                                    <span>2</span><span>STU1002</span><span style="text-align: left;">Sarah Davis</span><span>12.0</span><span style="color: #DC2626; font-weight: bold;">3</span><span style="color: #DC2626; font-weight: bold;">FAILED</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="font-size: 0.62rem; color: #64748B; text-align: center; margin-top: 0.5rem; border-top: 1px solid #E2E8F0; padding-top: 0.4rem;">
+                            Document automatically signed &amp; timestamped • Audit Trail ID: #EX-2026-9482
+                        </div>
+                    </div>
+                </div>
+
+                <div class="slide-footer">
+                    <div class="footer-tagline"><span>Audit &amp; Reporting</span> <span class="footer-dot"></span> <span>Direct Violation Count Replaced for Absolute Clarity</span></div>
+                    <div>Slide 09 / 12</div>
+                </div>
+            </section>
+
+            <!-- SLIDE 10: BUSINESS ROI -->
+            <section class="slide" data-title="Client ROI" data-notes="Now let's talk about the business numbers and return on investment for your organization. Compared to traditional manual proctoring services, our platform delivers an average 85% cost reduction. You don't have to hire invigilators or schedule 1-on-1 Zoom sessions. Furthermore, because evaluation is automated, results that previously took 5 to 7 days are delivered within seconds. Candidates experience zero software download friction, which means zero tech-support dropout rates on exam day.">
+                <div class="slide-tag">Business Value &amp; ROI</div>
+                <h2 class="slide-title">Quantifiable <span>Business Impact</span></h2>
+
+                <div class="grid-4" style="margin-bottom: 1.5rem;">
+                    <div class="kpi-box">
+                        <div class="kpi-num">85%</div>
+                        <div class="kpi-label">Cost Savings</div>
+                        <div class="kpi-sub">vs. human proctoring agencies</div>
+                    </div>
+                    <div class="kpi-box">
+                        <div class="kpi-num">0 sec</div>
+                        <div class="kpi-label">Grading Latency</div>
+                        <div class="kpi-sub">Instantaneous score turnaround</div>
+                    </div>
+                    <div class="kpi-box">
+                        <div class="kpi-num">99.4%</div>
+                        <div class="kpi-label">Uptime &amp; Success</div>
+                        <div class="kpi-sub">Zero exam day install crashes</div>
+                    </div>
+                    <div class="kpi-box">
+                        <div class="kpi-num">10x</div>
+                        <div class="kpi-label">Testing Throughput</div>
+                        <div class="kpi-sub">Scale from 50 to 5,000 students</div>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="feature-card">
+                        <div class="card-title">Financial &amp; Operational Efficiency</div>
+                        <p class="card-desc">Eliminate $10–$15/hour proctoring fees. Conduct university semester exams or nationwide campus hiring drives with a single administrator overseeing thousands of simultaneous candidates.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="card-title">Brand Protection &amp; Accreditation</div>
+                        <p class="card-desc">Protect your institution's degrees and hiring credibility. Objective forensic logs and timestamped violation snapshots provide bulletproof defense during accreditation audits and appeals.</p>
+                    </div>
+                </div>
+
+                <div class="slide-footer">
+                    <div class="footer-tagline"><span>Value Proposition</span> <span class="footer-dot"></span> <span>Measurable Return on Investment</span></div>
+                    <div>Slide 10 / 12</div>
+                </div>
+            </section>
+
+            <!-- SLIDE 11: SECURITY & PRIVACY COMPLIANCE -->
+            <section class="slide" data-title="Security & Compliance" data-notes="Data privacy and compliance are non-negotiable. Our platform complies with modern privacy standards: We process video locally at the browser edge, so raw webcam feeds are never sent or stored on cloud servers. We only store compressed snapshots when a distinct violation occurs. User passwords use industry-standard hashing, API tokens expire securely, and our cascade deletion guarantees candidate data can be completely purged upon request in compliance with GDPR.">
+                <div class="slide-tag">Trust &amp; Regulatory Compliance</div>
+                <h2 class="slide-title">Enterprise Security, <span>Privacy &amp; Compliance</span></h2>
+
+                <div class="grid-3">
+                    <div class="feature-card">
+                        <div class="card-icon">🛡️</div>
+                        <div class="card-title">Privacy-by-Design</div>
+                        <div class="card-desc">
+                            Raw camera video streams never leave candidate devices. Only lightweight mathematical landmark arrays are evaluated, preserving candidate home privacy.
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="card-icon">🔐</div>
+                        <div class="card-title">Military-Grade Encryption</div>
+                        <div class="card-desc">
+                            All communications encrypted via TLS 1.3 / HTTPS. Session tokens are signed via HMAC-SHA256 JWTs with ephemeral lifespans and anti-replay guards.
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="card-icon">⚖️</div>
+                        <div class="card-title">Right-to-be-Forgotten</div>
+                        <div class="card-desc">
+                            Full GDPR/compliance support. Cascade candidate deletion wipes users, answers, logs, and disk snapshots permanently upon institutional request.
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="card-icon">☁️</div>
+                        <div class="card-title">Flexible Cloud Deployment</div>
+                        <div class="card-desc">
+                            Ready for multi-cloud deployment on AWS, Azure, Google Cloud, or self-hosted private on-premises server environments with zero vendor lock-in.
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="card-icon">🔗</div>
+                        <div class="card-title">LMS &amp; HRIS Integration</div>
+                        <div class="card-desc">
+                            Standard RESTful API architecture supports seamless webhooks and integration with Canvas, Moodle, Blackboard, Workday, or custom portals.
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="card-icon">📜</div>
+                        <div class="card-title">Immutable Audit Trail</div>
+                        <div class="card-desc">
+                            Every question submission, access approval, and system intervention generates an immutable audit record for institutional accreditation reviews.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="slide-footer">
+                    <div class="footer-tagline"><span>Compliance</span> <span class="footer-dot"></span> <span>Zero Video Snooping / Enterprise Security Standards</span></div>
+                    <div>Slide 11 / 12</div>
+                </div>
+            </section>
+
+            <!-- SLIDE 12: CALL TO ACTION & Q&A -->
+            <section class="slide" data-title="Conclusion & Demo" data-notes="Thank you for your time. In summary, our AI-Proctored Examination System delivers uncompromised academic integrity, calibrated precision vision, and enterprise administration at a fraction of manual costs. We invite you to experience a live demonstration right now, or pilot your upcoming test with our team. We're ready to answer any questions.">
+                <div class="slide-tag">Next Steps &amp; Demonstration</div>
+                <h2 class="slide-title">Transform Your Testing <span>Integrity Today</span></h2>
+
+                <div class="grid-2">
+                    <div style="display: flex; flex-direction: column; justify-content: center; gap: 1.25rem;">
+                        <div class="feature-card" style="border-left: 4px solid var(--emerald-accent);">
+                            <div class="card-title">1. Experience the Live Interactive Demo</div>
+                            <p class="card-desc">Walk through the live student registration, webcam calibration, proctored exam experience, and the real-time admin scoreboard right now.</p>
+                        </div>
+
+                        <div class="feature-card" style="border-left: 4px solid var(--emerald-accent);">
+                            <div class="card-title">2. Conduct a 48-Hour Pilot Session</div>
+                            <p class="card-desc">We will configure a branded pilot exam for your department or recruitment team with your customized question bank and policy rules.</p>
+                        </div>
+
+                        <div class="feature-card" style="border-left: 4px solid var(--emerald-accent);">
+                            <div class="card-title">3. Enterprise Rollout &amp; Integration</div>
+                            <p class="card-desc">Full deployment support, custom LMS integration, and administrative training to ensure 100% smooth exam days.</p>
+                        </div>
+                    </div>
+
+                    <div style="background: linear-gradient(145deg, rgba(6, 44, 37, 0.7), rgba(10, 20, 30, 0.8)); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 16px; padding: 2.5rem; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+                        <div style="font-size: 3.5rem; margin-bottom: 1rem;">🤝</div>
+                        <div style="font-family: var(--font-heading); font-size: 1.75rem; font-weight: 800; color: #FFFFFF; margin-bottom: 0.5rem;">
+                            Questions &amp; Discussion
+                        </div>
+                        <p style="font-size: 0.95rem; color: var(--text-sub); line-height: 1.5; margin-bottom: 1.5rem;">
+                            Let's discuss how we can tailor our AI proctoring parameters and course isolation to your exact institutional requirements.
+                        </p>
+                        <div style="display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center;">
+                            <a href="/api/admin/presentation/download-pptx" download="AI_Proctored_Exam_System_Presentation.pptx" class="btn-ctrl" style="text-decoration: none; padding: 0.55rem 1rem; font-size: 0.85rem; background: var(--primary-green); border-color: var(--primary-green);">
+                                📊 Download PPTX
+                            </a>
+                            <a href="/api/admin/presentation/download-pdf" download="AI_Proctored_Exam_System_Presentation.pdf" class="btn-ctrl" style="text-decoration: none; padding: 0.55rem 1rem; font-size: 0.85rem; background: #0284C7; border-color: #0284C7;">
+                                📄 Download PDF
+                            </a>
+                            <a href="/api/admin/presentation/download-html" download="AI_Proctored_Exam_System_Presentation.html" class="btn-ctrl" style="text-decoration: none; padding: 0.55rem 1rem; font-size: 0.85rem;">
+                                🌐 Download HTML
+                            </a>
+                            <button class="btn-ctrl" onclick="goToSlide(0)" style="padding: 0.55rem 1rem; font-size: 0.85rem;">
+                                🔄 Replay
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="slide-footer">
+                    <div class="footer-tagline"><span>Presentation Concluded</span> <span class="footer-dot"></span> <span>Ready for Live Q&amp;A and Interactive Demo</span></div>
+                    <div>Slide 12 / 12</div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- SPEAKER NOTES DRAWER -->
+    <div class="notes-drawer" id="notes-drawer">
+        <div class="notes-header">
+            <div class="notes-title">
+                <span>🎙️</span>
+                <span>Speaker Talking Script &amp; Client Pitch</span>
+            </div>
+            <button class="btn-ctrl" onclick="toggleNotes()" style="padding: 0.2rem 0.6rem; font-size: 0.75rem;">✕ Close</button>
+        </div>
+        <div class="notes-body" id="notes-content">
+            <!-- Dynamically populated from active slide data-notes -->
+        </div>
+    </div>
+
+    <!-- PRESENTATION LOGIC -->
+    <script>
+        const slides = document.querySelectorAll('.slide');
+        let currentSlide = 0;
+        const totalSlides = slides.length;
+        const counterEl = document.getElementById('slide-num');
+        const notesContent = document.getElementById('notes-content');
+        const notesDrawer = document.getElementById('notes-drawer');
+        const btnNotes = document.getElementById('btn-notes');
+
+        function updateSlide() {
+            slides.forEach((s, idx) => {
+                s.classList.toggle('active', idx === currentSlide);
+            });
+            const pad = (n) => String(n).padStart(2, '0');
+            counterEl.textContent = `${pad(currentSlide + 1)} / ${pad(totalSlides)}`;
+
+            // Update speaker notes
+            const activeSlide = slides[currentSlide];
+            const notes = activeSlide.getAttribute('data-notes') || 'No speaker notes for this slide.';
+            notesContent.innerHTML = notes;
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                currentSlide++;
+                updateSlide();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateSlide();
+            }
+        }
+
+        function goToSlide(index) {
+            if (index >= 0 && index < totalSlides) {
+                currentSlide = index;
+                updateSlide();
+            }
+        }
+
+        function toggleNotes() {
+            const isOpen = notesDrawer.classList.toggle('open');
+            btnNotes.classList.toggle('active', isOpen);
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log('Error attempting to enable fullscreen:', err);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        // Keyboard Shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+                e.preventDefault();
+                nextSlide();
+            } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+                e.preventDefault();
+                prevSlide();
+            } else if (e.key === 'f' || e.key === 'F') {
+                toggleFullscreen();
+            } else if (e.key === 'n' || e.key === 'N') {
+                toggleNotes();
+            } else if (e.key === 'Home') {
+                goToSlide(0);
+            } else if (e.key === 'End') {
+                goToSlide(totalSlides - 1);
+            }
+        });
+
+        // Initialize first slide notes
+        updateSlide();
+    </script>
+</body>
+</html>
