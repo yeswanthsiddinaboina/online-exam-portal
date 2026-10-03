@@ -235,15 +235,51 @@ def save_questions(exam_id):
     if not Exam.query.filter_by(id=exam_id, is_deleted=False).first():
         return jsonify({"success": False, "error_code": "EXAM_NOT_FOUND", "message": "Exam not found."}), 404
     try:
+        from backend.models import StudentAnswer
         questions = _validate_questions((request.get_json() or {}).get("questions"))
-        Question.query.filter_by(exam_id=exam_id).delete(synchronize_session=False)
-        for question_data in questions:
-            _add_question_record(exam_id, question_data)
+        
+        # Load existing questions in database for this exam
+        existing = {question.id: question for question in Question.query.filter_by(exam_id=exam_id).all()}
+        retained_ids = set()
+
+        for data in questions:
+            question_id = data.get("id")
+            question = existing.get(question_id) if question_id else None
+            if question:
+                # Update existing question in-place
+                retained_ids.add(question.id)
+                question.question_text = data["question_text"]
+                question.question_type = data["question_type"]
+                question.marks = data["marks"]
+                question.negative_marks = data["negative_marks"]
+                question.correct_answer = data["correct_answer"]
+                question.options.clear()
+                for option in data.get("options", []):
+                    question.options.append(QuestionOption(
+                        option_letter=option["letter"],
+                        option_text=option["text"]
+                    ))
+            else:
+                # Add new question record
+                new_q = _add_question_record(exam_id, data)
+                retained_ids.add(new_q.id)
+
+        # Safely remove unwanted/deleted questions and their foreign key dependencies
+        unwanted_ids = [q_id for q_id in existing.keys() if q_id not in retained_ids]
+        if unwanted_ids:
+            # 1. Clean up StudentAnswer records referencing unwanted questions
+            StudentAnswer.query.filter(StudentAnswer.question_id.in_(unwanted_ids)).delete(synchronize_session=False)
+            # 2. Clean up QuestionOption records referencing unwanted questions
+            QuestionOption.query.filter(QuestionOption.question_id.in_(unwanted_ids)).delete(synchronize_session=False)
+            # 3. Clean up unwanted Question rows
+            Question.query.filter(Question.id.in_(unwanted_ids)).delete(synchronize_session=False)
+
         audit = AuditLog(user_id=user.id, action="QUESTIONS_REVIEWED_AND_SAVED", ip_address=request.remote_addr,
                          user_agent=request.headers.get("User-Agent"))
         audit.details = {"exam_id": exam_id, "questions_count": len(questions)}
         db.session.add(audit)
         db.session.commit()
+        
         saved = Question.query.filter_by(exam_id=exam_id).all()
         return jsonify({
             "success": True,
@@ -256,8 +292,8 @@ def save_questions(exam_id):
         return jsonify({"success": False, "error_code": "INVALID_QUESTIONS", "message": str(error)}), 400
     except Exception as error:
         db.session.rollback()
-        logger.error(f"Error saving questions for exam {exam_id}: {error}")
-        return jsonify({"success": False, "error_code": "QUESTION_SAVE_FAILED", "message": "Failed to save questions."}), 500
+        logger.error(f"Error saving questions for exam {exam_id}: {error}", exc_info=True)
+        return jsonify({"success": False, "error_code": "QUESTION_SAVE_FAILED", "message": f"Failed to save questions: {str(error)}"}), 500
 
 @questions_bp.route("/exams/<int:exam_id>/questions", methods=["GET"])
 @token_required
@@ -647,9 +683,12 @@ def save_questions_bulk(exam_id):
                 continue
             for option in data["options"]:
                 db.session.add(QuestionOption(question_id=question.id, option_letter=option["letter"], option_text=option["text"]))
-        for question_id, question in existing.items():
-            if question_id not in retained_ids:
-                db.session.delete(question)
+        unwanted_ids = [question_id for question_id in existing.keys() if question_id not in retained_ids]
+        if unwanted_ids:
+            from backend.models import StudentAnswer
+            StudentAnswer.query.filter(StudentAnswer.question_id.in_(unwanted_ids)).delete(synchronize_session=False)
+            QuestionOption.query.filter(QuestionOption.question_id.in_(unwanted_ids)).delete(synchronize_session=False)
+            Question.query.filter(Question.id.in_(unwanted_ids)).delete(synchronize_session=False)
         audit = AuditLog(user_id=user.id, action="QUESTIONS_REVIEWED_AND_SAVED", ip_address=request.remote_addr,
                          user_agent=request.headers.get("User-Agent"))
         audit.details = {"exam_id": exam_id, "questions_count": len(questions)}
@@ -674,6 +713,9 @@ def manage_question(exam_id, question_id):
     if not question:
         return jsonify({"success": False, "error_code": "QUESTION_NOT_FOUND", "message": "Question not found."}), 404
     if request.method == "DELETE":
+        from backend.models import StudentAnswer
+        StudentAnswer.query.filter_by(question_id=question.id).delete(synchronize_session=False)
+        QuestionOption.query.filter_by(question_id=question.id).delete(synchronize_session=False)
         db.session.delete(question)
         db.session.commit()
         return jsonify({"success": True, "message": "Question deleted."}), 200

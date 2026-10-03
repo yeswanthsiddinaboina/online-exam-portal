@@ -336,7 +336,6 @@
                                 <label class="form-label" for="course">Course</label>
                                 <select class="form-control" id="course" required style="cursor: pointer; appearance: auto; background-color: #FFFFFF; font-weight: 500;">
                                     <option value="Aptitude">Aptitude</option>
-                                    <option value="Drive">Drive</option>
                                     <option value="Python">Python</option>
                                     <option value="Java">Java</option>
                                     <option value="Python & Java" selected>Python & Java</option>
@@ -579,7 +578,8 @@
             document.getElementById("title").value = exam.title;
             document.getElementById("description").value = exam.description;
             document.getElementById("duration").value = exam.duration_minutes;
-            document.getElementById("course").value = exam.course || "Python & Java";
+            const examCourse = exam.course || "Python & Java";
+            document.getElementById("course").value = (examCourse.toLowerCase() === "drive") ? "Aptitude" : examCourse;
             
             const toggleEl = document.getElementById("exam-active-toggle");
             if (toggleEl) toggleEl.checked = exam.is_active !== false;

@@ -688,5 +688,106 @@ class SecureExamSystemTests(unittest.TestCase):
         student_emails = [s["email"] for s in reg_res.json["registrations"]]
         self.assertIn("student@test.com", student_emails)
 
+    def test_create_exam_aptitude_course_replaces_drive(self):
+        """Tests that exams can be created with Aptitude course, and Drive is cleanly mapped to Aptitude."""
+        login_res = self.client.post("/api/auth/login", json={
+            "email": "admin@test.com",
+            "password": "AdminPass123!"
+        })
+        admin_token = login_res.json["token"]
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+
+        # 1. Create exam with Aptitude
+        res1 = self.client.post("/api/exams", json={
+            "title": "Aptitude Assessment",
+            "description": "General quantitative & logical aptitude",
+            "duration_minutes": 45,
+            "course": "Aptitude"
+        }, headers=admin_headers)
+        self.assertEqual(res1.status_code, 201)
+        self.assertEqual(res1.json["exam"]["course"], "Aptitude")
+
+        # 2. Create exam with legacy Drive -> auto mapped to Aptitude
+        res2 = self.client.post("/api/exams", json={
+            "title": "Drive Assessment",
+            "description": "Legacy drive test",
+            "duration_minutes": 45,
+            "course": "Drive"
+        }, headers=admin_headers)
+        self.assertEqual(res2.status_code, 201)
+        self.assertEqual(res2.json["exam"]["course"], "Aptitude")
+
+    def test_delete_unwanted_questions_and_save_exam_foreign_key_safe(self):
+        """
+        Tests deleting unwanted questions from an existing exam and saving it.
+        Verifies that PostgreSQL foreign key constraints on question_options and student_answers
+        do not cause 'Failed to save questions'.
+        """
+        login_res = self.client.post("/api/auth/login", json={
+            "email": "admin@test.com",
+            "password": "AdminPass123!"
+        })
+        admin_token = login_res.json["token"]
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+
+        # 1. Fetch current questions (self.q1 exists from seed data)
+        get_res = self.client.get(f"/api/exams/{self.exam.id}/questions", headers=admin_headers)
+        self.assertEqual(get_res.status_code, 200)
+        current_qs = get_res.json["questions"]
+        self.assertGreater(len(current_qs), 0)
+
+        # 2. Add a second question with options
+        from backend.models import Question, QuestionOption, StudentAnswer, ExamAttempt
+        q2 = Question(
+            exam_id=self.exam.id,
+            question_text="Unwanted question to be deleted?",
+            question_type="MCQ",
+            marks=1.0,
+            correct_answer="A"
+        )
+        db.session.add(q2)
+        db.session.flush()
+        db.session.add(QuestionOption(question_id=q2.id, option_letter="A", option_text="Option A"))
+        db.session.add(QuestionOption(question_id=q2.id, option_letter="B", option_text="Option B"))
+        db.session.commit()
+
+        # Add a student answer referencing q2 to test foreign key safety
+        att = ExamAttempt.query.filter_by(exam_id=self.exam.id).first()
+        if not att:
+            att = ExamAttempt(student_id=self.student.id, exam_id=self.exam.id, status="IN_PROGRESS")
+            db.session.add(att)
+            db.session.commit()
+        ans = StudentAnswer(attempt_id=att.id, question_id=q2.id, chosen_option="A")
+        db.session.add(ans)
+        db.session.commit()
+
+        # 3. Simulate the user deleting q2 from the review list and sending only q1 to save-questions
+        save_payload = {
+            "questions": [
+                {
+                    "id": self.q1.id,
+                    "question_text": self.q1.question_text,
+                    "question_type": self.q1.question_type,
+                    "correct_answer": self.q1.correct_answer,
+                    "marks": self.q1.marks,
+                    "negative_marks": self.q1.negative_marks,
+                    "options": [{"letter": opt.option_letter, "text": opt.option_text} for opt in self.q1.options]
+                }
+            ]
+        }
+
+        # 4. Save reviewed questions
+        save_res = self.client.post(f"/api/exams/{self.exam.id}/save-questions", json=save_payload, headers=admin_headers)
+        self.assertEqual(save_res.status_code, 200)
+        self.assertTrue(save_res.json["success"])
+        self.assertEqual(save_res.json["question_count"], 1)
+
+        # 5. Verify q2, its options, and answers were cleanly removed
+        self.assertIsNone(Question.query.get(q2.id))
+        self.assertEqual(QuestionOption.query.filter_by(question_id=q2.id).count(), 0)
+        self.assertEqual(StudentAnswer.query.filter_by(question_id=q2.id).count(), 0)
+        # Verify q1 is still present and valid
+        self.assertIsNotNone(Question.query.get(self.q1.id))
+
 if __name__ == "__main__":
     unittest.main()

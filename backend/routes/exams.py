@@ -139,7 +139,9 @@ def create_exam():
 
     raw_course = data.get("course", "Python & Java")
     course = raw_course.strip() if isinstance(raw_course, str) else "Python & Java"
-    if course not in ["Aptitude", "Drive", "Python", "Java", "Python & Java", "All Courses"]:
+    if course.lower() == "drive":
+        course = "Aptitude"
+    if course not in ["Aptitude", "Python", "Java", "Python & Java", "All Courses"]:
         course = "Python & Java"
 
     if not title:
@@ -235,7 +237,9 @@ def update_exam(exam_id):
             exam.is_active = bool(data["is_active"])
         if "course" in data:
             up_course = data["course"].strip() if isinstance(data["course"], str) else "Python & Java"
-            if up_course in ["Aptitude", "Drive", "Python", "Java", "Python & Java", "All Courses"]:
+            if up_course.lower() == "drive":
+                up_course = "Aptitude"
+            if up_course in ["Aptitude", "Python", "Java", "Python & Java", "All Courses"]:
                 exam.course = up_course
 
         # Update security configs if specified
