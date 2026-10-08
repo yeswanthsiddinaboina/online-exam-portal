@@ -147,48 +147,6 @@ const API = {
         }
     },
 
-    async put(endpoint, body) {
-        try {
-            const res = await fetch(`${API_BASE}${endpoint}`, {
-                method: "PUT",
-                headers: getHeaders(),
-                body: JSON.stringify(body)
-            });
-            if (res.status === 401 && endpoint !== "/auth/login") {
-                localStorage.removeItem(tokenKey);
-                localStorage.removeItem(userKey);
-                const dest = encodeURIComponent(window.location.pathname + window.location.search);
-                redirectToLogin(dest);
-                return { success: false, error_code: "UNAUTHORIZED", message: "Session expired." };
-            }
-            return await res.json();
-        } catch (e) {
-            console.error("API PUT error:", e);
-            return { success: false, error_code: "NETWORK_ERROR", message: "Network connectivity issue." };
-        }
-    },
-
-    async patch(endpoint, body) {
-        try {
-            const res = await fetch(`${API_BASE}${endpoint}`, {
-                method: "PATCH",
-                headers: getHeaders(),
-                body: JSON.stringify(body)
-            });
-            if (res.status === 401 && endpoint !== "/auth/login") {
-                localStorage.removeItem(tokenKey);
-                localStorage.removeItem(userKey);
-                const dest = encodeURIComponent(window.location.pathname + window.location.search);
-                redirectToLogin(dest);
-                return { success: false, error_code: "UNAUTHORIZED", message: "Session expired." };
-            }
-            return await res.json();
-        } catch (e) {
-            console.error("API PATCH error:", e);
-            return { success: false, error_code: "NETWORK_ERROR", message: "Network connectivity issue." };
-        }
-    },
-
     async upload(endpoint, formData) {
         try {
             const res = await fetch(`${API_BASE}${endpoint}`, {

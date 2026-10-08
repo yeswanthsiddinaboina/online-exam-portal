@@ -161,37 +161,21 @@ def submit_exam(attempt_id):
             "message": "Session token is required to submit."
         }), 400
 
-    attempt = ExamAttempt.query.get(attempt_id)
-    if not attempt:
-        return jsonify({
-            "success": False,
-            "error_code": "ATTEMPT_NOT_FOUND",
-            "message": "Attempt not found."
-        }), 404
-
-    # If student already submitted this attempt, return 200 success
-    if attempt.student_id == student.id and attempt.status in ["SUBMITTED", "AUTO_SUBMITTED"]:
-        return jsonify({
-            "success": True,
-            "status": "SUBMITTED",
-            "message": "Examination submitted successfully."
-        }), 200
-
     is_valid, session_or_err = SessionManager.verify_session(attempt_id, student.id, session_token)
     if not is_valid:
-        # If session expired or timer completed, auto-submit and mark SUBMITTED
-        if session_or_err == "SESSION_EXPIRED" or "EXPIRED" in str(session_or_err) or (attempt and attempt.status in ["IN_PROGRESS", "EXPIRED"]):
-            if attempt and attempt.student_id == student.id:
-                attempt.status = "SUBMITTED"
-                if not attempt.ended_at:
-                    attempt.ended_at = datetime.datetime.utcnow()
+        # If session expired, we can auto-submit instead of failing completely
+        if session_or_err == "SESSION_EXPIRED":
+            attempt = ExamAttempt.query.get(attempt_id)
+            if attempt and attempt.status == "IN_PROGRESS":
+                attempt.status = "AUTO_SUBMITTED"
+                attempt.ended_at = datetime.datetime.utcnow()
                 db.session.commit()
                 # Run evaluation
                 EvaluationService.evaluate_attempt(attempt_id)
                 return jsonify({
                     "success": True,
-                    "status": "SUBMITTED",
-                    "message": "Examination time completed. Responses automatically submitted successfully."
+                    "status": "AUTO_SUBMITTED",
+                    "message": "Exam time limits expired. Responses auto-submitted."
                 }), 200
             
         return jsonify({
@@ -266,8 +250,7 @@ def get_attempt_status(attempt_id):
         grace_period = datetime.timedelta(seconds=attempt.exam.security_config.network_grace_period if attempt.exam.security_config else 30)
         
         if (now - attempt.started_at) > (max_duration + grace_period):
-            attempt.status = "SUBMITTED"
-            attempt.ended_at = now
+            attempt.status = "EXPIRED"
             db.session.commit()
             # Grade it
             EvaluationService.evaluate_attempt(attempt_id)

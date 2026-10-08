@@ -531,15 +531,15 @@
                 let badgeClass = "badge-neutral";
                 let statusLabel = att.status;
 
-                if (att.status === "SUBMITTED" || att.status === "AUTO_SUBMITTED" || att.status === "EXPIRED") {
+                if (att.status === "SUBMITTED" || att.status === "AUTO_SUBMITTED") {
                     badgeClass = "badge-active";
-                    statusLabel = "SUBMITTED";
+                    statusLabel = "Completed";
                 } else if (att.status === "IN_PROGRESS") {
                     badgeClass = "badge-warning";
-                    statusLabel = "ACTIVE";
+                    statusLabel = "Active";
                 } else if (att.status === "MALPRACTICE_CANCELLED") {
                     badgeClass = "badge-danger";
-                    statusLabel = "TERMINATED";
+                    statusLabel = "Terminated";
                 }
 
                 const pct = att.percentage !== null && att.percentage !== undefined ? att.percentage : 0;
@@ -579,7 +579,7 @@
             } else if (filterType === "ACTIVE") {
                 renderTable(cachedAttempts.filter(a => a.status === "IN_PROGRESS"));
             } else if (filterType === "COMPLETED") {
-                renderTable(cachedAttempts.filter(a => a.status === "SUBMITTED" || a.status === "AUTO_SUBMITTED" || a.status === "EXPIRED"));
+                renderTable(cachedAttempts.filter(a => a.status === "SUBMITTED" || a.status === "AUTO_SUBMITTED"));
             } else if (filterType === "TERMINATED") {
                 renderTable(cachedAttempts.filter(a => a.status === "MALPRACTICE_CANCELLED"));
             }
@@ -614,8 +614,7 @@
                 // 2. Session Log: Status
                 const statusEl = document.getElementById("audit-exam-status");
                 if (statusEl) {
-                    const normStatus = (att.status === "EXPIRED" || att.status === "AUTO_SUBMITTED") ? "SUBMITTED" : (att.status || "SUBMITTED").toUpperCase();
-                    statusEl.innerText = normStatus;
+                    statusEl.innerText = (att.status || "SUBMITTED").toUpperCase();
                     if (att.status === "MALPRACTICE_CANCELLED" || att.status === "TERMINATED") {
                         statusEl.style.background = "#FEE2E2";
                         statusEl.style.color = "#DC2626";

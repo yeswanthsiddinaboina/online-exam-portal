@@ -23,7 +23,7 @@ def get_dashboard_metrics():
         
         # Exam attempts counts
         completed_attempts = ExamAttempt.query.filter(
-            ExamAttempt.status.in_(["SUBMITTED", "AUTO_SUBMITTED", "EXPIRED"])
+            ExamAttempt.status.in_(["SUBMITTED", "AUTO_SUBMITTED"])
         ).count()
         
         malpractice_cases = db.session.query(ExamAttempt.student_id).join(ViolationLog).distinct().count()
@@ -338,23 +338,9 @@ def get_reports():
         # Fetch attempts for selected exam (ordered by newest started first)
         attempts = ExamAttempt.query.filter_by(exam_id=exam_id).order_by(ExamAttempt.started_at.desc()).all()
         
-        # Auto-heal any existing EXPIRED attempts to SUBMITTED
-        needs_commit = False
-        for a in attempts:
-            if a.status == "EXPIRED":
-                a.status = "SUBMITTED"
-                if not a.ended_at:
-                    a.ended_at = a.started_at
-                needs_commit = True
-        if needs_commit:
-            try:
-                db.session.commit()
-            except Exception:
-                db.session.rollback()
-
         # Calculate overall stats
         total_students = len(attempts)
-        submitted_attempts = [a for a in attempts if a.status in ["SUBMITTED", "AUTO_SUBMITTED", "EXPIRED"]]
+        submitted_attempts = [a for a in attempts if a.status in ["SUBMITTED", "AUTO_SUBMITTED"]]
         cancelled_attempts = [a for a in attempts if a.status == "MALPRACTICE_CANCELLED"]
         attending_attempts = [a for a in attempts if a.status == "IN_PROGRESS"]
         
@@ -390,7 +376,7 @@ def get_reports():
                 "student_email": a.student.email if a.student else "Unknown",
                 "student_username": a.student.first_name if a.student else "Unknown",
                 "student_userid": a.student.last_name if a.student else "Unknown",
-                "status": "SUBMITTED" if a.status in ["SUBMITTED", "AUTO_SUBMITTED", "EXPIRED"] else a.status,
+                "status": a.status,
                 "score_obtained": score,
                 "percentage": percentage,
                 "total_marks": total_marks_val,
@@ -771,16 +757,6 @@ def get_attempt_details(attempt_id):
 
         exam = attempt.exam
         student = attempt.student
-
-        if attempt.status == "EXPIRED":
-            attempt.status = "SUBMITTED"
-            if not attempt.ended_at:
-                attempt.ended_at = attempt.started_at
-            try:
-                db.session.commit()
-            except Exception:
-                db.session.rollback()
-
         result = Result.query.filter_by(attempt_id=attempt.id).first()
         if not result and attempt.status in ["SUBMITTED", "AUTO_SUBMITTED", "MALPRACTICE_CANCELLED", "EXPIRED"]:
             try:
@@ -884,7 +860,7 @@ def get_attempt_details(attempt_id):
                 "student_email": student.email if student else "Unknown",
                 "exam_title": exam.title if exam else "Examination",
                 "exam_id": attempt.exam_id,
-                "status": "SUBMITTED" if attempt.status in ["SUBMITTED", "AUTO_SUBMITTED", "EXPIRED"] else attempt.status,
+                "status": attempt.status,
                 "started_at": attempt.started_at.isoformat() + "Z" if attempt.started_at else None,
                 "ended_at": attempt.ended_at.isoformat() + "Z" if attempt.ended_at else None,
                 "total_questions": total_questions,
@@ -929,7 +905,7 @@ def get_registrations():
         for student in students:
             # Count exams completed / written by this student
             written_count = ExamAttempt.query.filter_by(student_id=student.id).filter(
-                ExamAttempt.status.in_(["SUBMITTED", "AUTO_SUBMITTED", "EXPIRED"])
+                ExamAttempt.status.in_(["SUBMITTED", "AUTO_SUBMITTED"])
             ).count()
             
             not_attempted_count = max(0, active_exams_count - written_count)
@@ -1110,93 +1086,6 @@ def reject_registration(student_id):
             "success": False,
             "error_code": "REJECT_REGISTRATION_FAILED",
             "message": "Failed to reject student registration."
-        }), 500
-
-
-@admin_bp.route("/registrations/<int:student_id>/course", methods=["PUT", "PATCH", "POST"])
-@admin_bp.route("/registrations/<int:student_id>", methods=["PUT", "PATCH"])
-@token_required
-@role_required(["admin"])
-def update_student_course(student_id):
-    from backend.models.user import User
-    from backend.models import AuditLog
-
-    student = User.query.filter_by(id=student_id, role="student").first()
-    if not student:
-        return jsonify({
-            "success": False,
-            "error_code": "STUDENT_NOT_FOUND",
-            "message": "Student record not found."
-        }), 404
-
-    data = request.get_json(silent=True) or {}
-    new_course = data.get("course")
-    if not new_course or not str(new_course).strip():
-        return jsonify({
-            "success": False,
-            "error_code": "INVALID_COURSE",
-            "message": "Course selection is required."
-        }), 400
-
-    course_clean = str(new_course).strip()
-    course_map = {
-        "aptitude": "Aptitude",
-        "python": "Python",
-        "java": "Java",
-        "drive": "Aptitude"
-    }
-    canonical_course = course_map.get(course_clean.lower(), course_clean)
-    if canonical_course not in ["Aptitude", "Python", "Java"]:
-        return jsonify({
-            "success": False,
-            "error_code": "INVALID_COURSE",
-            "message": f"Invalid course '{new_course}'. Valid courses are: Aptitude, Python, Java."
-        }), 400
-
-    old_course = student.course or "Python"
-    student.course = canonical_course
-
-    try:
-        current_admin = getattr(request, "current_user", None)
-        admin_id = current_admin.id if current_admin else None
-        audit = AuditLog(
-            user_id=student.id,
-            action="STUDENT_COURSE_UPDATED",
-            ip_address=request.remote_addr,
-            user_agent=request.user_agent.string if request.user_agent else None
-        )
-        audit.details = {
-            "admin_user_id": admin_id,
-            "student_email": student.email,
-            "student_name": student.first_name,
-            "old_course": old_course,
-            "new_course": canonical_course
-        }
-        db.session.add(audit)
-    except Exception as e:
-        logger.warning(f"Could not record course update audit log: {str(e)}")
-
-    try:
-        db.session.commit()
-        logger.info(f"Admin updated course for student {student.email} (ID: {student.id}) from '{old_course}' to '{canonical_course}'")
-        return jsonify({
-            "success": True,
-            "message": f"Successfully updated course to {canonical_course} for candidate {student.first_name}.",
-            "student": {
-                "id": student.id,
-                "first_name": student.first_name,
-                "last_name": student.last_name,
-                "email": student.email,
-                "course": student.course
-            }
-        }), 200
-    except Exception as e:
-        db.session.rollback()
-        logger.error(f"Failed to update student course: {str(e)}")
-        return jsonify({
-            "success": False,
-            "error_code": "UPDATE_COURSE_FAILED",
-            "message": f"Failed to update student course: {str(e)}"
         }), 500
 
 
