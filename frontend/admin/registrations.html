@@ -194,6 +194,45 @@
             border-color: var(--accent-danger);
             transform: translateY(-1px);
         }
+
+        .btn-action-edit {
+            background-color: #F0FDF4;
+            color: var(--primary-green);
+            border: 1px solid #BBF7D0;
+            padding: 0.28rem 0.55rem;
+            font-size: 0.76rem;
+            font-weight: 700;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            white-space: nowrap;
+        }
+
+        .btn-action-edit:hover {
+            background-color: var(--primary-green);
+            color: #FFFFFF;
+            border-color: var(--primary-green);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(14, 159, 110, 0.25);
+        }
+
+        .course-badge-clickable {
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            user-select: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .course-badge-clickable:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+            filter: brightness(0.96);
+        }
     </style>
 </head>
 <body>
@@ -420,6 +459,69 @@
                 <button class="btn btn-secondary" onclick="closeSignOutModal()" style="flex: 1;">Cancel</button>
                 <button class="btn btn-primary" onclick="handleLogout()" style="flex: 1; background: var(--primary-green);">Yes, Sign Out</button>
             </div>
+        </div>
+    </div>
+
+    <!-- EDIT STUDENT COURSE MODAL -->
+    <div class="modal-backdrop" id="edit-course-modal" onclick="if(event.target === this) closeEditCourseModal();">
+        <div class="modal-content" style="max-width: 480px; text-align: left;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                <div style="display: flex; align-items: center; gap: 0.65rem;">
+                    <div style="width: 38px; height: 38px; border-radius: 10px; background: #ECFDF5; color: var(--primary-green); display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+                        ✏️
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.2rem; color: var(--text-primary); font-family: var(--font-heading);">Edit Student Course</h3>
+                        <p style="margin: 0; font-size: 0.8rem; color: var(--text-secondary);">Change the candidate's enrolled course</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeEditCourseModal()" style="background: none; border: none; font-size: 1.3rem; color: var(--text-muted); cursor: pointer; padding: 0.25rem;" title="Close">✕</button>
+            </div>
+
+            <!-- Student Summary Card -->
+            <div style="background: #F9FAFB; border: 1px solid var(--border-subtle); border-radius: 12px; padding: 0.85rem 1rem; margin-bottom: 1.25rem; font-size: 0.85rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.35rem;">
+                    <span style="color: var(--text-secondary);">Candidate:</span>
+                    <strong id="edit-modal-student-name" style="color: var(--text-primary);">-</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.35rem;">
+                    <span style="color: var(--text-secondary);">User ID:</span>
+                    <span id="edit-modal-student-userid" style="font-family: monospace; font-weight: 700; color: var(--forest-dark);">-</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.35rem;">
+                    <span style="color: var(--text-secondary);">Gmail ID:</span>
+                    <span id="edit-modal-student-email" style="color: var(--text-primary);">-</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: var(--text-secondary);">Current Course:</span>
+                    <span id="edit-modal-current-course" class="badge" style="font-size: 0.74rem; padding: 0.2rem 0.55rem; background: #EEF2FF; color: #4F46E5; font-weight: 700;">-</span>
+                </div>
+            </div>
+
+            <form id="edit-course-form" onsubmit="handleUpdateCourseSubmit(event)">
+                <input type="hidden" id="edit-student-id">
+                
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label class="form-label" for="edit-student-course-select" style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary); margin-bottom: 0.45rem; display: block;">
+                        Select New Enrolled Course <span style="color: var(--accent-danger);">*</span>
+                    </label>
+                    <select id="edit-student-course-select" class="form-control" required style="width: 100%; padding: 0.65rem 0.85rem; font-size: 0.92rem; border-radius: 8px; border: 1px solid var(--border-subtle); background: #FFFFFF; font-weight: 600; cursor: pointer;">
+                        <option value="Aptitude">📚 Aptitude</option>
+                        <option value="Python">🐍 Python</option>
+                        <option value="Java">☕ Java</option>
+                    </select>
+                    <p style="margin: 0.45rem 0 0 0; font-size: 0.78rem; color: var(--text-secondary); line-height: 1.4;">
+                        Updating the course will immediately update the candidate's stream and give them access to exams assigned to the selected course.
+                    </p>
+                </div>
+
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditCourseModal()" style="padding: 0.55rem 1.1rem; font-size: 0.85rem;">Cancel</button>
+                    <button type="submit" id="btn-save-course" class="btn btn-primary" style="padding: 0.55rem 1.35rem; font-size: 0.85rem; background: var(--primary-green); font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem;">
+                        <span>💾</span> Save Course
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -666,8 +768,12 @@
                         <td class="col-userid">${r.last_name || 'Not Assigned'}</td>
                         <td class="col-candidate">${r.first_name || 'Candidate'}</td>
                         <td class="col-course">
-                            <span class="badge" style="${['drive', 'aptitude'].includes((r.course || '').toLowerCase()) ? 'background: #F5F3FF; color: #7C3AED; border: 1px solid #DDD6FE; font-weight: 700;' : 'background: #E0F2FE; color: #0369A1; font-weight: 700;'} font-size: 0.74rem; padding: 0.2rem 0.5rem; border-radius: 6px;">
+                            <span class="badge course-badge-clickable" onclick="openEditCourseModal(${r.id})" title="Click to edit enrolled course" style="${['drive', 'aptitude'].includes((r.course || '').toLowerCase()) ? 'background: #F5F3FF; color: #7C3AED; border: 1px solid #DDD6FE; font-weight: 700;' : 'background: #E0F2FE; color: #0369A1; font-weight: 700;'} font-size: 0.74rem; padding: 0.2rem 0.5rem; border-radius: 6px;">
                                 📚 ${r.course || 'Python'}
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.7; margin-left: 2px;">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                </svg>
                             </span>
                         </td>
                         <td class="col-email" title="${r.email}">${r.email}</td>
@@ -682,6 +788,13 @@
                                     <button class="btn-action-approve" onclick="approveStudent(${r.id})" title="Approve Student Account">Approve</button>
                                     <button class="btn-action-reject" onclick="rejectStudent(${r.id})" title="Reject Student Account">Reject</button>
                                 ` : ''}
+                                <button class="btn-action-edit" onclick="openEditCourseModal(${r.id})" title="Edit Student Enrolled Course">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                    </svg>
+                                    <span>Edit</span>
+                                </button>
                                 <button class="btn btn-delete btn-delete-icon" onclick="deleteStudent(${r.id})" title="Delete Candidate (Allows Re-registration)" style="width: 28px; height: 28px; min-width: 28px;">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <polyline points="3 6 5 6 21 6"></polyline>
@@ -695,6 +808,84 @@
                     </tr>
                 `;
             }).join('');
+        }
+
+        function openEditCourseModal(studentId) {
+            const student = allRegistrations.find(r => r.id === studentId);
+            if (!student) {
+                alert("Student details not found.");
+                return;
+            }
+
+            document.getElementById("edit-student-id").value = student.id;
+            document.getElementById("edit-modal-student-name").innerText = student.first_name || 'Candidate';
+            document.getElementById("edit-modal-student-userid").innerText = student.last_name || 'Not Assigned';
+            document.getElementById("edit-modal-student-email").innerText = student.email || '-';
+            
+            const currentCourse = student.course || 'Python';
+            document.getElementById("edit-modal-current-course").innerText = currentCourse;
+
+            const courseSelect = document.getElementById("edit-student-course-select");
+            const scLower = currentCourse.toLowerCase();
+            if (['drive', 'aptitude'].includes(scLower)) {
+                courseSelect.value = 'Aptitude';
+            } else if (scLower === 'java') {
+                courseSelect.value = 'Java';
+            } else {
+                courseSelect.value = 'Python';
+            }
+
+            document.getElementById("edit-course-modal").classList.add("active");
+        }
+
+        function closeEditCourseModal() {
+            const modal = document.getElementById("edit-course-modal");
+            if (modal) modal.classList.remove("active");
+        }
+
+        async function handleUpdateCourseSubmit(event) {
+            event.preventDefault();
+            const studentId = document.getElementById("edit-student-id").value;
+            const newCourse = document.getElementById("edit-student-course-select").value;
+            const saveBtn = document.getElementById("btn-save-course");
+
+            if (!studentId || !newCourse) {
+                alert("Please select a valid course.");
+                return;
+            }
+
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = `<span>⏳</span> Saving...`;
+            }
+
+            try {
+                const res = await API.put(`/admin/registrations/${studentId}/course`, {
+                    course: newCourse
+                });
+
+                if (res.success) {
+                    closeEditCourseModal();
+                    // Update student in local dataset immediately for responsive UX
+                    const target = allRegistrations.find(r => r.id == studentId);
+                    if (target) {
+                        target.course = newCourse;
+                    }
+                    renderRegistrations();
+                    alert(`✓ ${res.message || 'Course updated successfully!'}`);
+                    await refreshAll();
+                } else {
+                    alert(res.message || "Failed to update candidate course.");
+                }
+            } catch (err) {
+                console.error("Error updating course:", err);
+                alert("An error occurred while updating the candidate course.");
+            } finally {
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = `<span>💾</span> Save Course`;
+                }
+            }
         }
 
         async function approveStudent(studentId) {

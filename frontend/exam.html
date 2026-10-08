@@ -1040,6 +1040,30 @@
         </div>
     </div>
 
+    <!-- 8. AUTOMATIC SUBMISSION (TIME'S UP) POPUP MODAL -->
+    <div class="modal-backdrop" id="auto-submit-modal" style="z-index: 10005;">
+        <div class="modal-content" style="text-align: center; max-width: 460px; padding: 2.25rem 2rem; border-radius: 20px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);">
+            <div style="width: 76px; height: 76px; border-radius: 50%; background: #ECFDF5; border: 3px solid #10B981; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin: 0 auto 1.25rem auto;">
+                ✅
+            </div>
+            <h3 style="margin-bottom: 0.5rem; color: var(--forest-dark); font-family: var(--font-heading); font-size: 1.45rem;">
+                Time Completed!
+            </h3>
+            <div style="display: inline-block; background: #D1FAE5; color: #047857; font-weight: 800; font-size: 0.85rem; padding: 0.35rem 0.85rem; border-radius: 9999px; margin-bottom: 1rem; border: 1px solid rgba(16, 185, 129, 0.3);">
+                EXAM AUTOMATICALLY SUBMITTED
+            </div>
+            <p style="color: var(--text-secondary); line-height: 1.6; font-size: 0.92rem; margin-bottom: 1.75rem;">
+                Your examination duration has ended. All your recorded responses have been successfully saved and submitted for evaluation.<br><br>
+                Redirecting to results in <strong id="auto-redirect-countdown" style="color: var(--primary-green); font-size: 1.1rem;">3</strong> seconds...
+            </p>
+            <div style="display: flex; justify-content: center;">
+                <button type="button" id="btn-view-results-auto" onclick="proceedToResultsAfterAutoSubmit()" style="padding: 0.8rem 1.8rem; font-size: 0.95rem; background: var(--primary-green); color: #FFFFFF; border: none; font-weight: 700; border-radius: 10px; cursor: pointer; box-shadow: 0 4px 12px rgba(14, 159, 110, 0.3);">
+                    View Results Now →
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="js/app.js"></script>
     <script>
         checkAuth("student");
@@ -1455,16 +1479,20 @@
                     if (res.action === "TERMINATE" || res.action === "WARNING" || res.status === "MALPRACTICE_CANCELLED") {
                         showWarningModal(res.message, res.violation_log_id);
                     }
-                } else if (res.error_code === "SESSION_EXPIRED") {
-                    triggerTermination("Your examination session has expired.");
+                } else if (res.error_code === "SESSION_EXPIRED" || res.status === "SUBMITTED" || res.status === "AUTO_SUBMITTED") {
+                    autoSubmitOnTimeUp();
                 }
             }, 15000); // Optimized for 200+ concurrent users: cuts heartbeat load from 40 req/s to 13 req/s
         }
 
-        // Local UI Countdown Clock
+        // Local UI Countdown Clock with Automatic Submission
         function startLocalTimer() {
             examTimer = setInterval(() => {
-                if (timeRemaining <= 0) return;
+                if (timeRemaining <= 0) {
+                    clearInterval(examTimer);
+                    autoSubmitOnTimeUp();
+                    return;
+                }
                 
                 timeRemaining--;
                 
@@ -1478,7 +1506,96 @@
                         timerEl.style.color = "var(--accent-danger)";
                     }
                 }
+
+                if (timeRemaining <= 0) {
+                    clearInterval(examTimer);
+                    autoSubmitOnTimeUp();
+                }
             }, 1000);
+        }
+
+        let hasAutoSubmitted = false;
+
+        async function autoSubmitOnTimeUp() {
+            if (hasAutoSubmitted) return;
+            hasAutoSubmitted = true;
+            isSubmitting = true;
+
+            // Immediately stop local timer and heartbeat
+            clearInterval(examTimer);
+            clearInterval(heartbeatTimer);
+
+            // Teardown proctoring & sandboxing to avoid any further warnings or interruptions
+            SandboxEnforcer.destroy();
+            if (typeof AIProctorEngine !== "undefined") {
+                AIProctorEngine.stop();
+            }
+            SystemPreCheck.releaseMedia();
+
+            // Disable all interactive buttons and inputs
+            document.querySelectorAll("button").forEach(b => {
+                if (b.id !== "btn-view-results-auto") b.disabled = true;
+            });
+            document.querySelectorAll("input, textarea").forEach(inp => inp.disabled = true);
+
+            // Close any open modals (warning modal, submit-confirm modal, termination modal)
+            document.querySelectorAll(".modal-backdrop").forEach(m => {
+                if (m.id !== "auto-submit-modal") m.classList.remove("active");
+            });
+
+            // Immediately display the "Time Completed! Exam Submitted" popup on the candidate's screen
+            const autoModal = document.getElementById("auto-submit-modal");
+            if (autoModal) autoModal.classList.add("active");
+
+            // Save the last active question response immediately if un-saved
+            try {
+                if (questions.length > 0 && currentIndex < questions.length) {
+                    const q = questions[currentIndex];
+                    await API.post(`/attempts/${currentAttemptId}/answer`, {
+                        session_token: currentSessionToken,
+                        question_id: q.id,
+                        selected_answers: selectedAnswersMap[q.id] || [],
+                        text_answer: textAnswersMap[q.id] || ""
+                    });
+                }
+            } catch (e) {
+                console.warn("Could not save final question response on time up:", e);
+            }
+
+            // Submit the exam attempt to backend so status is SUBMITTED
+            const tempAttemptId = currentAttemptId;
+            try {
+                await API.post(`/attempts/${tempAttemptId}/submit`, {
+                    session_token: currentSessionToken
+                });
+            } catch (e) {
+                console.error("Auto submit API error:", e);
+            }
+
+            // Clean up session storage
+            localStorage.setItem("last_evaluated_attempt_id", tempAttemptId);
+            localStorage.removeItem("attempt_id");
+            localStorage.removeItem("session_token");
+            localStorage.removeItem("selected_exam_id");
+            localStorage.removeItem("verified_face_profile");
+
+            // 3-second countdown before smooth redirect to result screen
+            let secondsLeft = 3;
+            const countdownEl = document.getElementById("auto-redirect-countdown");
+            const redirectInterval = setInterval(() => {
+                secondsLeft--;
+                if (countdownEl) countdownEl.innerText = secondsLeft;
+                if (secondsLeft <= 0) {
+                    clearInterval(redirectInterval);
+                    window.location.href = `result.html?attempt_id=${tempAttemptId}`;
+                }
+            }, 1000);
+
+            // Manual button click handler
+            window.proceedToResultsAfterAutoSubmit = () => {
+                clearInterval(redirectInterval);
+                window.location.href = `result.html?attempt_id=${tempAttemptId}`;
+            };
         }
 
         function showWarningModal(message, logId) {

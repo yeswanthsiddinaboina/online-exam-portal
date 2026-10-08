@@ -253,7 +253,7 @@ class StudentExamMarksPDFService:
             percentage = result.percentage if result else 0.0
             passed = result.passed if result else (percentage >= 50.0)
             result_status = "PASSED" if passed else "FAILED"
-            exam_status = att.status or "SUBMITTED"
+            exam_status = "SUBMITTED" if (att.status in ["SUBMITTED", "AUTO_SUBMITTED", "EXPIRED"]) else (att.status or "SUBMITTED")
 
             # Calculate violation count for attempt
             violation_count = len(att.violations) if (hasattr(att, 'violations') and att.violations is not None) else (ViolationLog.query.filter_by(attempt_id=att.id).count() if att.id else 0)
