@@ -301,6 +301,15 @@ def logout():
         "message": "Logged out successfully."
     }), 200
 
+@auth_bp.route("/me", methods=["GET"])
+@token_required
+def get_current_user():
+    user = request.current_user
+    return jsonify({
+        "success": True,
+        "user": user.to_dict()
+    }), 200
+
 @auth_bp.route("/complete-first-login", methods=["POST"])
 @token_required
 def complete_first_login():

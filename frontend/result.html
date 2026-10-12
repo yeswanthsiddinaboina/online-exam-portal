@@ -110,7 +110,8 @@
                 }
 
                 if (r.ended_at) {
-                    document.getElementById("res-date").innerText = `Completed on: ${new Date(r.ended_at).toLocaleString()}`;
+                    const submitMethod = r.status === "AUTO_SUBMITTED" ? " (Auto-Submitted on Time Up)" : "";
+                    document.getElementById("res-date").innerText = `Completed on: ${new Date(r.ended_at).toLocaleString()}${submitMethod}`;
                 }
 
                 // Render violations panel if any exist

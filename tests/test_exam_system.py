@@ -144,7 +144,7 @@ class SecureExamSystemTests(unittest.TestCase):
         self.assertFalse(res.passed)
 
     def test_violation_engine_cooldown_and_limits(self):
-        """Tests that violation engine enforces limits, respects cooldowns, and triggers termination."""
+        """Tests that violation engine enforces limits, respects cooldowns, and issues warnings without terminating."""
         self.sec_cfg.cooldown_seconds = 0
         db.session.commit()
 
@@ -162,14 +162,14 @@ class SecureExamSystemTests(unittest.TestCase):
         self.assertEqual(res1["action"], "WARNING")
         self.assertEqual(res1["violation_count"], 1)
 
-        # 2nd violation (TAB_SWITCH) - limit is 2. This should trigger termination!
+        # 2nd violation (TAB_SWITCH) - limit is 2. With violation termination disabled, issues warning and remains IN_PROGRESS!
         res2 = ViolationEngine.process_event(attempt.id, "TAB_SWITCH", 1.0)
-        self.assertEqual(res2["action"], "TERMINATE")
+        self.assertEqual(res2["action"], "WARNING")
         self.assertEqual(res2["violation_count"], 2)
 
-        # Attempt should now be flagged malpractice
+        # Attempt should remain IN_PROGRESS (not MALPRACTICE_CANCELLED)
         db.session.refresh(attempt)
-        self.assertEqual(attempt.status, "MALPRACTICE_CANCELLED")
+        self.assertEqual(attempt.status, "IN_PROGRESS")
 
     def test_violation_cooldown_deduplication(self):
         """Tests that events triggered within the cooldown interval do not increment counts."""
@@ -192,7 +192,7 @@ class SecureExamSystemTests(unittest.TestCase):
         self.assertEqual(res2["message"], "Duplicate event within cooldown. Action repeated.")
 
     def test_strict_warning_policy_terminates_on_breach(self):
-        """Mobile cap is 2 warnings, face cap is 3 warnings, and termination occurs on the breach threshold."""
+        """Mobile cap is 2 warnings, face cap is 3 warnings, and warnings continue without terminating on breach."""
         self.sec_cfg.cooldown_seconds = 0
         self.sec_cfg.mobile_limit = 2
         self.sec_cfg.head_turn_limit = 3
@@ -213,7 +213,9 @@ class SecureExamSystemTests(unittest.TestCase):
         r3 = ViolationEngine.process_event(attempt.id, "PHONE_DETECTED", 0.99)
         self.assertEqual(r1["action"], "WARNING")
         self.assertEqual(r2["action"], "WARNING")
-        self.assertEqual(r3["action"], "TERMINATE")
+        self.assertEqual(r3["action"], "WARNING")
+        db.session.refresh(attempt)
+        self.assertEqual(attempt.status, "IN_PROGRESS")
 
         attempt2 = ExamAttempt(
             student_id=self.student.id,
@@ -231,7 +233,81 @@ class SecureExamSystemTests(unittest.TestCase):
         self.assertEqual(f1["action"], "WARNING")
         self.assertEqual(f2["action"], "WARNING")
         self.assertEqual(f3["action"], "WARNING")
-        self.assertEqual(f4["action"], "TERMINATE")
+        self.assertEqual(f4["action"], "WARNING")
+        db.session.refresh(attempt2)
+        self.assertEqual(attempt2.status, "IN_PROGRESS")
+
+    def test_violations_exceeding_threshold_do_not_terminate_exam_and_allow_submission(self):
+        """Verifies that when violation counts exceed limits, no termination occurs, warnings are issued, and student can complete and submit the exam."""
+        self.sec_cfg.cooldown_seconds = 0
+        self.sec_cfg.tab_switch_limit = 2
+        self.sec_cfg.mobile_limit = 1
+        db.session.commit()
+
+        login_res = self.client.post("/api/auth/login", json={
+            "email": "student@test.com",
+            "password": "StudentPass123!"
+        })
+        token = login_res.json["token"]
+        headers = {"Authorization": f"Bearer {token}"}
+
+        start_res = self.client.post(f"/api/exams/{self.exam.id}/start", headers=headers)
+        attempt_id = start_res.json["attempt"]["id"]
+        session_token = start_res.json["attempt"]["session_token"]
+
+        # Post 4 tab switch violations (threshold is 2)
+        for i in range(1, 5):
+            res = self.client.post("/api/proctor/events", json={
+                "attempt_id": attempt_id,
+                "session_token": session_token,
+                "event_type": "TAB_SWITCH",
+                "confidence": 1.0
+            }, headers=headers)
+            self.assertEqual(res.status_code, 200)
+            self.assertEqual(res.json["action"], "WARNING")
+            self.assertEqual(res.json["violation_count"], i)
+
+        # Post 2 phone violations (threshold is 1)
+        for j in range(1, 3):
+            res_p = self.client.post("/api/proctor/events", json={
+                "attempt_id": attempt_id,
+                "session_token": session_token,
+                "event_type": "PHONE_DETECTED",
+                "confidence": 0.99
+            }, headers=headers)
+            self.assertEqual(res_p.status_code, 200)
+            self.assertEqual(res_p.json["action"], "WARNING")
+            self.assertEqual(res_p.json["violation_count"], j)
+
+        # Verify attempt is STILL IN_PROGRESS
+        attempt = ExamAttempt.query.get(attempt_id)
+        self.assertEqual(attempt.status, "IN_PROGRESS")
+        self.assertIsNone(attempt.ended_at)
+
+        # Student saves an answer
+        save_res = self.client.post(f"/api/attempts/{attempt_id}/answer", json={
+            "session_token": session_token,
+            "question_id": self.q1.id,
+            "selected_answers": ["B"]
+        }, headers=headers)
+        self.assertEqual(save_res.status_code, 200)
+
+        # Student submits the exam
+        submit_res = self.client.post(f"/api/attempts/{attempt_id}/submit", json={
+            "session_token": session_token,
+            "submission_reason": "MANUAL"
+        }, headers=headers)
+        self.assertEqual(submit_res.status_code, 200)
+        self.assertEqual(submit_res.json["status"], "SUBMITTED")
+
+        # Verify evaluated marks
+        result = Result.query.filter_by(attempt_id=attempt_id).first()
+        self.assertIsNotNone(result)
+        self.assertEqual(result.total_score, 2.0)
+
+        # Verify violation logs are preserved in DB
+        v_count = ViolationLog.query.filter_by(attempt_id=attempt_id).count()
+        self.assertEqual(v_count, 6) # 4 tab switches + 2 phone detections
 
     # --- INTEGRATION & SECURITY TESTS ---
     def test_unauthorized_api_access(self):
@@ -788,6 +864,277 @@ class SecureExamSystemTests(unittest.TestCase):
         self.assertEqual(StudentAnswer.query.filter_by(question_id=q2.id).count(), 0)
         # Verify q1 is still present and valid
         self.assertIsNotNone(Question.query.get(self.q1.id))
+
+    def test_admin_update_student_course(self):
+        """Tests that admins can update a student's course, while non-admins are blocked."""
+        # 1. Admin login
+        admin_login = self.client.post("/api/auth/login", json={
+            "email": "admin@test.com",
+            "password": "AdminPass123!"
+        })
+        admin_token = admin_login.json["token"]
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+
+        # 2. Student login
+        student_login = self.client.post("/api/auth/login", json={
+            "email": "student@test.com",
+            "password": "StudentPass123!"
+        })
+        student_token = student_login.json["token"]
+        student_headers = {"Authorization": f"Bearer {student_token}"}
+
+        # Ensure student initial course is Python
+        self.student.course = "Python"
+        db.session.commit()
+
+        # 3. Admin updates course to Aptitude
+        update_res = self.client.put(
+            f"/api/admin/registrations/{self.student.id}/course",
+            json={"course": "Aptitude"},
+            headers=admin_headers
+        )
+        self.assertEqual(update_res.status_code, 200)
+        self.assertTrue(update_res.json["success"])
+        self.assertEqual(update_res.json["student"]["course"], "Aptitude")
+
+        # Verify DB updated
+        reloaded_student = User.query.get(self.student.id)
+        self.assertEqual(reloaded_student.course, "Aptitude")
+
+        # Verify AuditLog created
+        from backend.models import AuditLog
+        audit = AuditLog.query.filter_by(action="STUDENT_COURSE_UPDATED", user_id=self.admin.id).first()
+        self.assertIsNotNone(audit)
+        self.assertEqual(audit.details["new_course"], "Aptitude")
+
+        # 4. Admin updates course to Java using PATCH
+        patch_res = self.client.patch(
+            f"/api/admin/registrations/{self.student.id}/course",
+            json={"course": "Java"},
+            headers=admin_headers
+        )
+        self.assertEqual(patch_res.status_code, 200)
+        reloaded_student = User.query.get(self.student.id)
+        self.assertEqual(reloaded_student.course, "Java")
+
+        # 5. Invalid course should return 400
+        invalid_res = self.client.put(
+            f"/api/admin/registrations/{self.student.id}/course",
+            json={"course": "InvalidCourse123"},
+            headers=admin_headers
+        )
+        self.assertEqual(invalid_res.status_code, 400)
+        self.assertFalse(invalid_res.json["success"])
+
+        # 6. Student caller should be blocked (403 Forbidden)
+        blocked_res = self.client.put(
+            f"/api/admin/registrations/{self.student.id}/course",
+            json={"course": "Python"},
+            headers=student_headers
+        )
+        self.assertEqual(blocked_res.status_code, 403)
+
+        # 7. Non-existent student should return 404
+        not_found_res = self.client.put(
+            "/api/admin/registrations/99999/course",
+            json={"course": "Python"},
+            headers=admin_headers
+        )
+        self.assertEqual(not_found_res.status_code, 404)
+
+    def test_attempt_status_authoritative_deadline_and_timer(self):
+        """Tests that /attempts/<id>/status returns authoritative deadline and timer without delay."""
+        login_res = self.client.post("/api/auth/login", json={
+            "email": "student@test.com",
+            "password": "StudentPass123!"
+        })
+        token = login_res.json["token"]
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # Start attempt
+        start_res = self.client.post(f"/api/exams/{self.exam.id}/start", headers=headers)
+        self.assertEqual(start_res.status_code, 200)
+        attempt_id = start_res.json["attempt"]["id"]
+
+        # Fetch status
+        status_res = self.client.get(f"/api/attempts/{attempt_id}/status", headers=headers)
+        self.assertEqual(status_res.status_code, 200)
+        data = status_res.json
+        self.assertTrue(data["success"])
+        self.assertEqual(data["duration_seconds"], self.exam.duration_minutes * 60)
+        self.assertIsNotNone(data["deadline"])
+        self.assertIsNotNone(data["server_time"])
+        self.assertGreater(data["time_remaining_seconds"], 0)
+        self.assertEqual(data["status"], "IN_PROGRESS")
+
+    def test_automatic_submission_when_time_completed(self):
+        """Tests that auto-submitting with TIME_COMPLETED marks status as AUTO_SUBMITTED and evaluates saved answers."""
+        login_res = self.client.post("/api/auth/login", json={
+            "email": "student@test.com",
+            "password": "StudentPass123!"
+        })
+        token = login_res.json["token"]
+        headers = {"Authorization": f"Bearer {token}"}
+
+        start_res = self.client.post(f"/api/exams/{self.exam.id}/start", headers=headers)
+        attempt_id = start_res.json["attempt"]["id"]
+        session_token = start_res.json["attempt"]["session_token"]
+
+        # Save correct answer for q1
+        save_res = self.client.post(f"/api/attempts/{attempt_id}/answer", json={
+            "session_token": session_token,
+            "question_id": self.q1.id,
+            "selected_answers": ["B"]
+        }, headers=headers)
+        self.assertEqual(save_res.status_code, 200)
+
+        # Submit with TIME_COMPLETED reason
+        submit_res = self.client.post(f"/api/attempts/{attempt_id}/submit", json={
+            "session_token": session_token,
+            "submission_reason": "TIME_COMPLETED"
+        }, headers=headers)
+        self.assertEqual(submit_res.status_code, 200)
+        self.assertTrue(submit_res.json["success"])
+        self.assertEqual(submit_res.json["status"], "AUTO_SUBMITTED")
+        self.assertIn("automatically submitted successfully", submit_res.json["message"])
+
+        # Check DB attempt and result
+        attempt = ExamAttempt.query.get(attempt_id)
+        self.assertEqual(attempt.status, "AUTO_SUBMITTED")
+        result = Result.query.filter_by(attempt_id=attempt_id).first()
+        self.assertIsNotNone(result)
+        self.assertEqual(result.total_score, 2.0)
+
+    def test_submission_idempotency(self):
+        """Tests that repeated submit calls return HTTP 200 without error."""
+        login_res = self.client.post("/api/auth/login", json={
+            "email": "student@test.com",
+            "password": "StudentPass123!"
+        })
+        token = login_res.json["token"]
+        headers = {"Authorization": f"Bearer {token}"}
+
+        start_res = self.client.post(f"/api/exams/{self.exam.id}/start", headers=headers)
+        attempt_id = start_res.json["attempt"]["id"]
+        session_token = start_res.json["attempt"]["session_token"]
+
+        # First submit
+        res1 = self.client.post(f"/api/attempts/{attempt_id}/submit", json={
+            "session_token": session_token,
+            "submission_reason": "MANUAL"
+        }, headers=headers)
+        self.assertEqual(res1.status_code, 200)
+        self.assertEqual(res1.json["status"], "SUBMITTED")
+
+        # Second submit (idempotent retry)
+        res2 = self.client.post(f"/api/attempts/{attempt_id}/submit", json={
+            "session_token": session_token,
+            "submission_reason": "MANUAL"
+        }, headers=headers)
+        self.assertEqual(res2.status_code, 200)
+        self.assertTrue(res2.json["success"])
+
+    def test_session_manager_auto_submission_on_session_expired(self):
+        """Tests that SessionManager.verify_session auto-submits expired attempts rather than leaving them broken."""
+        login_res = self.client.post("/api/auth/login", json={
+            "email": "student@test.com",
+            "password": "StudentPass123!"
+        })
+        token = login_res.json["token"]
+        headers = {"Authorization": f"Bearer {token}"}
+
+        start_res = self.client.post(f"/api/exams/{self.exam.id}/start", headers=headers)
+        attempt_id = start_res.json["attempt"]["id"]
+        session_token = start_res.json["attempt"]["session_token"]
+
+        # Backdate started_at past duration + grace period
+        attempt = ExamAttempt.query.get(attempt_id)
+        attempt.started_at = datetime.datetime.utcnow() - datetime.timedelta(minutes=45)
+        db.session.commit()
+
+        # verify_session should detect expiration, auto-submit, and return SESSION_EXPIRED
+        is_valid, err = SessionManager.verify_session(attempt_id, self.student.id, session_token)
+        self.assertFalse(is_valid)
+        self.assertEqual(err, "SESSION_EXPIRED")
+
+        reloaded = ExamAttempt.query.get(attempt_id)
+        self.assertEqual(reloaded.status, "AUTO_SUBMITTED")
+
+    def test_heartbeat_clean_auto_submitted_response_on_expiration(self):
+        """Tests that heartbeat gracefully returns HTTP 200 with AUTO_SUBMITTED when session expires."""
+        login_res = self.client.post("/api/auth/login", json={
+            "email": "student@test.com",
+            "password": "StudentPass123!"
+        })
+        token = login_res.json["token"]
+        headers = {"Authorization": f"Bearer {token}"}
+
+        start_res = self.client.post(f"/api/exams/{self.exam.id}/start", headers=headers)
+        attempt_id = start_res.json["attempt"]["id"]
+        session_token = start_res.json["attempt"]["session_token"]
+
+        # Backdate attempt
+        attempt = ExamAttempt.query.get(attempt_id)
+        attempt.started_at = datetime.datetime.utcnow() - datetime.timedelta(minutes=45)
+        db.session.commit()
+
+        hb_res = self.client.post("/api/exam/heartbeat", json={
+            "attempt_id": attempt_id,
+            "session_token": session_token
+        }, headers=headers)
+        self.assertEqual(hb_res.status_code, 200)
+        self.assertTrue(hb_res.json["success"])
+        self.assertEqual(hb_res.json["status"], "AUTO_SUBMITTED")
+        self.assertEqual(hb_res.json["error_code"], "SESSION_EXPIRED")
+        self.assertEqual(hb_res.json["time_remaining_seconds"], 0)
+
+    def test_student_profile_sync_after_admin_course_update(self):
+        """Tests that /api/auth/me and /api/exams return the updated course immediately after admin changes it."""
+        # 1. Admin login
+        admin_login = self.client.post("/api/auth/login", json={
+            "email": "admin@test.com",
+            "password": "AdminPass123!"
+        })
+        admin_token = admin_login.json["token"]
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+
+        # 2. Student login (initial course: Drive)
+        self.student.course = "Drive"
+        self.student.registration_status = "APPROVED"
+        db.session.commit()
+
+        student_login = self.client.post("/api/auth/login", json={
+            "email": "student@test.com",
+            "password": "StudentPass123!"
+        })
+        student_token = student_login.json["token"]
+        student_headers = {"Authorization": f"Bearer {student_token}"}
+
+        # Verify initial /auth/me returns Drive
+        me_res1 = self.client.get("/api/auth/me", headers=student_headers)
+        self.assertEqual(me_res1.status_code, 200)
+        self.assertEqual(me_res1.json["user"]["course"], "Drive")
+
+        # 3. Admin updates student's course to Python
+        update_res = self.client.put(
+            f"/api/admin/registrations/{self.student.id}/course",
+            json={"course": "Python"},
+            headers=admin_headers
+        )
+        self.assertEqual(update_res.status_code, 200)
+
+        # 4. Student queries /auth/me without re-logging in -> must return Python!
+        me_res2 = self.client.get("/api/auth/me", headers=student_headers)
+        self.assertEqual(me_res2.status_code, 200)
+        self.assertEqual(me_res2.json["user"]["course"], "Python")
+
+        # 5. Student queries /api/exams -> must return Python exams, student_course=Python, and access_status=APPROVED
+        exams_res = self.client.get("/api/exams", headers=student_headers)
+        self.assertEqual(exams_res.status_code, 200)
+        self.assertEqual(exams_res.json["student_course"], "Python")
+        self.assertEqual(exams_res.json["user"]["course"], "Python")
+        self.assertGreater(len(exams_res.json["exams"]), 0)
+        self.assertEqual(exams_res.json["exams"][0]["access_status"], "APPROVED")
 
 if __name__ == "__main__":
     unittest.main()

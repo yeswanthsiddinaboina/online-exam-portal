@@ -41,6 +41,14 @@ def heartbeat():
     # Verify student session and limits
     is_valid, session_or_err = SessionManager.verify_session(attempt_id, student.id, session_token)
     if not is_valid:
+        if session_or_err == "SESSION_EXPIRED":
+            return jsonify({
+                "success": True,
+                "error_code": "SESSION_EXPIRED",
+                "status": "AUTO_SUBMITTED",
+                "time_remaining_seconds": 0,
+                "message": "Time completed. Session has expired and been automatically submitted."
+            }), 200
         return jsonify({
             "success": False,
             "error_code": session_or_err,
@@ -77,6 +85,9 @@ def heartbeat():
         "status": attempt.status,
         "time_remaining_seconds": time_remaining,
         "action": action,
+        "violation_count": res.get("violation_count") if 'res' in locals() else None,
+        "limit": res.get("limit") if 'res' in locals() else None,
+        "event_type": res.get("event_type") if 'res' in locals() else None,
         "message": message,
         "violation_log_id": violation_log_id
     }), 200
@@ -117,6 +128,8 @@ def report_event():
         "success": True,
         "action": result.get("action", "LOG"),
         "violation_count": result.get("violation_count", 0),
+        "limit": result.get("limit"),
+        "event_type": result.get("event_type", event_type),
         "violation_log_id": result.get("violation_log_id"),
         "message": result.get("message", "")
     }), 200

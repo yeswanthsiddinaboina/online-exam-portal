@@ -51,18 +51,26 @@
                 <div style="display: flex; flex-direction: column; justify-content: space-between;">
                     <!-- Step 1 Pane -->
                     <div id="step-1-pane">
-                        <h4 style="margin-bottom: 0.75rem; color: var(--text-primary);">Step 1: Code of Conduct</h4>
-                        <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.75rem; line-height: 1.45;">Please read the proctoring rules before writing the exam:</p>
-                        <ul style="font-size: 0.85rem; color: var(--text-secondary); padding-left: 1.2rem; line-height: 1.6; display: flex; flex-direction: column; gap: 0.4rem;">
-                            <li>🚫 <strong>Immediate Termination</strong> occurs on tab switching or minimized windows.</li>
-                            <li>📷 <strong>Webcam stream</strong> must remain enabled at all times.</li>
-                            <li>👤 <strong>No secondary person</strong> is allowed in the camera frame.</li>
-                            <li>📱 <strong>No electronic devices</strong> (mobile phones, tablets) are permitted.</li>
-                        </ul>
+                        <h4 style="margin-bottom: 0.5rem; color: var(--forest-dark); font-family: var(--font-heading); font-size: 1.05rem;">Step 1: Examination Rules & Environment Checklist</h4>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem; line-height: 1.4;">Review and confirm all environment requirements before proceeding:</p>
+                        <div style="max-height: 190px; overflow-y: auto; padding-right: 0.4rem; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 0.65rem 0.75rem; background: #FAFCFB; margin-bottom: 0.75rem;">
+                            <ol style="font-size: 0.8rem; color: var(--text-primary); padding-left: 1.15rem; line-height: 1.55; display: flex; flex-direction: column; gap: 0.35rem; margin: 0;">
+                                <li><strong>Quiet & Well-Lit Room:</strong> Sit alone in a quiet, well-lit room.</li>
+                                <li><strong>Neutral Background:</strong> Use a plain, neutral background wherever possible.</li>
+                                <li><strong>Webcam Visibility:</strong> Position your webcam so your face is clearly visible throughout the exam.</li>
+                                <li><strong>No Prohibited Devices:</strong> Keep mobile phones, tablets, smartwatches, secondary computers, and unauthorized monitors away.</li>
+                                <li><strong>No Reference Materials:</strong> Remove unauthorized books, handwritten notes, and printed materials unless explicitly permitted.</li>
+                                <li><strong>No Other Persons:</strong> Ensure no other person enters the visible examination area.</li>
+                                <li><strong>No Unauthorized Assistance:</strong> Avoid communicating with others or receiving assistance.</li>
+                                <li><strong>Stay on Exam Page:</strong> Avoid switching browser tabs, opening unauthorized windows, or leaving the examination page.</li>
+                                <li><strong>System Readiness:</strong> Ensure webcam, browser, and internet connection are working properly.</li>
+                                <li><strong>Rules Acknowledgement:</strong> Read and acknowledge all examination rules before proceeding.</li>
+                            </ol>
+                        </div>
                         
-                        <label style="display: flex; gap: 8px; margin-top: 1.5rem; font-size: 0.9rem; align-items: flex-start; cursor: pointer; color: var(--text-primary); line-height: 1.35;">
-                            <input type="checkbox" id="chk-agree" style="width: 16px; height: 16px; margin-top: 2px; accent-color: var(--accent-primary);">
-                            <span>I have read the guidelines and agree to abide by the security rules.</span>
+                        <label style="display: flex; gap: 8px; font-size: 0.84rem; align-items: flex-start; cursor: pointer; color: var(--text-primary); line-height: 1.35; background: var(--mint-soft); padding: 0.5rem 0.65rem; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.3);">
+                            <input type="checkbox" id="chk-agree" style="width: 16px; height: 16px; margin-top: 2px; accent-color: var(--primary-green); flex-shrink: 0;">
+                            <span>I confirm that my environment meets the checklist and I agree to abide by all examination rules.</span>
                         </label>
                     </div>
 
@@ -132,25 +140,73 @@
         let latestDetectedFaces = [];
         let hasProcessedAutoLaunch = false;
 
-        document.getElementById("user-display").innerText = `Candidate: ${currentUser.first_name}`;
-        document.getElementById("profile-name").innerText = currentUser.first_name;
-        document.getElementById("profile-email").innerText = currentUser.email;
-        const profilePhoneEl = document.getElementById("profile-phone");
-        if (profilePhoneEl) profilePhoneEl.innerText = currentUser.phone || '-';
-        document.getElementById("profile-userid").innerText = currentUser.last_name;
-        const profileCourseEl = document.getElementById("profile-course");
-        if (profileCourseEl) {
-            const cName = currentUser.course || 'Python';
-            profileCourseEl.innerText = cName;
-            if (['drive', 'aptitude'].includes(cName.toLowerCase())) {
-                profileCourseEl.style.color = '#7C3AED';
-                profileCourseEl.style.background = '#F5F3FF';
-                profileCourseEl.style.border = '1px solid #DDD6FE';
+        function renderProfileUI(u) {
+            if (!u) return;
+            currentUser = u;
+            try {
+                localStorage.setItem("user", JSON.stringify(u));
+            } catch (e) {}
+
+            const userDisplayEl = document.getElementById("user-display");
+            if (userDisplayEl) userDisplayEl.innerText = `Candidate: ${u.first_name || ''}`;
+
+            const profileNameEl = document.getElementById("profile-name");
+            if (profileNameEl) profileNameEl.innerText = u.first_name || '-';
+
+            const profileEmailEl = document.getElementById("profile-email");
+            if (profileEmailEl) profileEmailEl.innerText = u.email || '-';
+
+            const profilePhoneEl = document.getElementById("profile-phone");
+            if (profilePhoneEl) profilePhoneEl.innerText = u.phone || '-';
+
+            const profileUseridEl = document.getElementById("profile-userid");
+            if (profileUseridEl) profileUseridEl.innerText = u.last_name || '-';
+
+            const profileCourseEl = document.getElementById("profile-course");
+            if (profileCourseEl) {
+                const cName = u.course || 'Python';
+                profileCourseEl.innerText = cName;
+                if (['drive', 'aptitude'].includes(cName.toLowerCase())) {
+                    profileCourseEl.style.color = '#7C3AED';
+                    profileCourseEl.style.background = '#F5F3FF';
+                    profileCourseEl.style.border = '1px solid #DDD6FE';
+                } else {
+                    profileCourseEl.style.color = '#0369A1';
+                    profileCourseEl.style.background = '#E0F2FE';
+                    profileCourseEl.style.border = 'none';
+                }
             }
         }
 
+        async function syncUserProfile() {
+            try {
+                const res = await API.get("/auth/me");
+                if (res && res.success && res.user) {
+                    const oldCourse = currentUser ? currentUser.course : null;
+                    renderProfileUI(res.user);
+                    if (oldCourse && oldCourse.toLowerCase() !== (res.user.course || '').toLowerCase()) {
+                        loadExams();
+                    }
+                }
+            } catch (err) {
+                console.warn("Could not sync live user profile:", err);
+            }
+        }
+
+        // Render immediately from local cache, then sync live profile
+        renderProfileUI(currentUser);
+        syncUserProfile();
+
+        // Auto-refresh when tab receives focus or becomes visible
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible") {
+                syncUserProfile();
+                loadExams();
+            }
+        });
+
         // Check first login welcome modal status
-        if (currentUser.first_login_completed === false) {
+        if (currentUser && currentUser.first_login_completed === false) {
             document.getElementById("welcome-userid").innerText = currentUser.last_name;
             const welcomeModal = document.getElementById("welcome-modal");
             welcomeModal.classList.add("active");
@@ -167,6 +223,9 @@
 
         async function loadExams() {
             const res = await API.get("/exams");
+            if (res && res.user) {
+                renderProfileUI(res.user);
+            }
             const container = document.getElementById("exams-container");
             const activeExams = (res.success && res.exams) ? res.exams.filter(e => e.is_active !== false) : [];
             

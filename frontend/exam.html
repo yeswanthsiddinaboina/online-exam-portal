@@ -278,11 +278,32 @@
             display: grid !important;
             grid-template-columns: 1fr 340px !important;
             gap: 1.5rem !important;
-            padding: 1.5rem 2rem !important;
-            height: calc(100vh - 64px) !important;
-            max-height: calc(100vh - 64px) !important;
+            padding: 1.5rem 2rem 0.5rem 2rem !important;
+            height: calc(100vh - 64px - 26px) !important;
+            max-height: calc(100vh - 64px - 26px) !important;
             overflow-y: auto !important;
             box-sizing: border-box !important;
+        }
+
+        /* --- EXAM PORTAL BOTTOM WATERMARK --- */
+        .exam-brand-watermark {
+            height: 26px !important;
+            min-height: 26px !important;
+            max-height: 26px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            text-align: center !important;
+            font-size: 0.76rem !important;
+            font-weight: 500 !important;
+            color: var(--text-muted) !important;
+            opacity: 0.7 !important;
+            user-select: none !important;
+            pointer-events: none !important;
+            background: transparent !important;
+            flex-shrink: 0 !important;
+            box-sizing: border-box !important;
+            letter-spacing: 0.02em !important;
         }
 
         /* Center Question Area Card */
@@ -530,25 +551,69 @@
             height: 180px;
             border-radius: 12px;
             overflow: hidden;
-            background: #0B0C15;
+            background: linear-gradient(145deg, #062F28 0%, #041F1A 100%);
+            border: 1px solid rgba(16, 185, 129, 0.25);
             display: flex;
             align-items: center;
             justify-content: center;
+            box-sizing: border-box;
         }
 
-        .webcam-card-feed video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
+        /* Live video and canvas remain active in DOM and memory for AI inference, but invisible to the student */
+        .webcam-card-feed video,
         .webcam-card-feed canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+            z-index: 1 !important;
+        }
+
+        /* Active background proctoring notice replacing visual mirror preview */
+        .webcam-hidden-preview-notice {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 1rem 1.25rem;
+            color: #FFFFFF;
+            user-select: none;
             pointer-events: none;
+        }
+
+        .webcam-hidden-shield-icon {
+            width: 44px;
+            height: 44px;
+            background: rgba(16, 185, 129, 0.16);
+            border: 1.5px solid rgba(16, 185, 129, 0.4);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            margin-bottom: 0.6rem;
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
+        }
+
+        .webcam-hidden-title {
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: #FFFFFF;
+            letter-spacing: -0.01em;
+            margin-bottom: 0.25rem;
+        }
+
+        .webcam-hidden-subtitle {
+            font-size: 0.74rem;
+            color: #A7F3D0;
+            line-height: 1.35;
+            max-width: 210px;
         }
 
         .face-status-pill {
@@ -738,6 +803,48 @@
             opacity: 0.4;
             cursor: not-allowed;
         }
+
+        /* --- NON-BLOCKING VIOLATION TOAST NOTIFICATION --- */
+        .violation-toast-container {
+            position: fixed !important;
+            top: 18px !important;
+            left: 50% !important;
+            transform: translateX(-50%) translateY(-20px) !important;
+            z-index: 99999 !important;
+            pointer-events: none !important;
+            user-select: none !important;
+            opacity: 0 !important;
+            transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        }
+
+        .violation-toast-container.visible {
+            opacity: 1 !important;
+            transform: translateX(-50%) translateY(0) !important;
+        }
+
+        .violation-toast-content {
+            background: #DC2626 !important;
+            color: #FFFFFF !important;
+            padding: 0.65rem 1.35rem !important;
+            border-radius: 8px !important;
+            box-shadow: 0 4px 18px rgba(220, 38, 38, 0.5) !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 0.65rem !important;
+            font-size: 0.92rem !important;
+            font-weight: 600 !important;
+            letter-spacing: 0.01em !important;
+            border: 1px solid rgba(255, 255, 255, 0.25) !important;
+            pointer-events: none !important;
+            max-width: 90vw !important;
+            text-align: center !important;
+        }
+
+        .violation-toast-icon {
+            font-size: 1.15rem !important;
+            line-height: 1 !important;
+            flex-shrink: 0 !important;
+        }
     </style>
 </head>
 <body>
@@ -749,19 +856,44 @@
             <p style="color: var(--text-secondary); margin-bottom: 2rem; font-size: 0.95rem; line-height: 1.5;">
                 This exam is proctored. You must enter and maintain fullscreen mode. Exiting fullscreen or navigating away from this window will trigger security violations.
             </p>
-            <button class="btn btn-primary" id="btn-enter-fullscreen" style="width: 100%; background: var(--forest-dark); padding: 0.85rem; font-weight: 700; border-radius: 10px;">Enter Fullscreen to Begin</button>
+            <button class="btn btn-primary" id="btn-enter-fullscreen" onclick="handleEnterFullscreen()" style="width: 100%; background: var(--forest-dark); padding: 0.85rem; font-weight: 700; border-radius: 10px;">Enter Fullscreen to Begin</button>
         </div>
     </div>
 
-    <!-- 2. START EXAM COVER OVERLAY -->
-    <div id="start-exam-overlay" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #0b0c15; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; text-align: center; padding: 2rem;">
-        <div class="glass-panel" style="max-width: 480px; background: #FFFFFF; border-radius: 20px; padding: 2.5rem;">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">📝</div>
-            <h2 style="margin-bottom: 1rem; color: var(--primary-green); font-family: var(--font-heading);">Ready to Begin?</h2>
-            <p style="color: var(--text-secondary); margin-bottom: 2rem; font-size: 0.95rem; line-height: 1.5;">
-                You have authorized fullscreen. Your webcam proctoring, browser monitoring, and exam timer will start immediately once you click the button below.
-            </p>
-            <button class="btn btn-primary" id="btn-start-exam" style="width: 100%; background: var(--forest-dark); padding: 0.85rem; font-weight: 700; border-radius: 10px;">Start Exam</button>
+    <!-- 2. START EXAM COVER OVERLAY WITH ENVIRONMENT RULES CHECKLIST -->
+    <div id="start-exam-overlay" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(11, 12, 21, 0.96); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; padding: 1.5rem; overflow-y: auto;">
+        <div class="glass-panel" style="max-width: 580px; width: 100%; background: #FFFFFF; border-radius: 20px; padding: 2rem 2.25rem; text-align: left; box-shadow: 0 10px 30px rgba(0,0,0,0.3); max-height: 90vh; display: flex; flex-direction: column;">
+            <div style="text-align: center; margin-bottom: 1rem;">
+                <div style="font-size: 2.5rem; margin-bottom: 0.35rem;">📋</div>
+                <h2 style="margin: 0 0 0.4rem 0; color: var(--forest-dark); font-family: var(--font-heading); font-size: 1.35rem;">Examination Rules & Environment Checklist</h2>
+                <p style="color: var(--text-secondary); margin: 0; font-size: 0.88rem; line-height: 1.45;">
+                    Please review and acknowledge the 10 rules below before beginning your exam. Fullscreen and AI proctoring will be active.
+                </p>
+            </div>
+
+            <div style="flex: 1; overflow-y: auto; padding-right: 0.5rem; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 0.85rem 1rem; background: #FAFCFB; margin-bottom: 1rem;">
+                <ol style="font-size: 0.84rem; color: var(--text-primary); padding-left: 1.25rem; line-height: 1.6; display: flex; flex-direction: column; gap: 0.4rem; margin: 0;">
+                    <li><strong>Quiet & Well-Lit Room:</strong> Sit alone in a quiet, well-lit room.</li>
+                    <li><strong>Neutral Background:</strong> Use a plain, neutral background wherever possible.</li>
+                    <li><strong>Webcam Visibility:</strong> Position your webcam so your face is clearly visible throughout the exam.</li>
+                    <li><strong>No Prohibited Devices:</strong> Keep mobile phones, tablets, smartwatches, secondary computers, and unauthorized monitors away from the examination area.</li>
+                    <li><strong>No Reference Materials:</strong> Remove unauthorized books, handwritten notes, printed materials, and reference documents unless explicitly permitted.</li>
+                    <li><strong>No Other Persons:</strong> Ensure no other person enters the visible examination area.</li>
+                    <li><strong>No Unauthorized Assistance:</strong> Avoid communicating with others or receiving unauthorized assistance during the exam.</li>
+                    <li><strong>Stay on Exam Page:</strong> Avoid switching browser tabs, opening unauthorized windows, or leaving the examination page.</li>
+                    <li><strong>System Readiness:</strong> Ensure webcam, browser, and internet connection are working properly before starting.</li>
+                    <li><strong>Rules Acknowledgement:</strong> Read and acknowledge the examination rules before proceeding.</li>
+                </ol>
+            </div>
+
+            <label style="display: flex; gap: 10px; font-size: 0.86rem; align-items: flex-start; cursor: pointer; color: var(--text-primary); line-height: 1.4; background: var(--mint-soft); padding: 0.65rem 0.85rem; border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.35); margin-bottom: 1.25rem;">
+                <input type="checkbox" id="chk-exam-start-agree" style="width: 17px; height: 17px; margin-top: 2px; accent-color: var(--primary-green); flex-shrink: 0;">
+                <span style="font-weight: 500;">I have read, understood, and agree to abide by all the examination rules and environmental requirements listed above.</span>
+            </label>
+
+            <button class="btn btn-primary" id="btn-start-exam" onclick="handleStartExam()" disabled style="width: 100%; background: var(--forest-dark); padding: 0.85rem; font-weight: 700; border-radius: 10px; font-size: 0.95rem; cursor: not-allowed; opacity: 0.6; transition: all 0.2s;">
+                Start Exam
+            </button>
         </div>
     </div>
 
@@ -909,10 +1041,17 @@
                         </div>
                     </div>
 
-                    <!-- Video Viewport (Retaining existing elements) -->
+                    <!-- Video Viewport (Webcam preview hidden; feed remains active for AI proctoring) -->
                     <div class="webcam-card-feed">
                         <video id="webcam-feed" autoplay playsinline muted></video>
                         <canvas id="proctor-canvas"></canvas>
+
+                        <!-- Privacy-Safe Proctoring Active Status Notice -->
+                        <div class="webcam-hidden-preview-notice">
+                            <div class="webcam-hidden-shield-icon">🛡️</div>
+                            <div class="webcam-hidden-title">Webcam Monitoring Active</div>
+                            <div class="webcam-hidden-subtitle">AI proctoring is running in the background. Video preview is hidden.</div>
+                        </div>
                     </div>
 
                     <!-- Face Verified Status Badge -->
@@ -994,6 +1133,11 @@
                 </div>
             </aside>
         </main>
+
+        <!-- BOTTOM WATERMARK COMPONENT -->
+        <footer class="exam-brand-watermark">
+            Developed by NovaHamo Technologies
+        </footer>
     </div>
 
     <!-- 5. IN-PAGE SUBMISSION CONFIRMATION MODAL (Prevents exiting fullscreen) -->
@@ -1014,15 +1158,15 @@
         </div>
     </div>
 
-    <!-- 6. WARNING NOTIFICATION MODAL -->
-    <div class="modal-backdrop" id="warning-modal">
-        <div class="modal-content" style="text-align: center; max-width: 440px;">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
-            <h3 style="margin-bottom: 1rem; color: var(--accent-warning); font-family: var(--font-heading);">Security Warning</h3>
-            <p id="warning-message" style="line-height: 1.6; margin-bottom: 1.5rem; color: var(--text-secondary); font-size: 0.95rem;">
-                Warning: Examination policy violation detected. The system is automatically reviewing this alert.
-            </p>
+    <!-- 6. NON-BLOCKING VIOLATION TOAST NOTIFICATION -->
+    <div id="violation-toast" class="violation-toast-container" style="display: none;">
+        <div class="violation-toast-content">
+            <span class="violation-toast-icon">⚠️</span>
+            <span id="violation-toast-msg" class="violation-toast-msg">Warning: Examination policy violation detected.</span>
         </div>
+    </div>
+    <div id="warning-modal" style="display: none !important;">
+        <p id="warning-message" style="display: none !important;"></p>
     </div>
 
     <!-- 7. TERMINATION MODAL -->
@@ -1036,6 +1180,25 @@
             <div style="display: flex; flex-direction: column; gap: 0.75rem;">
                 <a href="#" class="btn btn-primary" onclick="viewTerminatedResults(); return false;" style="width: 100%; display: block; text-decoration: none; box-sizing: border-box; text-align: center; border-radius: 10px; padding: 0.85rem; font-weight: 700; background: var(--primary-green);">View Score & Results</a>
                 <a href="#" class="btn btn-secondary" onclick="redirectToDashboard(); return false;" style="width: 100%; display: block; text-decoration: none; box-sizing: border-box; text-align: center; border-radius: 10px; padding: 0.85rem; font-weight: 700;">Return to Dashboard</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 8. TIME COMPLETED AUTO-SUBMISSION MODAL -->
+    <div class="modal-backdrop" id="auto-submit-modal" style="z-index: 10002;">
+        <div class="modal-content" style="text-align: center; max-width: 480px; padding: 2rem;">
+            <div style="font-size: 3.5rem; margin-bottom: 1rem;">⏱️</div>
+            <h3 style="margin-bottom: 0.75rem; color: var(--forest-dark); font-family: var(--font-heading); font-size: 1.4rem;">Time Completed</h3>
+            <p style="color: var(--text-primary); font-weight: 600; line-height: 1.6; font-size: 1rem; margin-bottom: 1rem;">
+                Time completed. Your exam has been automatically submitted successfully.
+            </p>
+            <p style="color: var(--text-secondary); line-height: 1.5; font-size: 0.88rem; margin-bottom: 1.5rem;">
+                All your saved answers have been recorded and evaluated. Redirecting to your examination results...
+            </p>
+            <div style="display: flex; justify-content: center;">
+                <button class="btn btn-primary" id="btn-auto-submit-results" onclick="viewAutoSubmittedResults()" style="padding: 0.85rem 1.75rem; font-weight: 700; background: var(--primary-green); border-radius: 10px;">
+                    View Results (<span id="auto-redirect-counter">3</span>s)
+                </button>
             </div>
         </div>
     </div>
@@ -1062,9 +1225,15 @@
         let reviewSet = new Set();
         let skippedSet = new Set(); // Tracks question IDs skipped by student
         let visitedSet = new Set(); // Tracks question IDs visited
-        let timeRemaining = 0;
-        let aiCamera = null;
+        let timeRemaining = null;
+        let examDeadlineMs = null;
+        let isTimerInitialized = false;
+        let hasAutoSubmitted = false;
         let isSubmitting = false;
+        examTimer = null;
+        heartbeatTimer = null;
+        let aiCamera = null;
+        let autoSubmitRedirectInterval = null;
 
         function updateCurrentQuestionSkipStatus() {
             if (questions.length === 0) return;
@@ -1079,28 +1248,113 @@
             }
         }
 
-        // Enter Fullscreen Enforcer
-        document.getElementById("btn-enter-fullscreen").addEventListener("click", () => {
-            document.documentElement.requestFullscreen().then(() => {
-                document.getElementById("fullscreen-lockout").style.display = "none";
-                document.getElementById("start-exam-overlay").style.display = "flex";
-            }).catch(err => {
-                alert("Fullscreen authorization failed. Please allow fullscreen permission.");
-            });
-        });
+        // Enter Fullscreen Enforcer Functions
+        function handleEnterFullscreen() {
+            const lockout = document.getElementById("fullscreen-lockout");
+            const startOverlay = document.getElementById("start-exam-overlay");
 
-        // Start Exam Trigger
-        document.getElementById("btn-start-exam").addEventListener("click", () => {
-            document.getElementById("start-exam-overlay").style.display = "none";
+            const showStartOverlay = () => {
+                if (lockout) lockout.style.display = "none";
+                if (startOverlay) startOverlay.style.display = "flex";
+            };
+
+            const docEl = document.documentElement;
+            const requestFs = docEl.requestFullscreen || 
+                              docEl.webkitRequestFullscreen || 
+                              docEl.mozRequestFullScreen || 
+                              docEl.msRequestFullscreen;
+
+            if (requestFs) {
+                try {
+                    const fsPromise = requestFs.call(docEl);
+                    if (fsPromise && typeof fsPromise.then === "function") {
+                        fsPromise.then(showStartOverlay).catch(err => {
+                            console.warn("Fullscreen permission notice:", err);
+                            showStartOverlay();
+                        });
+                    } else {
+                        showStartOverlay();
+                    }
+                } catch (err) {
+                    console.warn("Fullscreen call exception:", err);
+                    showStartOverlay();
+                }
+            } else {
+                showStartOverlay();
+            }
+        }
+
+        function handleStartExam() {
+            const chkAgree = document.getElementById("chk-exam-start-agree");
+            if (chkAgree && !chkAgree.checked) {
+                alert("Please read and acknowledge the examination rules and environmental checklist before proceeding.");
+                return;
+            }
+            const startOverlay = document.getElementById("start-exam-overlay");
+            if (startOverlay) startOverlay.style.display = "none";
             initializeExam();
-        });
+        }
+
+        const enterFullscreenBtn = document.getElementById("btn-enter-fullscreen");
+        if (enterFullscreenBtn) {
+            enterFullscreenBtn.addEventListener("click", handleEnterFullscreen);
+        }
+
+        const startExamBtn = document.getElementById("btn-start-exam");
+        const startExamAgreeChk = document.getElementById("chk-exam-start-agree");
+        if (startExamAgreeChk && startExamBtn) {
+            startExamAgreeChk.addEventListener("change", (e) => {
+                startExamBtn.disabled = !e.target.checked;
+                startExamBtn.style.opacity = e.target.checked ? "1" : "0.6";
+                startExamBtn.style.cursor = e.target.checked ? "pointer" : "not-allowed";
+            });
+        }
+        if (startExamBtn) {
+            startExamBtn.addEventListener("click", handleStartExam);
+        }
+
+        // If already fullscreen when loaded, immediately transition to ready screen
+        if (document.fullscreenElement || document.webkitFullscreenElement) {
+            const lockout = document.getElementById("fullscreen-lockout");
+            const startOverlay = document.getElementById("start-exam-overlay");
+            if (lockout) lockout.style.display = "none";
+            if (startOverlay) startOverlay.style.display = "flex";
+        }
+
+        function updateTimerDisplay(remaining) {
+            if (typeof remaining !== "number" || isNaN(remaining) || remaining < 0) return;
+            const minutes = Math.floor(remaining / 60);
+            const seconds = remaining % 60;
+            const timerEl = document.getElementById("timer-display");
+            if (timerEl) {
+                timerEl.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                if (remaining <= 300) {
+                    timerEl.style.color = "var(--accent-danger)";
+                } else {
+                    timerEl.style.color = "var(--primary-green)";
+                }
+            }
+        }
 
         // Initialize exam session on screen lock
         async function initializeExam() {
             const examId = localStorage.getItem("selected_exam_id") || 1;
-            const res = await API.get(`/exams/${examId}/questions`);
-            if (res.success) {
-                questions = res.questions;
+
+            try {
+                // Concurrently fetch questions, exam metadata, and authoritative attempt status
+                const [questionsRes, metadataRes, statusRes] = await Promise.all([
+                    API.get(`/exams/${examId}/questions`),
+                    API.get(`/exams/${examId}`),
+                    API.get(`/attempts/${currentAttemptId}/status`)
+                ]);
+
+                if (!questionsRes || !questionsRes.success) {
+                    alert("Failed to load examination questions.");
+                    redirectToDashboard();
+                    return;
+                }
+
+                questions = questionsRes.questions;
                 
                 // Initialize responses map
                 questions.forEach(q => {
@@ -1109,12 +1363,45 @@
                 });
                 
                 // Load metadata
-                const metadataRes = await API.get(`/exams/${examId}`);
-                if (metadataRes.success) {
+                if (metadataRes && metadataRes.success && metadataRes.exam) {
                     document.getElementById("exam-title").innerText = metadataRes.exam.title;
                 }
 
                 document.getElementById("total-q-num").innerText = questions.length;
+
+                // Process authoritative attempt status & timer
+                if (statusRes && statusRes.success) {
+                    if (statusRes.status === "SUBMITTED" || statusRes.status === "AUTO_SUBMITTED") {
+                        localStorage.setItem("last_evaluated_attempt_id", currentAttemptId);
+                        window.location.href = `result.html?attempt_id=${currentAttemptId}`;
+                        return;
+                    }
+
+                    // Use server's authoritative remaining seconds, with robust fallback to exam metadata duration
+                    let serverRemainingSec = null;
+                    if (typeof statusRes.time_remaining_seconds === "number" && statusRes.time_remaining_seconds > 0) {
+                        serverRemainingSec = statusRes.time_remaining_seconds;
+                    } else if (metadataRes && metadataRes.success && metadataRes.exam && metadataRes.exam.duration_minutes) {
+                        serverRemainingSec = metadataRes.exam.duration_minutes * 60;
+                    } else {
+                        serverRemainingSec = 3600; // 60 minutes default fallback
+                    }
+
+                    timeRemaining = Math.max(1, Math.floor(serverRemainingSec));
+                    // Anchor deadline to local client time so clock skew/timezone drift cannot cause immediate expiry
+                    examDeadlineMs = Date.now() + (timeRemaining * 1000);
+                    isTimerInitialized = true;
+                    updateTimerDisplay(timeRemaining);
+                } else {
+                    console.warn("Could not retrieve authoritative attempt status, using exam metadata duration.");
+                    const fallbackSec = (metadataRes && metadataRes.success && metadataRes.exam && metadataRes.exam.duration_minutes) 
+                        ? (metadataRes.exam.duration_minutes * 60) 
+                        : 3600;
+                    timeRemaining = fallbackSec;
+                    examDeadlineMs = Date.now() + (fallbackSec * 1000);
+                    isTimerInitialized = true;
+                    updateTimerDisplay(timeRemaining);
+                }
 
                 // Render first question
                 if (questions.length > 0) {
@@ -1124,15 +1411,16 @@
                 renderMatrix();
                 updateProgressBar();
 
-                // Setup Sandbox & local AI
+                // Setup Sandbox & local AI (independent of timer)
                 setupSecuritySandbox();
                 setupWebcamProctoring();
 
                 // Start threads
                 startHeartbeat();
                 startLocalTimer();
-            } else {
-                alert("Failed to load examination questions.");
+            } catch (err) {
+                console.error("Initialization error:", err);
+                alert("Failed to initialize examination.");
                 redirectToDashboard();
             }
         }
@@ -1167,7 +1455,28 @@
                     return text.replace(/^[a-d]\s*[\).\-]\s*/i, "");
                 };
                 
-                q.options.forEach(opt => {
+                // Deduplicate options by letter
+                const uniqueOptionsMap = new Map();
+                (q.options || []).forEach(opt => {
+                    const letter = (opt.option_letter || "").toUpperCase().trim();
+                    if (!letter) return;
+                    if (!uniqueOptionsMap.has(letter)) {
+                        uniqueOptionsMap.set(letter, opt);
+                    } else {
+                        const existing = uniqueOptionsMap.get(letter);
+                        const existingClean = cleanOptionText(existing.option_text);
+                        const currentClean = cleanOptionText(opt.option_text);
+                        if (currentClean.length > existingClean.length) {
+                            uniqueOptionsMap.set(letter, opt);
+                        }
+                    }
+                });
+
+                const displayOptions = Array.from(uniqueOptionsMap.values()).sort((a, b) => 
+                    (a.option_letter || "").localeCompare(b.option_letter || "")
+                );
+
+                displayOptions.forEach(opt => {
                     const isSelected = selectedAnswersMap[q.id].includes(opt.option_letter);
                     const card = document.createElement("div");
                     card.className = `answer-card-item ${isSelected ? 'selected' : ''}`;
@@ -1402,10 +1711,7 @@
 
         // Setup browser focus/fullscreen security locks
         function setupSecuritySandbox() {
-            // TEMPORARY OVERRIDE FOR TOMORROW'S EXAM: Set to false to re-enable termination
-            const DISABLE_EXAM_TERMINATION = true;
-            const onTerminateAction = DISABLE_EXAM_TERMINATION ? showWarningModal : triggerTermination;
-            SandboxEnforcer.init(currentAttemptId, currentSessionToken, showWarningModal, onTerminateAction);
+            SandboxEnforcer.init(currentAttemptId, currentSessionToken, showWarningToast, showWarningToast);
         }
 
         // Setup MediaPipe webcam streams
@@ -1417,10 +1723,7 @@
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 400, height: 300 } });
                 video.srcObject = stream;
                 
-                // TEMPORARY OVERRIDE FOR TOMORROW'S EXAM: Set to false to re-enable termination
-                const DISABLE_EXAM_TERMINATION = true;
-                const onTerminateAction = DISABLE_EXAM_TERMINATION ? showWarningModal : triggerTermination;
-                AIProctorEngine.init(video, canvas, currentAttemptId, currentSessionToken, showWarningModal, onTerminateAction);
+                AIProctorEngine.init(video, canvas, currentAttemptId, currentSessionToken, showWarningToast, showWarningToast);
                 AIProctorEngine.start();
             } catch (e) {
                 console.error("Webcam init error:", e);
@@ -1428,93 +1731,240 @@
             }
         }
 
-        // Heartbeat thread (executes every 5 seconds)
+        // Heartbeat thread (executes every 15 seconds)
         function startHeartbeat() {
+            if (heartbeatTimer) clearInterval(heartbeatTimer);
             heartbeatTimer = setInterval(async () => {
-                if (isSubmitting) return; // Do not send heartbeat violations while user is submitting
+                if (isSubmitting || hasAutoSubmitted) return; // Do not send heartbeat violations while submitting
                 const isFullscreen = !!document.fullscreenElement;
                 const visibility = document.visibilityState;
 
-                const res = await API.post("/exam/heartbeat", {
-                    attempt_id: currentAttemptId,
-                    session_token: currentSessionToken,
-                    fullscreen_active: isFullscreen,
-                    visibility_state: visibility
-                });
+                try {
+                    const res = await API.post("/exam/heartbeat", {
+                        attempt_id: currentAttemptId,
+                        session_token: currentSessionToken,
+                        fullscreen_active: isFullscreen,
+                        visibility_state: visibility
+                    });
 
-                if (res.success) {
-                    timeRemaining = res.time_remaining_seconds;
-                    
-                    // TEMPORARY OVERRIDE FOR TOMORROW'S EXAM: Set to false to re-enable termination
-                    const DISABLE_EXAM_TERMINATION = true;
-                    if (!DISABLE_EXAM_TERMINATION && (res.status === "MALPRACTICE_CANCELLED" || res.action === "TERMINATE")) {
-                        triggerTermination(res.message);
-                        return;
+                    if (res && res.success) {
+                        if (typeof res.time_remaining_seconds === "number") {
+                            timeRemaining = res.time_remaining_seconds;
+                            // Keep deadline synced with server authoritative time
+                            examDeadlineMs = Date.now() + (timeRemaining * 1000);
+                            updateTimerDisplay(timeRemaining);
+                        }
+
+                        if (res.error_code === "SESSION_EXPIRED" || res.status === "AUTO_SUBMITTED" || (typeof res.time_remaining_seconds === "number" && res.time_remaining_seconds <= 0)) {
+                            autoSubmitOnTimeUp();
+                            return;
+                        }
+
+                        if (res.status === "MALPRACTICE_CANCELLED" || res.action === "TERMINATE") {
+                            showWarningToast(res.message);
+                            return;
+                        }
+                        
+                        if (res.action === "WARNING") {
+                            showWarningToast(res.message, res.violation_count, res.limit, res.event_type);
+                        }
+                    } else if (res && (res.error_code === "SESSION_EXPIRED" || (res.message && res.message.includes("EXPIRED")))) {
+                        autoSubmitOnTimeUp();
                     }
-                    
-                    if (res.action === "TERMINATE" || res.action === "WARNING" || res.status === "MALPRACTICE_CANCELLED") {
-                        showWarningModal(res.message, res.violation_log_id);
-                    }
-                } else if (res.error_code === "SESSION_EXPIRED") {
-                    triggerTermination("Your examination session has expired.");
+                } catch (err) {
+                    console.warn("Heartbeat error:", err);
                 }
             }, 15000); // Optimized for 200+ concurrent users: cuts heartbeat load from 40 req/s to 13 req/s
         }
 
-        // Local UI Countdown Clock
+        // Local UI Countdown Clock (driven by authoritative server deadline)
         function startLocalTimer() {
+            if (examTimer) clearInterval(examTimer);
             examTimer = setInterval(() => {
-                if (timeRemaining <= 0) return;
-                
-                timeRemaining--;
-                
-                const minutes = Math.floor(timeRemaining / 60);
-                const seconds = timeRemaining % 60;
-                
-                const timerEl = document.getElementById("timer-display");
-                if (timerEl) {
-                    timerEl.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                    if (timeRemaining <= 300) { // Under 5 minutes remaining, color timer crimson
-                        timerEl.style.color = "var(--accent-danger)";
+                if (!isTimerInitialized || hasAutoSubmitted || isSubmitting) return;
+
+                if (examDeadlineMs) {
+                    const diffMs = examDeadlineMs - Date.now();
+                    timeRemaining = Math.max(0, Math.floor(diffMs / 1000));
+                } else if (timeRemaining !== null) {
+                    timeRemaining = Math.max(0, timeRemaining - 1);
+                }
+
+                if (timeRemaining !== null) {
+                    updateTimerDisplay(timeRemaining);
+
+                    if (timeRemaining <= 0) {
+                        clearInterval(examTimer);
+                        autoSubmitOnTimeUp();
                     }
                 }
             }, 1000);
         }
 
-        function showWarningModal(message, logId) {
-            let displayMsg = message || "";
-            if (displayMsg.toLowerCase().includes("head turn")) {
-                displayMsg = displayMsg.replace(/Security Warning \(\d+\/\d+\):\s*/gi, "");
-                displayMsg = displayMsg.replace(/Security Warning:\s*/gi, "");
-                displayMsg = displayMsg.replace(/\s*\([^)]*75°[^)]*\)/gi, "");
-                displayMsg = displayMsg.replace(/\s*\(>75°\)/gi, "");
-                displayMsg = displayMsg.replace(/away from camera\s*/gi, "");
-            }
-            document.getElementById("warning-message").innerText = displayMsg;
-            document.getElementById("warning-modal").classList.add("active");
+        // Automatic submission when timer expires
+        async function autoSubmitOnTimeUp() {
+            if (hasAutoSubmitted) return;
+            hasAutoSubmitted = true;
+            isSubmitting = true;
 
-            clearTimeout(window.warningAutoHideTimer);
-            window.warningAutoHideTimer = setTimeout(() => {
-                document.getElementById("warning-modal").classList.remove("active");
-                if (typeof AIProctorEngine !== "undefined") {
-                    AIProctorEngine.lastEventTimes = {};
+            // Immediately halt monitoring and timers
+            if (examTimer) clearInterval(examTimer);
+            if (heartbeatTimer) clearInterval(heartbeatTimer);
+            SandboxEnforcer.destroy();
+            if (typeof AIProctorEngine !== "undefined") {
+                AIProctorEngine.stop();
+            }
+            SystemPreCheck.releaseMedia();
+
+            // Flush any unsaved pending answer for current question
+            if (saveTimeout) clearTimeout(saveTimeout);
+            if (questions.length > 0 && questions[currentIndex]) {
+                const q = questions[currentIndex];
+                try {
+                    await API.post(`/attempts/${currentAttemptId}/answer`, {
+                        session_token: currentSessionToken,
+                        question_id: q.id,
+                        selected_answers: selectedAnswersMap[q.id] || [],
+                        text_answer: textAnswersMap[q.id] || ""
+                    });
+                } catch (e) {
+                    console.warn("Could not flush final answer before auto-submit:", e);
                 }
-            }, 2000);
+            }
+
+            // Retry submission safely up to 3 times
+            let submitSuccess = false;
+            let attemptCount = 0;
+            while (!submitSuccess && attemptCount < 3) {
+                attemptCount++;
+                try {
+                    const res = await API.post(`/attempts/${currentAttemptId}/submit`, {
+                        session_token: currentSessionToken,
+                        submission_reason: "TIME_COMPLETED"
+                    });
+                    if (res && (res.success || res.status === "AUTO_SUBMITTED" || res.status === "SUBMITTED")) {
+                        submitSuccess = true;
+                    } else if (res && res.error_code === "ATTEMPT_NOT_FOUND") {
+                        submitSuccess = true;
+                    }
+                } catch (err) {
+                    console.error(`Auto-submit network attempt ${attemptCount} failed:`, err);
+                    if (attemptCount < 3) {
+                        await new Promise(r => setTimeout(r, 1000));
+                    }
+                }
+            }
+
+            if (submitSuccess) {
+                // Save attempt id before cleaning storage
+                const targetAttemptId = currentAttemptId;
+                if (targetAttemptId) {
+                    localStorage.setItem("last_evaluated_attempt_id", targetAttemptId);
+                }
+                localStorage.removeItem("attempt_id");
+                localStorage.removeItem("session_token");
+                localStorage.removeItem("selected_exam_id");
+                localStorage.removeItem("verified_face_profile");
+
+                // Close other modals and toasts, then show auto-submission modal
+                const toastEl = document.getElementById("violation-toast");
+                if (toastEl) {
+                    toastEl.classList.remove("visible");
+                    toastEl.style.display = "none";
+                }
+                const warningModal = document.getElementById("warning-modal");
+                if (warningModal) warningModal.classList.remove("active");
+                const submitModal = document.getElementById("submit-confirm-modal");
+                if (submitModal) submitModal.classList.remove("active");
+                const termModal = document.getElementById("termination-modal");
+                if (termModal) termModal.classList.remove("active");
+
+                const autoModal = document.getElementById("auto-submit-modal");
+                if (autoModal) {
+                    autoModal.classList.add("active");
+                }
+
+                // 3-second countdown redirect
+                let countdown = 3;
+                const counterEl = document.getElementById("auto-redirect-counter");
+                autoSubmitRedirectInterval = setInterval(() => {
+                    countdown--;
+                    if (counterEl) counterEl.innerText = countdown;
+                    if (countdown <= 0) {
+                        clearInterval(autoSubmitRedirectInterval);
+                        viewAutoSubmittedResults();
+                    }
+                }, 1000);
+            } else {
+                alert("Network connectivity issue while submitting examination. Please check connection and click OK to retry.");
+                hasAutoSubmitted = false;
+                isSubmitting = false;
+                autoSubmitOnTimeUp();
+            }
+        }
+
+        function viewAutoSubmittedResults() {
+            if (autoSubmitRedirectInterval) clearInterval(autoSubmitRedirectInterval);
+            const targetId = localStorage.getItem("last_evaluated_attempt_id") || currentAttemptId;
+            window.location.href = targetId ? `result.html?attempt_id=${targetId}` : "result.html";
+        }
+
+        let violationToastTimeout = null;
+        let violationToastDisplayTimeout = null;
+
+        function showWarningToast(message, count, limit, eventType) {
+            const toastEl = document.getElementById("violation-toast");
+            const msgEl = document.getElementById("violation-toast-msg");
+            if (!toastEl || !msgEl) return;
+
+            let displayMsg = message || "Warning: Examination policy violation detected.";
+            
+            // Format count and limit if provided and not already included
+            if (count !== undefined && count !== null && limit !== undefined && limit !== null) {
+                const countRegex = new RegExp(`\\(${count}\\s*\\/\\s*${limit}\\)`);
+                if (!countRegex.test(displayMsg) && !/\(\d+\/\d+\)/.test(displayMsg)) {
+                    displayMsg = `${displayMsg} (${count}/${limit})`;
+                }
+            }
+
+            // Clean any legacy verbose prefix
+            displayMsg = displayMsg.replace(/Security Warning \(\d+\/\d+\):\s*/gi, "Warning: ");
+            displayMsg = displayMsg.replace(/Security Warning:\s*/gi, "Warning: ");
+            displayMsg = displayMsg.replace(/\s*\([^)]*75°[^)]*\)/gi, "");
+            displayMsg = displayMsg.replace(/\s*\(>75°\)/gi, "");
+            displayMsg = displayMsg.replace(/away from camera\s*/gi, "");
+
+            msgEl.textContent = displayMsg;
+
+            // Clear any active hide timers
+            if (violationToastTimeout) clearTimeout(violationToastTimeout);
+            if (violationToastDisplayTimeout) clearTimeout(violationToastDisplayTimeout);
+
+            toastEl.style.display = "block";
+            // Force browser reflow so transition runs smoothly
+            void toastEl.offsetWidth;
+            toastEl.classList.add("visible");
+
+            // Auto-hide cleanly after 3 seconds without blocking interaction or wiping engine cooldowns
+            violationToastTimeout = setTimeout(() => {
+                toastEl.classList.remove("visible");
+                violationToastDisplayTimeout = setTimeout(() => {
+                    if (!toastEl.classList.contains("visible")) {
+                        toastEl.style.display = "none";
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // Backward compatibility alias for showWarningModal
+        function showWarningModal(message, countOrLogId, limit, eventType) {
+            const count = (typeof countOrLogId === "number") ? countOrLogId : undefined;
+            showWarningToast(message, count, limit, eventType);
         }
 
         function triggerTermination(message) {
-            clearInterval(heartbeatTimer);
-            clearInterval(examTimer);
-            if (aiCamera) AIProctorEngine.stop();
-            SandboxEnforcer.destroy();
-            SystemPreCheck.releaseMedia();
-            
-            document.getElementById("termination-message").innerText = message;
-            document.getElementById("termination-modal").classList.add("active");
-            
-            // Disable interactions
-            document.querySelectorAll("button").forEach(btn => btn.disabled = true);
-            document.getElementById("btn-enter-fullscreen").disabled = true;
+            console.warn("Violation termination disabled. Presenting warning toast:", message);
+            showWarningToast(message);
         }
 
         function viewTerminatedResults() {
@@ -1575,7 +2025,8 @@
             
             try {
                 const res = await API.post(`/attempts/${currentAttemptId}/submit`, {
-                    session_token: currentSessionToken
+                    session_token: currentSessionToken,
+                    submission_reason: "MANUAL"
                 });
 
                 if (res.success) {

@@ -99,7 +99,7 @@ def get_result_details(attempt_id):
             "question_text": q.question_text,
             "question_type": q.question_type,
             "marks": q.marks,
-            "options": [opt.to_dict() for opt in q.options],
+            "options": q.to_dict()["options"],
             "correct_answer": q.correct_answer if answers_visible else None,
             "student_answer": {
                 "selected_answers": ans.selected_answers if ans else [],

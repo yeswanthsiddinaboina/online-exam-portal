@@ -93,21 +93,26 @@ class SessionManager:
             
         # Check if duration exceeded (server-side timer enforcement)
         now = datetime.datetime.utcnow()
+        if not attempt.started_at:
+            attempt.started_at = now
+            db.session.commit()
+
         time_elapsed = now - attempt.started_at
-        max_duration = datetime.timedelta(minutes=attempt.exam.duration_minutes)
+        duration_mins = attempt.exam.duration_minutes if (attempt.exam and attempt.exam.duration_minutes and attempt.exam.duration_minutes > 0) else 60
+        max_duration = datetime.timedelta(minutes=duration_mins)
         
         # Add small grace period for network delays (e.g. 30 seconds)
-        grace_period = datetime.timedelta(seconds=attempt.exam.security_config.network_grace_period if attempt.exam.security_config else 30)
+        grace_period = datetime.timedelta(seconds=attempt.exam.security_config.network_grace_period if attempt.exam and attempt.exam.security_config else 30)
         
-        if time_elapsed > (max_duration + grace_period):
-            attempt.status = "EXPIRED"
-            attempt.ended_at = now
+        if time_elapsed > (max_duration + grace_period) and time_elapsed.total_seconds() > 60:
+            attempt.status = "AUTO_SUBMITTED"
+            attempt.ended_at = attempt.started_at + max_duration
             db.session.commit()
             try:
                 from backend.services.evaluation import EvaluationService
                 EvaluationService.evaluate_attempt(attempt.id)
             except Exception as e:
-                logger.error(f"Error evaluating expired attempt {attempt.id}: {str(e)}")
+                logger.error(f"Error evaluating auto-submitted attempt {attempt.id}: {str(e)}")
             return False, "SESSION_EXPIRED"
 
         return True, attempt
@@ -116,7 +121,11 @@ class SessionManager:
     def get_remaining_time(attempt):
         """Calculates remaining seconds for an attempt on the server side."""
         now = datetime.datetime.utcnow()
+        if not attempt.started_at:
+            attempt.started_at = now
+            db.session.commit()
         time_elapsed = now - attempt.started_at
-        max_duration = datetime.timedelta(minutes=attempt.exam.duration_minutes)
+        duration_mins = attempt.exam.duration_minutes if (attempt.exam and attempt.exam.duration_minutes and attempt.exam.duration_minutes > 0) else 60
+        max_duration = datetime.timedelta(minutes=duration_mins)
         remaining = max_duration - time_elapsed
         return max(0, int(remaining.total_seconds()))

@@ -183,8 +183,14 @@ def _add_question_record(exam_id, data):
                         marks=data["marks"], negative_marks=data["negative_marks"], correct_answer=data["correct_answer"])
     db.session.add(question)
     db.session.flush()
-    for option in data["options"]:
-        db.session.add(QuestionOption(question_id=question.id, option_letter=option["letter"], option_text=option["text"]))
+    seen_opts = {}
+    for option in data.get("options", []):
+        ltr = str(option.get("letter", "")).strip().upper()
+        txt = str(option.get("text", "")).strip()
+        if ltr and txt:
+            seen_opts[ltr] = txt
+    for ltr, txt in sorted(seen_opts.items()):
+        db.session.add(QuestionOption(question_id=question.id, option_letter=ltr, option_text=txt))
     return question
 
 
@@ -253,11 +259,19 @@ def save_questions(exam_id):
                 question.marks = data["marks"]
                 question.negative_marks = data["negative_marks"]
                 question.correct_answer = data["correct_answer"]
-                question.options.clear()
+                QuestionOption.query.filter_by(question_id=question.id).delete(synchronize_session=False)
+                db.session.flush()
+                seen_opts = {}
                 for option in data.get("options", []):
-                    question.options.append(QuestionOption(
-                        option_letter=option["letter"],
-                        option_text=option["text"]
+                    ltr = str(option.get("letter", "")).strip().upper()
+                    txt = str(option.get("text", "")).strip()
+                    if ltr and txt:
+                        seen_opts[ltr] = txt
+                for ltr, txt in sorted(seen_opts.items()):
+                    db.session.add(QuestionOption(
+                        question_id=question.id,
+                        option_letter=ltr,
+                        option_text=txt
                     ))
             else:
                 # Add new question record
@@ -318,6 +332,34 @@ def get_exam_questions(exam_id):
 
     questions = Question.query.filter_by(exam_id=exam_id).all()
     
+    # Self-healing: Deduplicate any stale or duplicate QuestionOption records in the database
+    has_db_updates = False
+    for q in questions:
+        if q.options:
+            by_letter = {}
+            for opt in q.options:
+                ltr = (opt.option_letter or "").strip().upper()
+                if ltr:
+                    by_letter.setdefault(ltr, []).append(opt)
+            for ltr, opt_list in by_letter.items():
+                if len(opt_list) > 1:
+                    def score_opt(o):
+                        txt = (o.option_text or "").strip()
+                        has_pfx = bool(re.match(r"^[A-D]\s*[\).\-:]", txt, re.I))
+                        return (0 if has_pfx else 1, len(txt), o.id or 0)
+                    opt_list.sort(key=score_opt)
+                    # Keep the best one, delete duplicates
+                    for dup in opt_list[:-1]:
+                        db.session.delete(dup)
+                    has_db_updates = True
+    if has_db_updates:
+        try:
+            db.session.commit()
+            questions = Question.query.filter_by(exam_id=exam_id).all()
+        except Exception as e:
+            db.session.rollback()
+            logger.warning(f"Option deduplication cleanup warning: {e}")
+
     # Crucial security requirement: Redact correct answers for students
     include_correct = (user.role == "admin")
     
@@ -676,13 +718,20 @@ def save_questions_bulk(exam_id):
                 question.marks = data["marks"]
                 question.negative_marks = data["negative_marks"]
                 question.correct_answer = data["correct_answer"]
-                question.options.clear()
+                QuestionOption.query.filter_by(question_id=question.id).delete(synchronize_session=False)
+                db.session.flush()
+                seen_opts = {}
+                for option in data.get("options", []):
+                    ltr = str(option.get("letter", "")).strip().upper()
+                    txt = str(option.get("text", "")).strip()
+                    if ltr and txt:
+                        seen_opts[ltr] = txt
+                for ltr, txt in sorted(seen_opts.items()):
+                    db.session.add(QuestionOption(question_id=question.id, option_letter=ltr, option_text=txt))
             else:
                 question = _add_question_record(exam_id, data)
                 retained_ids.add(question.id)
                 continue
-            for option in data["options"]:
-                db.session.add(QuestionOption(question_id=question.id, option_letter=option["letter"], option_text=option["text"]))
         unwanted_ids = [question_id for question_id in existing.keys() if question_id not in retained_ids]
         if unwanted_ids:
             from backend.models import StudentAnswer
@@ -726,9 +775,16 @@ def manage_question(exam_id, question_id):
         question.marks = data["marks"]
         question.negative_marks = data["negative_marks"]
         question.correct_answer = data["correct_answer"]
-        question.options.clear()
-        for option in data["options"]:
-            db.session.add(QuestionOption(question_id=question.id, option_letter=option["letter"], option_text=option["text"]))
+        QuestionOption.query.filter_by(question_id=question.id).delete(synchronize_session=False)
+        db.session.flush()
+        seen_opts = {}
+        for option in data.get("options", []):
+            ltr = str(option.get("letter", "")).strip().upper()
+            txt = str(option.get("text", "")).strip()
+            if ltr and txt:
+                seen_opts[ltr] = txt
+        for ltr, txt in sorted(seen_opts.items()):
+            db.session.add(QuestionOption(question_id=question.id, option_letter=ltr, option_text=txt))
         db.session.commit()
         return jsonify({"success": True, "question": question.to_dict(True)}), 200
     except (ValueError, TypeError) as error:

@@ -1163,6 +1163,97 @@ def delete_registration(student_id):
         }), 500
 
 
+@admin_bp.route("/registrations/<int:student_id>/course", methods=["PUT", "PATCH", "POST"])
+@admin_bp.route("/registrations/<int:student_id>", methods=["PUT", "PATCH"])
+@token_required
+@role_required(["admin"])
+def update_student_course(student_id):
+    from backend.models.user import User
+    from backend.models import AuditLog
+
+    student = User.query.filter_by(id=student_id, role="student").first()
+    if not student:
+        return jsonify({
+            "success": False,
+            "error_code": "STUDENT_NOT_FOUND",
+            "message": "Student record not found."
+        }), 404
+
+    data = request.get_json() or {}
+    new_course = data.get("course")
+    if not new_course or not isinstance(new_course, str):
+        return jsonify({
+            "success": False,
+            "error_code": "MISSING_COURSE",
+            "message": "Course is required."
+        }), 400
+
+    new_course = new_course.strip()
+    valid_courses = ["Aptitude", "Python", "Java"]
+    course_map = {c.lower(): c for c in valid_courses}
+    course_map["drive"] = "Aptitude"
+
+    normalized_course = course_map.get(new_course.lower())
+    if not normalized_course:
+        return jsonify({
+            "success": False,
+            "error_code": "INVALID_COURSE",
+            "message": f"Invalid course '{new_course}'. Valid courses are: {', '.join(valid_courses)}."
+        }), 400
+
+    old_course = student.course or "Not Assigned"
+    try:
+        student.course = normalized_course
+
+        # Auto-approve access records for the newly assigned course if student is already approved
+        if student.registration_status == "APPROVED":
+            from backend.models.access import ExamAccess
+            from backend.models.exam import Exam
+            exams_in_course = Exam.query.filter_by(is_deleted=False).all()
+            for ex in exams_in_course:
+                if ex.is_accessible_by(normalized_course):
+                    acc = ExamAccess.query.filter_by(student_id=student.id, exam_id=ex.id).first()
+                    if acc and not acc.approved:
+                        acc.approved = True
+        
+        # Log audit trail
+        audit = AuditLog(
+            user_id=request.current_user.id,
+            action="STUDENT_COURSE_UPDATED",
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get("User-Agent")
+        )
+        audit.details = {
+            "student_id": student.id,
+            "student_name": student.first_name,
+            "student_email": student.email,
+            "old_course": old_course,
+            "new_course": normalized_course
+        }
+        db.session.add(audit)
+        db.session.commit()
+
+        logger.info(f"Admin {request.current_user.email} updated student {student.email} course from '{old_course}' to '{normalized_course}'.")
+        return jsonify({
+            "success": True,
+            "message": f"Course updated successfully to {normalized_course}.",
+            "student": {
+                "id": student.id,
+                "name": student.first_name,
+                "email": student.email,
+                "course": student.course
+            }
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Failed to update student course: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error_code": "UPDATE_COURSE_FAILED",
+            "message": f"Failed to update student course: {str(e)}"
+        }), 500
+
+
 @admin_bp.route("/notifications", methods=["GET"])
 @token_required
 @role_required(["admin"])

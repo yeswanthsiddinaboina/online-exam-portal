@@ -153,6 +153,7 @@ def submit_exam(attempt_id):
     student = request.current_user
     data = request.get_json() or {}
     session_token = data.get("session_token")
+    submission_reason = data.get("submission_reason", "MANUAL")
 
     if not session_token:
         return jsonify({
@@ -161,55 +162,87 @@ def submit_exam(attempt_id):
             "message": "Session token is required to submit."
         }), 400
 
-    is_valid, session_or_err = SessionManager.verify_session(attempt_id, student.id, session_token)
-    if not is_valid:
-        # If session expired, we can auto-submit instead of failing completely
-        if session_or_err == "SESSION_EXPIRED":
-            attempt = ExamAttempt.query.get(attempt_id)
-            if attempt and attempt.status == "IN_PROGRESS":
-                attempt.status = "AUTO_SUBMITTED"
-                attempt.ended_at = datetime.datetime.utcnow()
-                db.session.commit()
-                # Run evaluation
-                EvaluationService.evaluate_attempt(attempt_id)
-                return jsonify({
-                    "success": True,
-                    "status": "AUTO_SUBMITTED",
-                    "message": "Exam time limits expired. Responses auto-submitted."
-                }), 200
-            
+    attempt = ExamAttempt.query.get(attempt_id)
+    if not attempt:
         return jsonify({
             "success": False,
-            "error_code": session_or_err,
-            "message": f"Cannot submit exam: {session_or_err.replace('_', ' ').title()}"
+            "error_code": "ATTEMPT_NOT_FOUND",
+            "message": "Attempt not found."
+        }), 404
+
+    if attempt.student_id != student.id and student.role != "admin":
+        return jsonify({
+            "success": False,
+            "error_code": "UNAUTHORIZED_ATTEMPT",
+            "message": "You do not have permission to submit this attempt."
         }), 403
 
-    attempt = session_or_err
+    # Idempotent: If attempt was ALREADY submitted or auto-submitted, return success 200!
+    if attempt.status in ["SUBMITTED", "AUTO_SUBMITTED"]:
+        return jsonify({
+            "success": True,
+            "status": attempt.status,
+            "message": "Examination submitted successfully."
+        }), 200
+
+    # Verify session token matches
+    if attempt.session_token != session_token and student.role != "admin":
+        return jsonify({
+            "success": False,
+            "error_code": "INVALID_SESSION_TOKEN",
+            "message": "Session credentials invalid."
+        }), 403
+
+    # Check if attempt was cancelled for malpractice
+    if attempt.status == "MALPRACTICE_CANCELLED":
+        return jsonify({
+            "success": False,
+            "error_code": "MALPRACTICE_CANCELLED",
+            "message": "This attempt was terminated due to policy violations."
+        }), 403
 
     try:
-        # Update attempt status
-        attempt.status = "SUBMITTED"
-        attempt.ended_at = datetime.datetime.utcnow()
+        now = datetime.datetime.utcnow()
+        max_duration = datetime.timedelta(minutes=attempt.exam.duration_minutes)
+        is_time_up = (attempt.started_at is not None and (now - attempt.started_at) >= max_duration) or submission_reason == "TIME_COMPLETED" or attempt.status == "EXPIRED"
+
+        if is_time_up:
+            target_status = "AUTO_SUBMITTED"
+            action = "EXAM_AUTO_SUBMITTED"
+            message = "Time completed. Your exam has been automatically submitted successfully."
+        else:
+            target_status = "SUBMITTED"
+            action = "EXAM_SUBMITTED"
+            message = "Examination submitted successfully."
+
+        attempt.status = target_status
+        if not attempt.ended_at:
+            attempt.ended_at = now
         db.session.commit()
 
         # Log audit trail
         audit = AuditLog(
             user_id=student.id,
-            action="EXAM_SUBMITTED",
+            action=action,
             ip_address=request.remote_addr,
             user_agent=request.headers.get("User-Agent")
         )
-        audit.details = {"attempt_id": attempt.id, "exam_id": attempt.exam_id}
+        audit.details = {
+            "attempt_id": attempt.id,
+            "exam_id": attempt.exam_id,
+            "submission_reason": submission_reason,
+            "status": target_status
+        }
         db.session.add(audit)
         db.session.commit()
 
-        # Perform server-side evaluation immediately
+        # Perform server-side evaluation immediately from saved answers
         EvaluationService.evaluate_attempt(attempt.id)
 
         return jsonify({
             "success": True,
-            "status": "SUBMITTED",
-            "message": "Examination submitted successfully."
+            "status": target_status,
+            "message": message
         }), 200
 
     except Exception as e:
@@ -220,6 +253,7 @@ def submit_exam(attempt_id):
             "error_code": "SUBMISSION_FAILED",
             "message": "An error occurred while submitting your examination."
         }), 500
+
 
 @attempts_bp.route("/attempts/<int:attempt_id>/status", methods=["GET"])
 @token_required
@@ -241,26 +275,45 @@ def get_attempt_status(attempt_id):
             "message": "You do not have permission to view this attempt."
         }), 403
 
-    # If exam is in progress, calculate time remaining on server
-    time_remaining = 0
+    now = datetime.datetime.utcnow()
+    duration_mins = attempt.exam.duration_minutes if (attempt.exam and attempt.exam.duration_minutes and attempt.exam.duration_minutes > 0) else 60
+    duration_seconds = duration_mins * 60
+    max_duration = datetime.timedelta(seconds=duration_seconds)
+    grace_period = datetime.timedelta(seconds=attempt.exam.security_config.network_grace_period if attempt.exam.security_config else 30)
+
+    if not attempt.started_at:
+        attempt.started_at = now
+        db.session.commit()
+
+    time_remaining = duration_seconds
+    deadline_dt = attempt.started_at + max_duration
+    deadline = deadline_dt.isoformat() + "Z"
+
     if attempt.status == "IN_PROGRESS":
-        # Check if expired first
-        now = datetime.datetime.utcnow()
-        max_duration = datetime.timedelta(minutes=attempt.exam.duration_minutes)
-        grace_period = datetime.timedelta(seconds=attempt.exam.security_config.network_grace_period if attempt.exam.security_config else 30)
-        
-        if (now - attempt.started_at) > (max_duration + grace_period):
-            attempt.status = "EXPIRED"
+        time_elapsed = now - attempt.started_at
+        if time_elapsed > (max_duration + grace_period) and time_elapsed.total_seconds() > 60:
+            # Auto-submit if deadline and grace period have fully passed and at least 60s elapsed
+            attempt.status = "AUTO_SUBMITTED"
+            attempt.ended_at = deadline_dt
             db.session.commit()
-            # Grade it
             EvaluationService.evaluate_attempt(attempt_id)
+            time_remaining = 0
         else:
-            time_remaining = SessionManager.get_remaining_time(attempt)
+            remaining_sec = (deadline_dt - now).total_seconds()
+            time_remaining = max(1, int(remaining_sec))
+    elif attempt.status in ["SUBMITTED", "AUTO_SUBMITTED", "EXPIRED", "MALPRACTICE_CANCELLED"]:
+        time_remaining = 0
 
     return jsonify({
         "success": True,
+        "attempt_id": attempt.id,
         "status": attempt.status,
+        "exam_id": attempt.exam_id,
+        "exam_title": attempt.exam.title,
+        "duration_seconds": duration_seconds,
         "time_remaining_seconds": time_remaining,
-        "started_at": attempt.started_at.isoformat() if attempt.started_at else None,
-        "ended_at": attempt.ended_at.isoformat() if attempt.ended_at else None
+        "deadline": deadline,
+        "started_at": (attempt.started_at.isoformat() + "Z") if attempt.started_at else None,
+        "ended_at": (attempt.ended_at.isoformat() + "Z") if attempt.ended_at else None,
+        "server_time": now.isoformat() + "Z"
     }), 200

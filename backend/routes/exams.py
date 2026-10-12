@@ -79,7 +79,9 @@ def get_all_exams():
             # Access permission check: requires per-exam request and admin approval
             access_obj = access_map.get(exam.id)
             if access_obj:
-                d["access_status"] = "APPROVED" if access_obj.approved else "PENDING"
+                d["access_status"] = "APPROVED" if (access_obj.approved or user.registration_status == "APPROVED") else "PENDING"
+            elif user.registration_status == "APPROVED":
+                d["access_status"] = "APPROVED"
             else:
                 d["access_status"] = "UNREQUESTED"
                 
@@ -87,7 +89,9 @@ def get_all_exams():
             
         return jsonify({
             "success": True,
-            "exams": exams_data
+            "exams": exams_data,
+            "student_course": user.course,
+            "user": user.to_dict()
         }), 200
 
 @exams_bp.route("/<int:exam_id>", methods=["GET"])

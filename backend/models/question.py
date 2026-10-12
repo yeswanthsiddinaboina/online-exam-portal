@@ -18,6 +18,25 @@ class Question(db.Model):
     answers = db.relationship("StudentAnswer", backref="question", lazy=True, cascade="all, delete-orphan")
 
     def to_dict(self, include_correct=False):
+        seen_letters = {}
+        for opt in self.options:
+            letter = (opt.option_letter or "").strip().upper()
+            if not letter:
+                continue
+            if letter not in seen_letters:
+                seen_letters[letter] = opt
+            else:
+                existing = seen_letters[letter]
+                opt_txt = (opt.option_text or "").strip()
+                ex_txt = (existing.option_text or "").strip()
+                if len(opt_txt) > len(ex_txt):
+                    seen_letters[letter] = opt
+
+        if seen_letters:
+            display_options = [seen_letters[k].to_dict() for k in sorted(seen_letters.keys())]
+        else:
+            display_options = [opt.to_dict() for opt in self.options]
+
         data = {
             "id": self.id,
             "exam_id": self.exam_id,
@@ -25,7 +44,7 @@ class Question(db.Model):
             "question_type": self.question_type,
             "marks": self.marks,
             "negative_marks": self.negative_marks,
-            "options": [opt.to_dict() for opt in self.options],
+            "options": display_options,
             "created_at": self.created_at.isoformat() if self.created_at else None
         }
         if include_correct:

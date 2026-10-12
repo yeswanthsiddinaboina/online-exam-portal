@@ -147,6 +147,48 @@ const API = {
         }
     },
 
+    async put(endpoint, body) {
+        try {
+            const res = await fetch(`${API_BASE}${endpoint}`, {
+                method: "PUT",
+                headers: getHeaders(),
+                body: JSON.stringify(body)
+            });
+            if (res.status === 401) {
+                localStorage.removeItem(tokenKey);
+                localStorage.removeItem(userKey);
+                const dest = encodeURIComponent(window.location.pathname + window.location.search);
+                redirectToLogin(dest);
+                return { success: false, error_code: "UNAUTHORIZED", message: "Session expired." };
+            }
+            return await res.json();
+        } catch (e) {
+            console.error("API PUT error:", e);
+            return { success: false, error_code: "NETWORK_ERROR", message: "Network connectivity issue." };
+        }
+    },
+
+    async patch(endpoint, body) {
+        try {
+            const res = await fetch(`${API_BASE}${endpoint}`, {
+                method: "PATCH",
+                headers: getHeaders(),
+                body: JSON.stringify(body)
+            });
+            if (res.status === 401) {
+                localStorage.removeItem(tokenKey);
+                localStorage.removeItem(userKey);
+                const dest = encodeURIComponent(window.location.pathname + window.location.search);
+                redirectToLogin(dest);
+                return { success: false, error_code: "UNAUTHORIZED", message: "Session expired." };
+            }
+            return await res.json();
+        } catch (e) {
+            console.error("API PATCH error:", e);
+            return { success: false, error_code: "NETWORK_ERROR", message: "Network connectivity issue." };
+        }
+    },
+
     async upload(endpoint, formData) {
         try {
             const res = await fetch(`${API_BASE}${endpoint}`, {
@@ -453,12 +495,8 @@ class SandboxEnforcer {
         });
         
         if (res.success) {
-            // TEMPORARY OVERRIDE FOR TOMORROW'S EXAM: Set to false to re-enable
-            const DISABLE_EXAM_TERMINATION = true;
-            if (res.action === "TERMINATE" && !DISABLE_EXAM_TERMINATION) {
-                this.onTerminate(res.message);
-            } else if (res.action === "WARNING" || res.action === "TERMINATE") {
-                this.onWarning(res.message, res.violation_log_id);
+            if (res.action === "TERMINATE" || res.action === "WARNING") {
+                this.onWarning(res.message, res.violation_count, res.limit, eventType);
             }
         }
     }
@@ -737,8 +775,7 @@ class AIProctorEngine {
         }
 
         // Update Top Face Verified Badge UI
-        // TEMPORARY OVERRIDE FOR TOMORROW'S EXAM: Set to false to re-enable
-        const DISABLE_MULTIPLE_PERSON = true;
+        const DISABLE_MULTIPLE_PERSON = false;
 
         // Update Top Face Verified Badge UI
         const faceStatusPill = document.getElementById("face-verified-pill");
@@ -962,12 +999,8 @@ class AIProctorEngine {
         });
 
         if (res.success) {
-            // TEMPORARY OVERRIDE FOR TOMORROW'S EXAM: Set to false to re-enable
-            const DISABLE_EXAM_TERMINATION = true;
-            if (res.action === "TERMINATE" && !DISABLE_EXAM_TERMINATION) {
-                this.onTerminate(res.message);
-            } else if (res.action === "WARNING" || res.action === "TERMINATE") {
-                this.onWarning(res.message, res.violation_log_id);
+            if (res.action === "TERMINATE" || res.action === "WARNING") {
+                this.onWarning(res.message, res.violation_count, res.limit, eventType);
                 // Capture frame and upload as evidence
                 this.captureAndUploadEvidence(eventType, res.violation_log_id);
             }

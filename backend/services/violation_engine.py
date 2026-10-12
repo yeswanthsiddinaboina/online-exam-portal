@@ -11,7 +11,7 @@ logger = get_logger()
 # ==============================================================================
 DISABLE_FACE_MISMATCH = True
 DISABLE_EXAM_TERMINATION = True
-DISABLE_MULTIPLE_PERSON = True
+DISABLE_MULTIPLE_PERSON = False
 # ==============================================================================
 
 
@@ -164,7 +164,7 @@ class ViolationEngine:
             else:
                 severity = 2
                 action_taken = "WARNING"
-                message = f"Security Warning ({mismatch_count}/2): Candidate face mismatch detected. Infraction recorded for proctor review."
+                message = f"Warning: Candidate face mismatch detected. ({mismatch_count}/2)"
         elif not DISABLE_MULTIPLE_PERSON and event_type == "MULTIPLE_PERSON" and multiple_face_count >= multiple_person_limit:
             if not DISABLE_EXAM_TERMINATION:
                 severity = 3
@@ -175,7 +175,7 @@ class ViolationEngine:
             else:
                 severity = 2
                 action_taken = "WARNING"
-                message = f"Security Warning ({multiple_face_count}/{multiple_person_limit}): Multiple people detected! Permitted limit reached. Infraction recorded for proctor review."
+                message = f"Warning: Multiple people detected. ({multiple_face_count}/{multiple_person_limit})"
         elif event_type in ["TAB_SWITCH", "WINDOW_HIDDEN"] and tab_count >= tab_limit:
             if not DISABLE_EXAM_TERMINATION:
                 severity = 3
@@ -186,7 +186,7 @@ class ViolationEngine:
             else:
                 severity = 2
                 action_taken = "WARNING"
-                message = f"Security Warning ({tab_count}/{tab_limit}): Tab switch detected! Permitted limit reached. Infraction recorded for proctor review."
+                message = f"Warning: Please remain on the examination page. ({tab_count}/{tab_limit})"
         elif event_type == "FULLSCREEN_EXIT" and fullscreen_count >= fullscreen_limit:
             if not DISABLE_EXAM_TERMINATION:
                 severity = 3
@@ -197,7 +197,7 @@ class ViolationEngine:
             else:
                 severity = 2
                 action_taken = "WARNING"
-                message = f"Security Warning ({fullscreen_count}/{fullscreen_limit}): Fullscreen mode exited! Permitted limit reached. Infraction recorded for proctor review."
+                message = f"Warning: Please remain in fullscreen mode. ({fullscreen_count}/{fullscreen_limit})"
         elif event_type == "PHONE_DETECTED" and mobile_count > mobile_limit:
             if not DISABLE_EXAM_TERMINATION:
                 severity = 3
@@ -208,7 +208,7 @@ class ViolationEngine:
             else:
                 severity = 2
                 action_taken = "WARNING"
-                message = f"Security Warning ({mobile_count}/{mobile_limit}): Mobile phone detected! Permitted limit reached. Infraction recorded for proctor review."
+                message = f"Warning: Unauthorized mobile phone detected. ({mobile_count}/{mobile_limit})"
         elif event_type in ["HEAD_TURN", "FACE_ABSENT"] and face_count > head_turn_limit:
             if not DISABLE_EXAM_TERMINATION:
                 severity = 3
@@ -220,47 +220,28 @@ class ViolationEngine:
                 severity = 2
                 action_taken = "WARNING"
                 if event_type == "HEAD_TURN":
-                    message = "Head turn detected! Permitted limit reached. Infraction recorded for proctor review."
+                    message = f"Warning: Please keep your face directed toward the screen. ({face_count}/{head_turn_limit})"
                 else:
-                    message = f"Security Warning ({face_count}/{head_turn_limit}): Face absent detected! Permitted limit reached. Infraction recorded for proctor review."
+                    message = f"Warning: Face not detected. Please face the camera. ({face_count}/{head_turn_limit})"
         else:
             severity = 2
             action_taken = "WARNING"
             if event_type == "FACE_MISMATCH":
-                message = "Critical Security Alert: Candidate face mismatch detected! The face writing this exam does not match the candidate verified at check-in."
+                message = f"Warning: Candidate face mismatch detected. ({mismatch_count}/2)"
             elif event_type == "MULTIPLE_PERSON":
-                remaining = max(0, multiple_person_limit - multiple_face_count)
-                if not DISABLE_EXAM_TERMINATION and multiple_face_count == multiple_person_limit - 1:
-                    message = f"Security Warning ({multiple_face_count}/{multiple_person_limit}): Multiple faces detected! FINAL WARNING: Only the registered candidate must be visible in the camera frame. Any further detection will terminate your exam immediately!"
-                else:
-                    message = f"Security Warning ({multiple_face_count}/{multiple_person_limit}): Multiple faces detected! Only the registered candidate must be visible in the camera frame ({remaining} warning(s) remaining)."
+                message = f"Warning: Multiple people detected. ({multiple_face_count}/{multiple_person_limit})"
             elif event_type in ["TAB_SWITCH", "WINDOW_HIDDEN"]:
-                remaining = max(0, tab_limit - tab_count)
-                if not DISABLE_EXAM_TERMINATION and tab_count == tab_limit - 1:
-                    message = f"Security Warning ({tab_count}/{tab_limit}): Tab switch detected! FINAL WARNING: You have reached {tab_count} of {tab_limit} permitted switches. Any further tab switch will terminate your exam immediately!"
-                else:
-                    message = f"Security Warning ({tab_count}/{tab_limit}): Tab switch detected! Navigating away from the exam tab is prohibited ({remaining} warning(s) remaining)."
+                message = f"Warning: Please remain on the examination page. ({tab_count}/{tab_limit})"
             elif event_type == "FULLSCREEN_EXIT":
-                remaining = max(0, fullscreen_limit - fullscreen_count)
-                if not DISABLE_EXAM_TERMINATION and fullscreen_count == fullscreen_limit - 1:
-                    message = f"Security Warning ({fullscreen_count}/{fullscreen_limit}): Fullscreen exited! FINAL WARNING: Any further exit will terminate your exam immediately!"
-                else:
-                    message = f"Security Warning ({fullscreen_count}/{fullscreen_limit}): Fullscreen exited! Please remain in fullscreen mode ({remaining} warning(s) remaining)."
+                message = f"Warning: Please remain in fullscreen mode. ({fullscreen_count}/{fullscreen_limit})"
             elif event_type == "PHONE_DETECTED":
-                remaining = max(0, mobile_limit - mobile_count)
-                if not DISABLE_EXAM_TERMINATION and mobile_count == mobile_limit:
-                    message = f"Security Warning ({mobile_count}/{mobile_limit}): Mobile phone detected! FINAL WARNING: Maximum permitted warnings reached. Any further phone detection will terminate your exam immediately!"
-                else:
-                    message = f"Security Warning ({mobile_count}/{mobile_limit}): Mobile phone or unauthorized electronic device detected in camera frame ({remaining} warning(s) remaining)."
-            elif event_type in ["HEAD_TURN", "FACE_ABSENT"]:
-                if event_type == "HEAD_TURN":
-                    message = "Head turn detected! Please face the screen and remain focused on your examination."
-                else:
-                    remaining = max(0, head_turn_limit - face_count)
-                    if not DISABLE_EXAM_TERMINATION and face_count == head_turn_limit:
-                        message = f"Security Warning ({face_count}/{head_turn_limit}): Face absent! FINAL WARNING: Maximum permitted warnings reached. Any further infractions will terminate your exam immediately!"
-                    else:
-                        message = f"Security Warning ({face_count}/{head_turn_limit}): Face absent detected! Please face the camera and remain focused on your examination screen ({remaining} warning(s) remaining)."
+                message = f"Warning: Unauthorized mobile phone detected. ({mobile_count}/{mobile_limit})"
+            elif event_type == "HEAD_TURN":
+                message = f"Warning: Please keep your face directed toward the screen. ({face_count}/{head_turn_limit})"
+            elif event_type == "FACE_ABSENT":
+                message = f"Warning: Face not detected. Please face the camera. ({face_count}/{head_turn_limit})"
+            elif event_type == "CAMERA_FAILURE":
+                message = "Warning: Camera connection lost. Please restore your camera connection."
             else:
                 message = "Warning: Examination policy violation detected. Please adhere to the exam guidelines."
 
@@ -310,6 +291,8 @@ class ViolationEngine:
             return {
                 "action": action_taken,
                 "violation_count": current_count,
+                "limit": limit,
+                "event_type": event_type,
                 "violation_log_id": violation.id,
                 "message": message
             }

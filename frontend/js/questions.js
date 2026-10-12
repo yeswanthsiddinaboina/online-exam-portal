@@ -17,6 +17,27 @@ function escapeHtml(value) {
 }
 
 function toReviewQuestion(question) {
+    const optionMap = new Map();
+    (question.options || []).forEach((option, index) => {
+        const letter = (option.letter || option.option_letter || String.fromCharCode(65 + index)).trim().toUpperCase();
+        const text = (option.text || option.option_text || "").trim();
+        if (!text) return;
+        if (!optionMap.has(letter)) {
+            optionMap.set(letter, { letter, text });
+        } else {
+            const prev = optionMap.get(letter);
+            const prevPrefixed = /^[A-D]\s*[\).\-:]/i.test(prev.text);
+            const currPrefixed = /^[A-D]\s*[\).\-:]/i.test(text);
+            if (prevPrefixed && !currPrefixed) {
+                optionMap.set(letter, { letter, text });
+            } else if (!prevPrefixed && currPrefixed) {
+                // Keep clean non-prefixed option
+            } else if (text.length > prev.text.length) {
+                optionMap.set(letter, { letter, text });
+            }
+        }
+    });
+
     return {
         id: question.id || null,
         question_text: question.question_text || question.question || "",
@@ -24,10 +45,7 @@ function toReviewQuestion(question) {
         correct_answer: question.correct_answer || question.answer || "",
         marks: Number(question.marks || 1),
         negative_marks: Number(question.negative_marks || 0),
-        options: (question.options || []).map((option, index) => ({
-            letter: option.letter || option.option_letter || String.fromCharCode(65 + index),
-            text: option.text || option.option_text || ""
-        }))
+        options: Array.from(optionMap.values())
     };
 }
 

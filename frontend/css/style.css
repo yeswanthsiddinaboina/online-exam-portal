@@ -897,3 +897,33 @@ h1, h2, h3, h4, h5, h6 {
     color: #9CA3AF;
 }
 
+/* --- Shared Authentication & Portal Branding Footers --- */
+.app-auth-footer {
+    text-align: center;
+    font-size: 0.82rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: var(--text-muted);
+    margin-top: 1.75rem;
+    user-select: none;
+    line-height: 1.4;
+}
+
+.app-auth-footer-dark {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* --- Student Exam-Writing Page Bottom Watermark --- */
+.exam-brand-watermark {
+    text-align: center;
+    font-size: 0.76rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: var(--text-muted);
+    opacity: 0.7;
+    user-select: none;
+    pointer-events: none;
+    background: transparent;
+    line-height: 1.2;
+}
+
