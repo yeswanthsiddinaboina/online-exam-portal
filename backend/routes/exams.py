@@ -76,12 +76,16 @@ def get_all_exams():
                         d["percentage"] = res_obj.percentage
                         d["passed"] = res_obj.passed
             
-            # Access permission check: requires per-exam request and admin approval
+            # Access permission check: strictly requires per-exam request and admin approval
             access_obj = access_map.get(exam.id)
             if access_obj:
-                d["access_status"] = "APPROVED" if (access_obj.approved or user.registration_status == "APPROVED") else "PENDING"
-            elif user.registration_status == "APPROVED":
-                d["access_status"] = "APPROVED"
+                status_val = (getattr(access_obj, "status", "") or "").upper()
+                if status_val == "REJECTED":
+                    d["access_status"] = "REJECTED"
+                elif access_obj.approved or status_val == "APPROVED":
+                    d["access_status"] = "APPROVED"
+                else:
+                    d["access_status"] = "PENDING"
             else:
                 d["access_status"] = "UNREQUESTED"
                 
@@ -107,6 +111,8 @@ def get_exam_by_id(exam_id):
             "message": f"Exam with ID {exam_id} not found."
         }), 404
         
+    exam_dict = exam.to_dict(include_config=True)
+
     # Standard students shouldn't access inactive exams
     if user.role != "admin":
         if not exam.is_active:
@@ -124,9 +130,22 @@ def get_exam_by_id(exam_id):
                 "message": f"This examination is assigned to {exam.course} students only."
             }), 403
 
+        from backend.models import ExamAccess
+        access_obj = ExamAccess.query.filter_by(student_id=user.id, exam_id=exam_id).first()
+        if access_obj:
+            status_val = (getattr(access_obj, "status", "") or "").upper()
+            if status_val == "REJECTED":
+                exam_dict["access_status"] = "REJECTED"
+            elif access_obj.approved or status_val == "APPROVED":
+                exam_dict["access_status"] = "APPROVED"
+            else:
+                exam_dict["access_status"] = "PENDING"
+        else:
+            exam_dict["access_status"] = "UNREQUESTED"
+
     return jsonify({
         "success": True,
-        "exam": exam.to_dict(include_config=True)
+        "exam": exam_dict
     }), 200
 
 @exams_bp.route("", methods=["POST"])
@@ -451,7 +470,7 @@ def request_exam_access(exam_id):
         }), 403
 
     from backend.models import ExamAccess, Exam
-    exam = Exam.query.get(exam_id)
+    exam = Exam.query.filter_by(id=exam_id, is_deleted=False).first()
     if not exam or not exam.is_active:
         return jsonify({
             "success": False,
@@ -467,29 +486,48 @@ def request_exam_access(exam_id):
             "message": f"This examination is assigned to {exam.course} students only."
         }), 403
 
-    # Check if access record already exists
+    # Check if access record already exists (reuse existing state instead of creating duplicates)
     existing = ExamAccess.query.filter_by(student_id=user.id, exam_id=exam_id).first()
     if existing:
-        return jsonify({
-            "success": True,
-            "message": "Access request already submitted.",
-            "access_status": "APPROVED" if existing.approved else "PENDING"
-        }), 200
+        existing_status = (getattr(existing, "status", "") or "").upper()
+        if existing_status == "REJECTED":
+            return jsonify({
+                "success": False,
+                "error_code": "EXAM_ACCESS_REJECTED",
+                "message": "Your request to write this examination was rejected by the administrator.",
+                "access_status": "REJECTED"
+            }), 403
+        elif existing.approved or existing_status == "APPROVED":
+            return jsonify({
+                "success": True,
+                "message": "Your exam access request is already approved.",
+                "access_status": "APPROVED",
+                "request": existing.to_dict()
+            }), 200
+        else:
+            return jsonify({
+                "success": True,
+                "message": "Your exam request has already been sent to the Admin. Please wait for approval.",
+                "access_status": "PENDING",
+                "request": existing.to_dict()
+            }), 200
 
     try:
         access_req = ExamAccess(
             student_id=user.id,
             exam_id=exam_id,
-            approved=False
+            approved=False,
+            status="PENDING"
         )
         db.session.add(access_req)
         db.session.commit()
         
-        logger.info(f"Student {user.email} requested access for exam {exam.title}")
+        logger.info(f"Student {user.email} requested access for exam {exam.title} (Status: PENDING)")
         return jsonify({
             "success": True,
-            "message": "Exam access request submitted successfully. Please wait for admin approval.",
-            "access_status": "PENDING"
+            "message": "Your exam request has been sent to the Admin. Please wait for approval.",
+            "access_status": "PENDING",
+            "request": access_req.to_dict()
         }), 201
     except Exception as e:
         db.session.rollback()

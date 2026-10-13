@@ -322,13 +322,30 @@ def get_exam_questions(exam_id):
             "message": f"Exam with ID {exam_id} not found."
         }), 404
 
-    # Students shouldn't view questions of inactive exams
-    if user.role != "admin" and not exam.is_active:
-        return jsonify({
-            "success": False,
-            "error_code": "EXAM_INACTIVE",
-            "message": "This examination is not active."
-        }), 403
+    # Students shouldn't view questions of inactive, mismatched-course, or unapproved exams
+    if user.role != "admin":
+        if not exam.is_active:
+            return jsonify({
+                "success": False,
+                "error_code": "EXAM_INACTIVE",
+                "message": "This examination is not active."
+            }), 403
+
+        if not exam.is_accessible_by(user.course):
+            return jsonify({
+                "success": False,
+                "error_code": "EXAM_COURSE_MISMATCH",
+                "message": f"This examination is assigned to {exam.course} students only."
+            }), 403
+
+        from backend.models import ExamAccess
+        access = ExamAccess.query.filter_by(student_id=user.id, exam_id=exam_id).first()
+        if not access or not access.approved or (getattr(access, "status", "APPROVED") or "").upper() == "REJECTED":
+            return jsonify({
+                "success": False,
+                "error_code": "EXAM_ACCESS_RESTRICTED",
+                "message": "Access restricted. You must request and receive administrator approval to access this examination."
+            }), 403
 
     questions = Question.query.filter_by(exam_id=exam_id).all()
     

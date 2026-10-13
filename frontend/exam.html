@@ -1348,8 +1348,8 @@
                     API.get(`/attempts/${currentAttemptId}/status`)
                 ]);
 
-                if (!questionsRes || !questionsRes.success) {
-                    alert("Failed to load examination questions.");
+                if (!questionsRes || !questionsRes.success || (metadataRes && metadataRes.exam && metadataRes.exam.access_status && metadataRes.exam.access_status !== "APPROVED")) {
+                    alert((questionsRes && questionsRes.message) || "Access restricted. You must request and receive administrator approval before launching this examination.");
                     redirectToDashboard();
                     return;
                 }

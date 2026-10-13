@@ -40,8 +40,9 @@ def start_exam(exam_id):
             "attempt_id": attempt.id,
             "session_token": attempt.session_token,
             "started_at": attempt.started_at.isoformat(),
-            "duration_seconds": attempt.exam.duration_minutes * 60
-        }), 201
+            "duration_seconds": attempt.exam.duration_minutes * 60,
+            "attempt": attempt.to_dict()
+        }), 200
 
     except PermissionError as pe:
         err_msg = str(pe)

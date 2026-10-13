@@ -237,12 +237,27 @@ class SecureExamSystemTests(unittest.TestCase):
         db.session.refresh(attempt2)
         self.assertEqual(attempt2.status, "IN_PROGRESS")
 
+    def _grant_exam_access(self, student_id=None, exam_id=None):
+        from backend.models import ExamAccess
+        s_id = student_id or self.student.id
+        e_id = exam_id or self.exam.id
+        acc = ExamAccess.query.filter_by(student_id=s_id, exam_id=e_id).first()
+        if not acc:
+            acc = ExamAccess(student_id=s_id, exam_id=e_id, approved=True, status="APPROVED")
+            db.session.add(acc)
+        else:
+            acc.approved = True
+            acc.status = "APPROVED"
+        db.session.commit()
+        return acc
+
     def test_violations_exceeding_threshold_do_not_terminate_exam_and_allow_submission(self):
         """Verifies that when violation counts exceed limits, no termination occurs, warnings are issued, and student can complete and submit the exam."""
         self.sec_cfg.cooldown_seconds = 0
         self.sec_cfg.tab_switch_limit = 2
         self.sec_cfg.mobile_limit = 1
         db.session.commit()
+        self._grant_exam_access()
 
         login_res = self.client.post("/api/auth/login", json={
             "email": "student@test.com",
@@ -944,6 +959,7 @@ class SecureExamSystemTests(unittest.TestCase):
 
     def test_attempt_status_authoritative_deadline_and_timer(self):
         """Tests that /attempts/<id>/status returns authoritative deadline and timer without delay."""
+        self._grant_exam_access()
         login_res = self.client.post("/api/auth/login", json={
             "email": "student@test.com",
             "password": "StudentPass123!"
@@ -969,6 +985,7 @@ class SecureExamSystemTests(unittest.TestCase):
 
     def test_automatic_submission_when_time_completed(self):
         """Tests that auto-submitting with TIME_COMPLETED marks status as AUTO_SUBMITTED and evaluates saved answers."""
+        self._grant_exam_access()
         login_res = self.client.post("/api/auth/login", json={
             "email": "student@test.com",
             "password": "StudentPass123!"
@@ -1007,6 +1024,7 @@ class SecureExamSystemTests(unittest.TestCase):
 
     def test_submission_idempotency(self):
         """Tests that repeated submit calls return HTTP 200 without error."""
+        self._grant_exam_access()
         login_res = self.client.post("/api/auth/login", json={
             "email": "student@test.com",
             "password": "StudentPass123!"
@@ -1036,6 +1054,7 @@ class SecureExamSystemTests(unittest.TestCase):
 
     def test_session_manager_auto_submission_on_session_expired(self):
         """Tests that SessionManager.verify_session auto-submits expired attempts rather than leaving them broken."""
+        self._grant_exam_access()
         login_res = self.client.post("/api/auth/login", json={
             "email": "student@test.com",
             "password": "StudentPass123!"
@@ -1062,6 +1081,7 @@ class SecureExamSystemTests(unittest.TestCase):
 
     def test_heartbeat_clean_auto_submitted_response_on_expiration(self):
         """Tests that heartbeat gracefully returns HTTP 200 with AUTO_SUBMITTED when session expires."""
+        self._grant_exam_access()
         login_res = self.client.post("/api/auth/login", json={
             "email": "student@test.com",
             "password": "StudentPass123!"
@@ -1089,7 +1109,7 @@ class SecureExamSystemTests(unittest.TestCase):
         self.assertEqual(hb_res.json["time_remaining_seconds"], 0)
 
     def test_student_profile_sync_after_admin_course_update(self):
-        """Tests that /api/auth/me and /api/exams return the updated course immediately after admin changes it."""
+        """Tests that /api/auth/me and /api/exams return the updated course immediately after admin changes it, without auto-approving exam access."""
         # 1. Admin login
         admin_login = self.client.post("/api/auth/login", json={
             "email": "admin@test.com",
@@ -1128,13 +1148,361 @@ class SecureExamSystemTests(unittest.TestCase):
         self.assertEqual(me_res2.status_code, 200)
         self.assertEqual(me_res2.json["user"]["course"], "Python")
 
-        # 5. Student queries /api/exams -> must return Python exams, student_course=Python, and access_status=APPROVED
+        # 5. Student queries /api/exams -> must return Python exams, student_course=Python, and access_status=UNREQUESTED (requires request & approval)
         exams_res = self.client.get("/api/exams", headers=student_headers)
         self.assertEqual(exams_res.status_code, 200)
         self.assertEqual(exams_res.json["student_course"], "Python")
         self.assertEqual(exams_res.json["user"]["course"], "Python")
         self.assertGreater(len(exams_res.json["exams"]), 0)
-        self.assertEqual(exams_res.json["exams"][0]["access_status"], "APPROVED")
+        self.assertEqual(exams_res.json["exams"][0]["access_status"], "UNREQUESTED")
+
+    # --- EXAM ACCESS REQUEST & ADMIN APPROVAL WORKFLOW TESTS ---
+    def test_exam_access_request_creates_pending_and_does_not_launch(self):
+        """
+        Tests:
+        1. Student clicks 'Request to Write Exam' -> request created with status PENDING.
+        2. Exam does NOT launch after request creation (no ExamAttempt created).
+        12. Duplicate PENDING requests for the same student and exam are prevented.
+        """
+        from backend.models import ExamAccess
+
+        login_res = self.client.post("/api/auth/login", json={
+            "email": "student@test.com",
+            "password": "StudentPass123!"
+        })
+        student_headers = {"Authorization": f"Bearer {login_res.json['token']}"}
+
+        # Initially UNREQUESTED
+        exams_before = self.client.get("/api/exams", headers=student_headers)
+        self.assertEqual(exams_before.status_code, 200)
+        exam_item = next(e for e in exams_before.json["exams"] if e["id"] == self.exam.id)
+        self.assertEqual(exam_item["access_status"], "UNREQUESTED")
+
+        # 1. Request access to write exam
+        req_res = self.client.post(f"/api/exams/{self.exam.id}/request-access", headers=student_headers)
+        self.assertEqual(req_res.status_code, 201)
+        self.assertTrue(req_res.json["success"])
+        self.assertEqual(req_res.json["access_status"], "PENDING")
+        self.assertIn("Please wait for approval", req_res.json["message"])
+
+        # 2. Verify DB record is PENDING and no ExamAttempt was created
+        access_records = ExamAccess.query.filter_by(student_id=self.student.id, exam_id=self.exam.id).all()
+        self.assertEqual(len(access_records), 1)
+        self.assertFalse(access_records[0].approved)
+        self.assertEqual(access_records[0].status, "PENDING")
+        self.assertEqual(ExamAttempt.query.filter_by(student_id=self.student.id, exam_id=self.exam.id).count(), 0)
+
+        # Verify GET /api/exams shows PENDING
+        exams_after = self.client.get("/api/exams", headers=student_headers)
+        exam_item_after = next(e for e in exams_after.json["exams"] if e["id"] == self.exam.id)
+        self.assertEqual(exam_item_after["access_status"], "PENDING")
+
+        # 12. Duplicate request for the same student and exam returns existing PENDING state without creating duplicates
+        dup_res = self.client.post(f"/api/exams/{self.exam.id}/request-access", headers=student_headers)
+        self.assertEqual(dup_res.status_code, 200)
+        self.assertTrue(dup_res.json["success"])
+        self.assertEqual(dup_res.json["access_status"], "PENDING")
+        self.assertEqual(ExamAccess.query.filter_by(student_id=self.student.id, exam_id=self.exam.id).count(), 1)
+
+    def test_unrequested_pending_and_rejected_cannot_launch_or_fetch_questions(self):
+        """
+        Tests:
+        3. Student with PENDING request cannot launch exam or fetch questions.
+        4. Student with no request (UNREQUESTED) cannot launch exam or fetch questions.
+        5. Student with REJECTED request cannot launch exam or fetch questions.
+        """
+        from backend.models import ExamAccess
+
+        login_res = self.client.post("/api/auth/login", json={
+            "email": "student@test.com",
+            "password": "StudentPass123!"
+        })
+        student_headers = {"Authorization": f"Bearer {login_res.json['token']}"}
+
+        # --- Case A: UNREQUESTED (no ExamAccess record) ---
+        start_unreq = self.client.post(f"/api/exams/{self.exam.id}/start", headers=student_headers)
+        self.assertEqual(start_unreq.status_code, 403)
+        self.assertEqual(start_unreq.json["error_code"], "EXAM_ACCESS_RESTRICTED")
+
+        q_unreq = self.client.get(f"/api/exams/{self.exam.id}/questions", headers=student_headers)
+        self.assertEqual(q_unreq.status_code, 403)
+        self.assertEqual(q_unreq.json["error_code"], "EXAM_ACCESS_RESTRICTED")
+
+        ref_unreq = self.client.post(
+            "/api/proctor/verify-face/reference",
+            data={"exam_id": self.exam.id},
+            headers=student_headers
+        )
+        self.assertEqual(ref_unreq.status_code, 403)
+        self.assertEqual(ref_unreq.json["error_code"], "EXAM_ACCESS_RESTRICTED")
+
+        cmp_unreq = self.client.post(
+            "/api/proctor/verify-face/compare",
+            data={"exam_id": self.exam.id},
+            headers=student_headers
+        )
+        self.assertEqual(cmp_unreq.status_code, 403)
+        self.assertEqual(cmp_unreq.json["error_code"], "EXAM_ACCESS_RESTRICTED")
+
+        # --- Case B: PENDING request ---
+        req_res = self.client.post(f"/api/exams/{self.exam.id}/request-access", headers=student_headers)
+        self.assertEqual(req_res.status_code, 201)
+
+        start_pend = self.client.post(f"/api/exams/{self.exam.id}/start", headers=student_headers)
+        self.assertEqual(start_pend.status_code, 403)
+        self.assertEqual(start_pend.json["error_code"], "EXAM_ACCESS_RESTRICTED")
+
+        q_pend = self.client.get(f"/api/exams/{self.exam.id}/questions", headers=student_headers)
+        self.assertEqual(q_pend.status_code, 403)
+        self.assertEqual(q_pend.json["error_code"], "EXAM_ACCESS_RESTRICTED")
+
+        ref_pend = self.client.post(
+            "/api/proctor/verify-face/reference",
+            data={"exam_id": self.exam.id},
+            headers=student_headers
+        )
+        self.assertEqual(ref_pend.status_code, 403)
+        self.assertEqual(ref_pend.json["error_code"], "EXAM_ACCESS_RESTRICTED")
+
+        cmp_pend = self.client.post(
+            "/api/proctor/verify-face/compare",
+            data={"exam_id": self.exam.id},
+            headers=student_headers
+        )
+        self.assertEqual(cmp_pend.status_code, 403)
+        self.assertEqual(cmp_pend.json["error_code"], "EXAM_ACCESS_RESTRICTED")
+
+        # --- Case C: REJECTED request ---
+        acc = ExamAccess.query.filter_by(student_id=self.student.id, exam_id=self.exam.id).first()
+        acc.approved = False
+        acc.status = "REJECTED"
+        db.session.commit()
+
+        start_rej = self.client.post(f"/api/exams/{self.exam.id}/start", headers=student_headers)
+        self.assertEqual(start_rej.status_code, 403)
+        self.assertEqual(start_rej.json["error_code"], "EXAM_ACCESS_RESTRICTED")
+
+        q_rej = self.client.get(f"/api/exams/{self.exam.id}/questions", headers=student_headers)
+        self.assertEqual(q_rej.status_code, 403)
+        self.assertEqual(q_rej.json["error_code"], "EXAM_ACCESS_RESTRICTED")
+
+        ref_rej = self.client.post(
+            "/api/proctor/verify-face/reference",
+            data={"exam_id": self.exam.id},
+            headers=student_headers
+        )
+        self.assertEqual(ref_rej.status_code, 403)
+        self.assertEqual(ref_rej.json["error_code"], "EXAM_ACCESS_RESTRICTED")
+
+        cmp_rej = self.client.post(
+            "/api/proctor/verify-face/compare",
+            data={"exam_id": self.exam.id},
+            headers=student_headers
+        )
+        self.assertEqual(cmp_rej.status_code, 403)
+        self.assertEqual(cmp_rej.json["error_code"], "EXAM_ACCESS_RESTRICTED")
+
+        # Re-requesting while REJECTED is also blocked with 403
+        rereq_rej = self.client.post(f"/api/exams/{self.exam.id}/request-access", headers=student_headers)
+        self.assertEqual(rereq_rej.status_code, 403)
+        self.assertEqual(rereq_rej.json["access_status"], "REJECTED")
+
+    def test_admin_view_approve_and_reject_exam_access_requests(self):
+        """
+        Tests:
+        6. Admin can view PENDING requests.
+        7. Admin can approve a PENDING request -> status becomes APPROVED.
+        8. Admin can reject a PENDING request -> status becomes REJECTED.
+        9. Non-admin / student cannot approve or reject requests.
+        10. Approved student can launch exam and fetch questions.
+        """
+        from backend.models import ExamAccess
+
+        # Login student & admin
+        s_login = self.client.post("/api/auth/login", json={"email": "student@test.com", "password": "StudentPass123!"})
+        student_headers = {"Authorization": f"Bearer {s_login.json['token']}"}
+
+        a_login = self.client.post("/api/auth/login", json={"email": "admin@test.com", "password": "AdminPass123!"})
+        admin_headers = {"Authorization": f"Bearer {a_login.json['token']}"}
+
+        # Student submits request
+        req_res = self.client.post(f"/api/exams/{self.exam.id}/request-access", headers=student_headers)
+        self.assertEqual(req_res.status_code, 201)
+        access_id = req_res.json["request"]["id"]
+
+        # 6. Admin views pending requests
+        pending_res = self.client.get("/api/admin/access/pending", headers=admin_headers)
+        self.assertEqual(pending_res.status_code, 200)
+        self.assertEqual(pending_res.json["count"], 1)
+        self.assertEqual(pending_res.json["pending_access"][0]["id"], access_id)
+        self.assertEqual(pending_res.json["pending_access"][0]["status"], "PENDING")
+
+        # 9. Non-admin / student cannot approve or reject requests
+        stu_approve = self.client.post(f"/api/admin/access/{access_id}/approve", headers=student_headers)
+        self.assertEqual(stu_approve.status_code, 403)
+        stu_reject = self.client.post(f"/api/admin/access/{access_id}/reject", headers=student_headers)
+        self.assertEqual(stu_reject.status_code, 403)
+
+        # 8. Admin rejects the request -> status becomes REJECTED
+        rej_res = self.client.post(f"/api/admin/access/{access_id}/reject", headers=admin_headers)
+        self.assertEqual(rej_res.status_code, 200)
+        self.assertEqual(rej_res.json["access_status"], "REJECTED")
+
+        acc_db = ExamAccess.query.get(access_id)
+        self.assertFalse(acc_db.approved)
+        self.assertEqual(acc_db.status, "REJECTED")
+
+        # Rejected request is no longer in pending list
+        pending_after_rej = self.client.get("/api/admin/access/pending", headers=admin_headers)
+        self.assertEqual(pending_after_rej.json["count"], 0)
+
+        # Student sees REJECTED on dashboard and cannot launch
+        exams_rej = self.client.get("/api/exams", headers=student_headers)
+        self.assertEqual(exams_rej.json["exams"][0]["access_status"], "REJECTED")
+        self.assertEqual(self.client.post(f"/api/exams/{self.exam.id}/start", headers=student_headers).status_code, 403)
+
+        # 7. Admin approves the request -> status becomes APPROVED
+        app_res = self.client.post(f"/api/admin/access/{access_id}/approve", headers=admin_headers)
+        self.assertEqual(app_res.status_code, 200)
+        self.assertEqual(app_res.json["access_status"], "APPROVED")
+
+        db.session.refresh(acc_db)
+        self.assertTrue(acc_db.approved)
+        self.assertEqual(acc_db.status, "APPROVED")
+
+        # 10. Approved student sees APPROVED, can fetch questions, and can launch the exam
+        exams_app = self.client.get("/api/exams", headers=student_headers)
+        self.assertEqual(exams_app.json["exams"][0]["access_status"], "APPROVED")
+
+        q_res = self.client.get(f"/api/exams/{self.exam.id}/questions", headers=student_headers)
+        self.assertEqual(q_res.status_code, 200)
+        self.assertEqual(len(q_res.json["questions"]), 1)
+
+        start_res = self.client.post(f"/api/exams/{self.exam.id}/start", headers=student_headers)
+        self.assertEqual(start_res.status_code, 200)
+        self.assertTrue(start_res.json["success"])
+        self.assertIsNotNone(start_res.json["attempt_id"])
+
+    def test_student_cannot_approve_or_launch_another_students_exam_request(self):
+        """
+        Tests:
+        11. Student cannot approve or launch another student's exam request.
+        """
+        # Create a second student
+        student_b = User(email="student_b@test.com", first_name="Student", last_name="Two", role="student", registration_status="APPROVED")
+        student_b.set_password("StudentPass123!")
+        db.session.add(student_b)
+        db.session.commit()
+
+        # Login Student A, Student B, and Admin
+        sa_login = self.client.post("/api/auth/login", json={"email": "student@test.com", "password": "StudentPass123!"})
+        sa_headers = {"Authorization": f"Bearer {sa_login.json['token']}"}
+
+        sb_login = self.client.post("/api/auth/login", json={"email": "student_b@test.com", "password": "StudentPass123!"})
+        sb_headers = {"Authorization": f"Bearer {sb_login.json['token']}"}
+
+        admin_login = self.client.post("/api/auth/login", json={"email": "admin@test.com", "password": "AdminPass123!"})
+        admin_headers = {"Authorization": f"Bearer {admin_login.json['token']}"}
+
+        # Student B requests access
+        req_b = self.client.post(f"/api/exams/{self.exam.id}/request-access", headers=sb_headers)
+        self.assertEqual(req_b.status_code, 201)
+        req_b_id = req_b.json["request"]["id"]
+
+        # Student A tries to approve Student B's request -> 403 Forbidden
+        sa_approve = self.client.post(f"/api/admin/access/{req_b_id}/approve", headers=sa_headers)
+        self.assertEqual(sa_approve.status_code, 403)
+
+        # Admin approves Student B's request
+        admin_app = self.client.post(f"/api/admin/access/{req_b_id}/approve", headers=admin_headers)
+        self.assertEqual(admin_app.status_code, 200)
+
+        # Student B can launch the exam, but Student A still CANNOT launch or fetch questions!
+        sa_start = self.client.post(f"/api/exams/{self.exam.id}/start", headers=sa_headers)
+        self.assertEqual(sa_start.status_code, 403)
+        self.assertEqual(sa_start.json["error_code"], "EXAM_ACCESS_RESTRICTED")
+
+        sa_questions = self.client.get(f"/api/exams/{self.exam.id}/questions", headers=sa_headers)
+        self.assertEqual(sa_questions.status_code, 403)
+        self.assertEqual(sa_questions.json["error_code"], "EXAM_ACCESS_RESTRICTED")
+
+        sb_start = self.client.post(f"/api/exams/{self.exam.id}/start", headers=sb_headers)
+        self.assertEqual(sb_start.status_code, 200)
+        sb_attempt_id = sb_start.json["attempt_id"]
+
+        # Student A cannot access Student B's attempt status
+        sa_status_hijack = self.client.get(f"/api/attempts/{sb_attempt_id}/status", headers=sa_headers)
+        self.assertEqual(sa_status_hijack.status_code, 403)
+
+    def test_two_step_face_reference_and_compare_workflow(self):
+        """
+        Tests the complete two-step pre-exam face setup workflow:
+        Step 1: POST /api/proctor/verify-face/reference ("1. Agree & Take Reference Photo")
+        Step 2: POST /api/proctor/verify-face/compare ("2. Verify Face & Launch Exam")
+        """
+        from PIL import Image
+        from backend.config import Config
+
+        def make_jpeg():
+            buf = io.BytesIO()
+            img = Image.new("RGB", (320, 240), color=(120, 160, 200))
+            img.save(buf, format="JPEG")
+            buf.seek(0)
+            return buf
+
+        # Login as student
+        login_res = self.client.post("/api/auth/login", json={
+            "email": "student@test.com",
+            "password": "StudentPass123!"
+        })
+        student_headers = {"Authorization": f"Bearer {login_res.json['token']}"}
+
+        # Before approval: Step 1 is rejected with 403 EXAM_ACCESS_RESTRICTED
+        unapproved_ref = self.client.post(
+            "/api/proctor/verify-face/reference",
+            data={"exam_id": str(self.exam.id), "file": (make_jpeg(), "reference_frame.jpg")},
+            content_type="multipart/form-data",
+            headers=student_headers
+        )
+        self.assertEqual(unapproved_ref.status_code, 403)
+        self.assertEqual(unapproved_ref.json["error_code"], "EXAM_ACCESS_RESTRICTED")
+
+        # Grant approved access
+        self._grant_exam_access()
+
+        # Step 1: Capture reference photo succeeds with 200
+        ref_res = self.client.post(
+            "/api/proctor/verify-face/reference",
+            data={"exam_id": str(self.exam.id), "file": (make_jpeg(), "reference_frame.jpg")},
+            content_type="multipart/form-data",
+            headers=student_headers
+        )
+        self.assertEqual(ref_res.status_code, 200)
+        self.assertTrue(ref_res.json["success"])
+
+        temp_ref_path = Config.EVIDENCE_DIR / f"temp_ref_{self.student.id}_{self.exam.id}.jpg"
+        self.assertTrue(temp_ref_path.exists())
+
+        # Step 2: Compare face and start exam session succeeds with 200
+        cmp_res = self.client.post(
+            "/api/proctor/verify-face/compare",
+            data={"exam_id": str(self.exam.id), "file": (make_jpeg(), "verify_frame.jpg")},
+            content_type="multipart/form-data",
+            headers=student_headers
+        )
+        self.assertEqual(cmp_res.status_code, 200)
+        self.assertTrue(cmp_res.json["success"])
+        attempt_id = cmp_res.json["attempt_id"]
+        self.assertIsNotNone(attempt_id)
+        self.assertIsNotNone(cmp_res.json["session_token"])
+
+        # Permanent reference photo is saved as reference_<attempt_id>.jpg
+        final_ref_path = Config.EVIDENCE_DIR / f"reference_{attempt_id}.jpg"
+        self.assertTrue(final_ref_path.exists())
+        if final_ref_path.exists():
+            final_ref_path.unlink()
 
 if __name__ == "__main__":
     unittest.main()
+
+

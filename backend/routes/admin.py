@@ -404,7 +404,10 @@ def get_reports():
 
         # Fetch all pending access requests across all active non-deleted exams
         from backend.models import ExamAccess
-        pending_access = ExamAccess.query.filter_by(approved=False).order_by(ExamAccess.requested_at.desc()).all()
+        pending_access = ExamAccess.query.filter(
+            ExamAccess.approved == False,
+            db.or_(ExamAccess.status == "PENDING", ExamAccess.status == None)
+        ).order_by(ExamAccess.requested_at.desc()).all()
         pending_data = [{
             "id": pa.id,
             "exam_id": pa.exam_id,
@@ -412,6 +415,7 @@ def get_reports():
             "student_email": pa.student.email if pa.student else "Unknown",
             "student_username": pa.student.first_name if pa.student else "Unknown",
             "student_userid": pa.student.last_name if pa.student else "Unknown",
+            "status": pa.status or "PENDING",
             "requested_at": pa.requested_at.isoformat() + "Z" if pa.requested_at else None
         } for pa in pending_access if pa.exam and not getattr(pa.exam, 'is_deleted', False)]
 
@@ -569,11 +573,14 @@ def approve_access(access_id):
 
     try:
         access.approved = True
+        access.status = "APPROVED"
         db.session.commit()
         logger.info(f"Admin approved exam access for student {access.student.email} on exam {access.exam.title}")
         return jsonify({
             "success": True,
-            "message": f"Successfully approved access for {access.student.email}."
+            "message": f"Successfully approved access for {access.student.email}.",
+            "access_status": "APPROVED",
+            "request": access.to_dict()
         }), 200
     except Exception as e:
         db.session.rollback()
@@ -599,12 +606,15 @@ def reject_access(access_id):
         }), 404
 
     try:
-        db.session.delete(access)
+        access.approved = False
+        access.status = "REJECTED"
         db.session.commit()
-        logger.info(f"Admin rejected exam access for student {access.student.email} on exam {access.exam.title}")
+        logger.info(f"Admin rejected exam access for student {access.student.email if access.student else access.student_id} on exam {access.exam.title if access.exam else access.exam_id}")
         return jsonify({
             "success": True,
-            "message": "Successfully rejected access request."
+            "message": "Successfully rejected access request.",
+            "access_status": "REJECTED",
+            "request": access.to_dict()
         }), 200
     except Exception as e:
         db.session.rollback()
@@ -622,9 +632,14 @@ def reject_access(access_id):
 def approve_all_access(exam_id):
     from backend.models import ExamAccess
     try:
-        pending = ExamAccess.query.filter_by(exam_id=exam_id, approved=False).all()
+        pending = ExamAccess.query.filter(
+            ExamAccess.exam_id == exam_id,
+            ExamAccess.approved == False,
+            db.or_(ExamAccess.status == "PENDING", ExamAccess.status == None)
+        ).all()
         for pa in pending:
             pa.approved = True
+            pa.status = "APPROVED"
         db.session.commit()
         logger.info(f"Admin approved all pending access requests for exam {exam_id} ({len(pending)} requests approved)")
         return jsonify({
@@ -647,9 +662,13 @@ def approve_all_access(exam_id):
 def approve_all_pending_access():
     from backend.models import ExamAccess
     try:
-        pending = ExamAccess.query.filter_by(approved=False).all()
+        pending = ExamAccess.query.filter(
+            ExamAccess.approved == False,
+            db.or_(ExamAccess.status == "PENDING", ExamAccess.status == None)
+        ).all()
         for pa in pending:
             pa.approved = True
+            pa.status = "APPROVED"
         db.session.commit()
         logger.info(f"Admin approved all pending access requests across all exams ({len(pending)} requests approved)")
         return jsonify({
@@ -672,7 +691,10 @@ def approve_all_pending_access():
 def get_pending_access_requests():
     from backend.models import ExamAccess
     try:
-        pending_access = ExamAccess.query.filter_by(approved=False).order_by(ExamAccess.requested_at.desc()).all()
+        pending_access = ExamAccess.query.filter(
+            ExamAccess.approved == False,
+            db.or_(ExamAccess.status == "PENDING", ExamAccess.status == None)
+        ).order_by(ExamAccess.requested_at.desc()).all()
         data = [{
             "id": pa.id,
             "exam_id": pa.exam_id,
@@ -681,8 +703,9 @@ def get_pending_access_requests():
             "student_email": pa.student.email if pa.student else "Unknown",
             "student_username": pa.student.first_name if pa.student else "Unknown",
             "student_userid": pa.student.last_name if pa.student else "Unknown",
+            "status": pa.status or "PENDING",
             "requested_at": pa.requested_at.isoformat() + "Z" if pa.requested_at else None
-        } for pa in pending_access]
+        } for pa in pending_access if pa.exam and not getattr(pa.exam, "is_deleted", False)]
         return jsonify({
             "success": True,
             "pending_access": data,
@@ -1205,17 +1228,6 @@ def update_student_course(student_id):
     try:
         student.course = normalized_course
 
-        # Auto-approve access records for the newly assigned course if student is already approved
-        if student.registration_status == "APPROVED":
-            from backend.models.access import ExamAccess
-            from backend.models.exam import Exam
-            exams_in_course = Exam.query.filter_by(is_deleted=False).all()
-            for ex in exams_in_course:
-                if ex.is_accessible_by(normalized_course):
-                    acc = ExamAccess.query.filter_by(student_id=student.id, exam_id=ex.id).first()
-                    if acc and not acc.approved:
-                        acc.approved = True
-        
         # Log audit trail
         audit = AuditLog(
             user_id=request.current_user.id,
@@ -1275,7 +1287,10 @@ def get_notifications():
         } for r in pending_regs]
 
         # Fetch pending exam access requests
-        pending_access = ExamAccess.query.filter_by(approved=False).all()
+        pending_access = ExamAccess.query.filter(
+            ExamAccess.approved == False,
+            db.or_(ExamAccess.status == "PENDING", ExamAccess.status == None)
+        ).all()
         access_data = [{
             "id": f"access-{a.id}",
             "raw_id": a.id,
@@ -1284,7 +1299,7 @@ def get_notifications():
             "message": f"{a.student.first_name} requested access to {a.exam.title}.",
             "timestamp": a.requested_at.isoformat() + "Z" if a.requested_at else None,
             "link": f"results.html?exam_id={a.exam_id}"
-        } for a in pending_access]
+        } for a in pending_access if a.exam and a.student and not getattr(a.exam, "is_deleted", False)]
 
         # Fetch pending password reset requests
         from backend.models.password_reset import PasswordResetRequest

@@ -42,19 +42,10 @@ class SessionManager:
             if not exam.is_accessible_by(student.course):
                 raise PermissionError("EXAM_COURSE_MISMATCH")
 
-        # Enforce exam access approval rule
+        # Enforce per-exam access approval rule (no automatic approval bypass)
         access = ExamAccess.query.filter_by(student_id=student_id, exam_id=exam_id).first()
-        if not access or not access.approved:
-            if student and student.registration_status == "APPROVED":
-                if not access:
-                    access = ExamAccess(student_id=student_id, exam_id=exam_id, approved=True)
-                    db.session.add(access)
-                    db.session.commit()
-                else:
-                    access.approved = True
-                    db.session.commit()
-            else:
-                raise PermissionError("EXAM_ACCESS_RESTRICTED")
+        if not access or not access.approved or (getattr(access, "status", "APPROVED") or "").upper() == "REJECTED":
+            raise PermissionError("EXAM_ACCESS_RESTRICTED")
 
         # Enforce single active session rule
         if cls.has_any_active_attempt(student_id):

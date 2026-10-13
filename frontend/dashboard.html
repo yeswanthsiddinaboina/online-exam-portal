@@ -221,6 +221,8 @@
             });
         }
 
+        let cachedActiveExams = [];
+
         async function loadExams() {
             const res = await API.get("/exams");
             if (res && res.user) {
@@ -228,6 +230,7 @@
             }
             const container = document.getElementById("exams-container");
             const activeExams = (res.success && res.exams) ? res.exams.filter(e => e.is_active !== false) : [];
+            cachedActiveExams = activeExams;
             
             if (activeExams.length > 0) {
                 container.innerHTML = activeExams.map(exam => {
@@ -253,9 +256,11 @@
                     } else if (exam.access_status === "APPROVED") {
                         actionBtn = `<button class="btn btn-primary" onclick="openPrecheck(${exam.id})" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Launch Exam</button>`;
                     } else if (exam.access_status === "PENDING") {
-                        actionBtn = `<button class="btn btn-warning" disabled style="padding: 0.5rem 1rem; font-size: 0.9rem; background: var(--accent-warning); color: #fff; border-color: transparent;">Approval Pending</button>`;
+                        actionBtn = `<button class="btn btn-warning" disabled style="padding: 0.5rem 1rem; font-size: 0.9rem; background: var(--accent-warning); color: #fff; border-color: transparent; cursor: not-allowed; opacity: 0.9;">⏳ Waiting for Admin Approval</button>`;
+                    } else if (exam.access_status === "REJECTED") {
+                        actionBtn = `<button class="btn btn-danger" disabled style="padding: 0.5rem 1rem; font-size: 0.9rem; background: var(--accent-danger); color: #fff; border-color: transparent; cursor: not-allowed; opacity: 0.9;">🚫 Access Rejected by Admin</button>`;
                     } else {
-                        actionBtn = `<button class="btn btn-primary" onclick="requestAccess(${exam.id})" style="padding: 0.5rem 1rem; font-size: 0.9rem; background: var(--accent-secondary); border-color: transparent;">Request Access</button>`;
+                        actionBtn = `<button class="btn btn-primary" onclick="requestAccess(${exam.id})" style="padding: 0.5rem 1rem; font-size: 0.9rem; background: var(--accent-secondary); border-color: transparent;">Request to Write Exam</button>`;
                     }
                     return `
                         <div class="glass-panel" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
@@ -276,7 +281,7 @@
                     `;
                 }).join('');
                 
-                // Auto-launch precheck if ?exam_id=ID is present in URL (only once on page load)
+                // Auto-launch precheck if ?exam_id=ID is present in URL ONLY if APPROVED (never bypass approval)
                 const urlParams = new URLSearchParams(window.location.search);
                 const examIdParam = urlParams.get("exam_id");
                 if (examIdParam && !hasProcessedAutoLaunch) {
@@ -302,10 +307,12 @@
                         } else if (matchedExam.access_status === "APPROVED") {
                             openPrecheck(matchedExam.id);
                         } else if (matchedExam.access_status === "PENDING") {
-                            alert("Your access request is currently pending administrator approval. Please wait.");
+                            alert("Waiting for Admin Approval. Your exam access request is currently pending administrator approval.");
+                        } else if (matchedExam.access_status === "REJECTED") {
+                            alert("Your request to write this examination was rejected by the administrator.");
                         } else {
                             const reqRes = await API.post(`/exams/${matchedExam.id}/request-access`, {});
-                            alert(reqRes.message);
+                            alert(reqRes.message || "Your exam request has been sent to the Admin. Please wait for approval.");
                             loadExams();
                         }
                     }
@@ -325,14 +332,26 @@
         async function requestAccess(examId) {
             const res = await API.post(`/exams/${examId}/request-access`, {});
             if (res.success) {
-                alert(res.message);
+                alert(res.message || "Your exam request has been sent to the Admin. Please wait for approval.");
                 loadExams();
             } else {
                 alert(res.message || "Failed to submit access request.");
+                loadExams();
             }
         }
 
         function openPrecheck(examId) {
+            const targetExam = cachedActiveExams.find(e => e.id == examId);
+            if (!targetExam || targetExam.access_status !== "APPROVED") {
+                if (targetExam && targetExam.access_status === "PENDING") {
+                    alert("Waiting for Admin Approval. You cannot launch this exam until an administrator approves your request.");
+                } else if (targetExam && targetExam.access_status === "REJECTED") {
+                    alert("Your request to write this examination was rejected by the administrator.");
+                } else {
+                    alert("You must request access and receive administrator approval before launching this examination.");
+                }
+                return;
+            }
             selectedExamId = examId;
             localStorage.setItem("selected_exam_id", examId);
             document.getElementById("precheck-modal").classList.add("active");

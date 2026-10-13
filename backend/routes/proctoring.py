@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from PIL import Image
 from backend.config import Config
-from backend.models import db, ExamAttempt, AuditLog
+from backend.models import db, Exam, ExamAccess, ExamAttempt, AuditLog
 from backend.services.session_manager import SessionManager
 from backend.services.violation_engine import ViolationEngine
 from backend.services.evidence_service import EvidenceService
@@ -246,32 +246,30 @@ def face_verification():
             "message": "You have already attempted this examination. Multiple attempts are prohibited."
         }), 400
 
-    exam = Exam.query.get(exam_id)
-    if exam and not exam.is_accessible_by(student.course):
+    exam = Exam.query.filter_by(id=exam_id, is_deleted=False).first()
+    if not exam or not exam.is_active:
+        return jsonify({
+            "success": False,
+            "error_code": "EXAM_NOT_FOUND",
+            "message": "Examination not found or inactive."
+        }), 404
+
+    if not exam.is_accessible_by(student.course):
         return jsonify({
             "success": False,
             "error_code": "EXAM_COURSE_MISMATCH",
             "message": f"This examination is assigned to {exam.course} students only."
         }), 403
 
-    # Check if student has approved access
+    # Check if student has approved access (no auto-approval bypass)
     from backend.models import ExamAccess
     access = ExamAccess.query.filter_by(student_id=student.id, exam_id=exam_id).first()
-    if not access or not access.approved:
-        if student.registration_status == "APPROVED":
-            if not access:
-                access = ExamAccess(student_id=student.id, exam_id=exam_id, approved=True)
-                db.session.add(access)
-                db.session.commit()
-            else:
-                access.approved = True
-                db.session.commit()
-        else:
-            return jsonify({
-                "success": False,
-                "error_code": "EXAM_ACCESS_RESTRICTED",
-                "message": "Access restricted. You must request and receive administrator approval to write this exam."
-            }), 403
+    if not access or not access.approved or (getattr(access, "status", "APPROVED") or "").upper() == "REJECTED":
+        return jsonify({
+            "success": False,
+            "error_code": "EXAM_ACCESS_RESTRICTED",
+            "message": "Access restricted. You must request and receive administrator approval to write this exam."
+        }), 403
 
     if "file" not in request.files:
         return jsonify({
@@ -345,24 +343,30 @@ def save_temp_reference():
             "message": "Examination ID is required."
         }), 400
 
-    # Check if student has approved access
+    exam = Exam.query.filter_by(id=exam_id, is_deleted=False).first()
+    if not exam or not exam.is_active:
+        return jsonify({
+            "success": False,
+            "error_code": "EXAM_NOT_FOUND",
+            "message": "Examination not found or inactive."
+        }), 404
+
+    if not exam.is_accessible_by(student.course):
+        return jsonify({
+            "success": False,
+            "error_code": "EXAM_COURSE_MISMATCH",
+            "message": f"This examination is assigned to {exam.course} students only."
+        }), 403
+
+    # Check if student has approved access (no auto-approval bypass)
     from backend.models import ExamAccess
     access = ExamAccess.query.filter_by(student_id=student.id, exam_id=exam_id).first()
-    if not access or not access.approved:
-        if student.registration_status == "APPROVED":
-            if not access:
-                access = ExamAccess(student_id=student.id, exam_id=exam_id, approved=True)
-                db.session.add(access)
-                db.session.commit()
-            else:
-                access.approved = True
-                db.session.commit()
-        else:
-            return jsonify({
-                "success": False,
-                "error_code": "EXAM_ACCESS_RESTRICTED",
-                "message": "Access restricted. You must request and receive administrator approval to write this exam."
-            }), 403
+    if not access or not access.approved or (getattr(access, "status", "APPROVED") or "").upper() == "REJECTED":
+        return jsonify({
+            "success": False,
+            "error_code": "EXAM_ACCESS_RESTRICTED",
+            "message": "Access restricted. You must request and receive administrator approval to write this exam."
+        }), 403
 
     if "file" not in request.files:
         return jsonify({
@@ -463,6 +467,31 @@ def compare_faces_and_start():
             "error_code": "MISSING_EXAM_ID",
             "message": "Examination ID is required."
         }), 400
+
+    exam = Exam.query.filter_by(id=exam_id, is_deleted=False).first()
+    if not exam or not exam.is_active:
+        return jsonify({
+            "success": False,
+            "error_code": "EXAM_NOT_FOUND",
+            "message": "Examination not found or inactive."
+        }), 404
+
+    if not exam.is_accessible_by(student.course):
+        return jsonify({
+            "success": False,
+            "error_code": "EXAM_COURSE_MISMATCH",
+            "message": f"This examination is assigned to {exam.course} students only."
+        }), 403
+
+    # Enforce per-exam admin approval before comparing faces or starting session
+    from backend.models import ExamAccess
+    access = ExamAccess.query.filter_by(student_id=student.id, exam_id=exam_id).first()
+    if not access or not access.approved or (getattr(access, "status", "APPROVED") or "").upper() == "REJECTED":
+        return jsonify({
+            "success": False,
+            "error_code": "EXAM_ACCESS_RESTRICTED",
+            "message": "Access restricted. You must request and receive administrator approval to write this exam."
+        }), 403
 
     # Verify temp reference exists
     ref_path = Config.EVIDENCE_DIR / f"temp_ref_{student.id}_{exam_id}.jpg"

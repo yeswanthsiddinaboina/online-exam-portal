@@ -87,6 +87,15 @@ def create_app(config_class=Config):
                     conn.commit()
                 logger.info("Database migrated: added course column to exams table.")
 
+            # Self-healing migration for exam_access table
+            access_columns = [c['name'] for c in inspector.get_columns('exam_access')]
+            if 'status' not in access_columns:
+                with engine.connect() as conn:
+                    conn.execute(db.text("ALTER TABLE exam_access ADD COLUMN status VARCHAR(20) DEFAULT 'PENDING'"))
+                    conn.execute(db.text("UPDATE exam_access SET status = 'APPROVED' WHERE approved = TRUE"))
+                    conn.commit()
+                logger.info("Database migrated: added status column to exam_access table.")
+
             # Enforce single admin user policy with fixed credentials
             from backend.models.user import User
             admin_user = User.query.filter_by(email="admin@gmail.com").first()
