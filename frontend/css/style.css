@@ -312,14 +312,14 @@ h1, h2, h3, h4, h5, h6 {
     word-break: normal;
 }
 
-.table-violations th:nth-child(1), .table-violations td:nth-child(1) { width: 16%; } /* Candidate */
+.table-violations th:nth-child(1), .table-violations td:nth-child(1) { width: 17%; } /* Candidate */
 .table-violations th:nth-child(2), .table-violations td:nth-child(2) { width: 9%; }  /* User ID */
-.table-violations th:nth-child(3), .table-violations td:nth-child(3) { width: 16%; } /* Exam Title */
+.table-violations th:nth-child(3), .table-violations td:nth-child(3) { width: 11%; } /* Exam Title */
 .table-violations th:nth-child(4), .table-violations td:nth-child(4) { width: 12%; } /* Total Violations */
-.table-violations th:nth-child(5), .table-violations td:nth-child(5) { width: 13%; } /* Latest Incident */
-.table-violations th:nth-child(6), .table-violations td:nth-child(6) { width: 12%; } /* Last Flagged */
+.table-violations th:nth-child(5), .table-violations td:nth-child(5) { width: 14%; } /* Latest Incident */
+.table-violations th:nth-child(6), .table-violations td:nth-child(6) { width: 13%; } /* Last Flagged */
 .table-violations th:nth-child(7), .table-violations td:nth-child(7) { width: 9%; }  /* Status */
-.table-violations th:nth-child(8), .table-violations td:nth-child(8) { width: 13%; text-align: right; } /* Action */
+.table-violations th:nth-child(8), .table-violations td:nth-child(8) { width: 15%; text-align: right; } /* Action */
 
 @media (max-width: 991px) {
     .table-violations {
