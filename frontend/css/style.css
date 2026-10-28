@@ -250,31 +250,34 @@ h1, h2, h3, h4, h5, h6 {
     border-radius: 12px;
     border: 1px solid var(--border-subtle);
     background: #FFFFFF;
+    box-sizing: border-box;
 }
 
 .table {
     width: 100%;
     border-collapse: collapse;
     text-align: left;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
 }
 
 .table th {
-    padding: 0.85rem 1.2rem;
+    padding: 0.75rem 0.75rem;
     background-color: #F9FAFB;
     color: var(--text-secondary);
     font-weight: 600;
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 0.04em;
     border-bottom: 1px solid var(--border-subtle);
+    box-sizing: border-box;
 }
 
 .table td {
-    padding: 1rem 1.2rem;
+    padding: 0.75rem 0.75rem;
     border-bottom: 1px solid var(--border-subtle);
     color: var(--text-primary);
     vertical-align: middle;
+    box-sizing: border-box;
 }
 
 .table tr:last-child td {
@@ -292,6 +295,36 @@ h1, h2, h3, h4, h5, h6 {
 
 .scoreboard-row:hover td {
     background-color: rgba(16, 185, 129, 0.08) !important;
+}
+
+/* Proctoring Violations Table - Proportional responsive layout without desktop horizontal scroll */
+.table-violations {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+}
+
+.table-violations th,
+.table-violations td {
+    padding: 0.75rem 0.55rem;
+    box-sizing: border-box;
+    overflow-wrap: break-word;
+    word-break: normal;
+}
+
+.table-violations th:nth-child(1), .table-violations td:nth-child(1) { width: 16%; } /* Candidate */
+.table-violations th:nth-child(2), .table-violations td:nth-child(2) { width: 9%; }  /* User ID */
+.table-violations th:nth-child(3), .table-violations td:nth-child(3) { width: 16%; } /* Exam Title */
+.table-violations th:nth-child(4), .table-violations td:nth-child(4) { width: 12%; } /* Total Violations */
+.table-violations th:nth-child(5), .table-violations td:nth-child(5) { width: 13%; } /* Latest Incident */
+.table-violations th:nth-child(6), .table-violations td:nth-child(6) { width: 12%; } /* Last Flagged */
+.table-violations th:nth-child(7), .table-violations td:nth-child(7) { width: 9%; }  /* Status */
+.table-violations th:nth-child(8), .table-violations td:nth-child(8) { width: 13%; text-align: right; } /* Action */
+
+@media (max-width: 991px) {
+    .table-violations {
+        min-width: 820px;
+    }
 }
 
 /* --- Status Badges --- */
@@ -611,6 +644,7 @@ h1, h2, h3, h4, h5, h6 {
     height: 100vh;
     overflow: hidden;
     background: var(--bg-primary);
+    min-width: 0;
 }
 
 .admin-top-bar {
@@ -664,8 +698,9 @@ h1, h2, h3, h4, h5, h6 {
 
 .admin-content-scroll {
     flex: 1;
-    padding: 2rem;
+    padding: 1.5rem 1.75rem;
     overflow-y: auto;
+    overflow-x: hidden;
     box-sizing: border-box;
 }
 
@@ -926,4 +961,3 @@ h1, h2, h3, h4, h5, h6 {
     background: transparent;
     line-height: 1.2;
 }
-
