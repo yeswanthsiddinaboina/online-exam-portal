@@ -416,7 +416,7 @@
                             <label class="form-label" for="reg-phone">Phone Number</label>
                             <div class="input-icon-wrapper">
                                 <span class="input-icon-prefix">📱</span>
-                                <input class="form-control" type="tel" id="reg-phone" placeholder="10-digit mobile number" pattern="[0-9]{10}" maxlength="15" required>
+                                <input class="form-control" type="tel" id="reg-phone" placeholder="10-digit mobile number" pattern="[6-9][0-9]{9}" maxlength="10" title="Enter a valid 10-digit Indian mobile number." required>
                             </div>
                         </div>
 
@@ -437,7 +437,20 @@
                             <label class="form-label" for="reg-password">Password</label>
                             <div class="input-icon-wrapper">
                                 <span class="input-icon-prefix">🔒</span>
-                                <input class="form-control" type="password" id="reg-password" placeholder="Create password (min 4 characters)" minlength="4" required>
+                                <input class="form-control" type="password" id="reg-password" placeholder="Create password (min 8 characters)" minlength="8" maxlength="64" required>
+                                <span class="input-toggle-password" id="toggle-reg-pass" onclick="togglePasswordVisibility('reg-password', this)">👁️</span>
+                            </div>
+                            <!-- Password Policy Checklist -->
+                            <div id="password-policy-box" style="margin-top: 0.5rem; font-size: 0.74rem; color: var(--text-secondary); background: #F9FAFB; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 0.5rem 0.75rem;">
+                                <div style="font-weight: 600; margin-bottom: 0.25rem; color: var(--text-primary);">Password requirements:</div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.2rem 0.5rem;">
+                                    <div id="pwd-req-len" style="color: var(--text-muted); transition: color 0.15s ease;">✕ 8–64 characters</div>
+                                    <div id="pwd-req-upper" style="color: var(--text-muted); transition: color 0.15s ease;">✕ Uppercase letter</div>
+                                    <div id="pwd-req-lower" style="color: var(--text-muted); transition: color 0.15s ease;">✕ Lowercase letter</div>
+                                    <div id="pwd-req-num" style="color: var(--text-muted); transition: color 0.15s ease;">✕ Number (0–9)</div>
+                                    <div id="pwd-req-special" style="color: var(--text-muted); transition: color 0.15s ease;">✕ Special character</div>
+                                    <div id="pwd-req-space" style="color: var(--text-muted); transition: color 0.15s ease;">✕ No leading/trailing space</div>
+                                </div>
                             </div>
                         </div>
 
@@ -445,7 +458,8 @@
                             <label class="form-label" for="reg-confirm-password">Confirm Password</label>
                             <div class="input-icon-wrapper">
                                 <span class="input-icon-prefix">🔒</span>
-                                <input class="form-control" type="password" id="reg-confirm-password" placeholder="Re-enter password" minlength="4" required>
+                                <input class="form-control" type="password" id="reg-confirm-password" placeholder="Re-enter password" minlength="8" maxlength="64" required>
+                                <span class="input-toggle-password" id="toggle-reg-confirm-pass" onclick="togglePasswordVisibility('reg-confirm-password', this)">👁️</span>
                             </div>
                         </div>
 
@@ -612,13 +626,69 @@
             const password = document.getElementById("reg-password").value;
             const confirmPassword = document.getElementById("reg-confirm-password").value;
 
-            if (!phone) {
-                alert("Please enter your phone number.");
+            const phoneRegex = /^[6-9][0-9]{9}$/;
+            if (!phone || !phoneRegex.test(phone)) {
+                alert("Enter a valid 10-digit Indian mobile number.");
                 return;
             }
 
             if (!course) {
                 alert("Please select your enrolled course (Drive, Python, or Java).");
+                return;
+            }
+
+            // Strong Password Policy Validation
+            if (password.startsWith(" ") || password.endsWith(" ")) {
+                alert("Password cannot contain leading or trailing spaces.");
+                return;
+            }
+
+            if (password.length < 8) {
+                alert("Password must be at least 8 characters long.");
+                return;
+            }
+
+            if (password.length > 64) {
+                alert("Password cannot exceed 64 characters.");
+                return;
+            }
+
+            if (!/[A-Z]/.test(password)) {
+                alert("Password must include at least one uppercase letter (A-Z).");
+                return;
+            }
+
+            if (!/[a-z]/.test(password)) {
+                alert("Password must include at least one lowercase letter (a-z).");
+                return;
+            }
+
+            if (!/[0-9]/.test(password)) {
+                alert("Password must include at least one digit (0-9).");
+                return;
+            }
+
+            const specialCharRegex = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/;
+            if (!specialCharRegex.test(password)) {
+                alert("Password must include at least one special character (!@#$%^&*...).");
+                return;
+            }
+
+            const commonWeakPasswords = [
+                "password123!", "password1234!", "admin123456!", "welcome1234!",
+                "qwerty12345!", "student1234!", "p@ssword123!", "p@ssw0rd123!",
+                "p@$$w0rd123!", "password@123", "password#123", "changeme123!",
+                "secureexam123!", "testing1234!", "summer2026!", "winter2026!",
+                "spring2026!", "autumn2026!", "welcome@1234", "admin@123456",
+                "administrator1!", "password2026!", "exampass1234!", "letmein12345!",
+                "sunshine1234!", "football1234!", "baseball1234!", "princess1234!",
+                "dragon123456!", "master123456!", "monkey123456!", "123456789012!",
+                "aa1234567890!", "abcdef123456!", "iloveyou1234!", "trustno1123!",
+                "qwertzuiop1!", "zaq12wsx3edc!", "1qaz2wsx3edc!",
+                "pass@123", "admin@123", "admin!123", "welcome@1", "p@ssword1", "testing@123"
+            ];
+            if (commonWeakPasswords.includes(password.toLowerCase().trim())) {
+                alert("Password is too common or easily guessed. Please choose a stronger password.");
                 return;
             }
 
@@ -643,6 +713,41 @@
                 alert(res.message || "Registration submission failed.");
             }
         });
+
+        // Real-time password policy checklist updates
+        const regPasswordInput = document.getElementById("reg-password");
+        if (regPasswordInput) {
+            regPasswordInput.addEventListener("input", function() {
+                const val = this.value;
+                const hasLen = val.length >= 8 && val.length <= 64;
+                const hasUpper = /[A-Z]/.test(val);
+                const hasLower = /[a-z]/.test(val);
+                const hasNum = /[0-9]/.test(val);
+                const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(val);
+                const hasNoLeadingTrailingSpace = val.length > 0 && !val.startsWith(" ") && !val.endsWith(" ");
+
+                updateReqStatus("pwd-req-len", hasLen, "8–64 characters");
+                updateReqStatus("pwd-req-upper", hasUpper, "Uppercase letter");
+                updateReqStatus("pwd-req-lower", hasLower, "Lowercase letter");
+                updateReqStatus("pwd-req-num", hasNum, "Number (0–9)");
+                updateReqStatus("pwd-req-special", hasSpecial, "Special character");
+                updateReqStatus("pwd-req-space", hasNoLeadingTrailingSpace, "No leading/trailing space");
+            });
+        }
+
+        function updateReqStatus(id, satisfied, label) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (satisfied) {
+                el.style.color = "#059669";
+                el.style.fontWeight = "600";
+                el.innerText = `✓ ${label}`;
+            } else {
+                el.style.color = "var(--text-muted)";
+                el.style.fontWeight = "400";
+                el.innerText = `✕ ${label}`;
+            }
+        }
 
         // Password Reset - Step 1 Submission
         document.getElementById("form-reset-step1").addEventListener("submit", async function(e) {

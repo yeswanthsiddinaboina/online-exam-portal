@@ -1,8 +1,9 @@
 from flask import Blueprint, request, jsonify
 from backend.models import db, User, AuditLog
-from backend.utils.security import generate_token, token_required
+from backend.utils.security import generate_token, token_required, validate_password
 from backend.utils.logger import get_logger
 import datetime
+import re
 
 logger = get_logger()
 auth_bp = Blueprint("auth", __name__)
@@ -52,7 +53,21 @@ def register():
         course = "Python"
 
     raw_phone = data.get("phone") or data.get("phone_number")
-    phone = raw_phone.strip() if isinstance(raw_phone, str) and raw_phone.strip() else None
+    phone = raw_phone.strip() if isinstance(raw_phone, str) and raw_phone.strip() else (str(raw_phone).strip() if raw_phone is not None and str(raw_phone).strip() else None)
+    if phone and not re.match(r"^[6-9][0-9]{9}$", phone):
+        return jsonify({
+            "success": False,
+            "error_code": "INVALID_PHONE_NUMBER",
+            "message": "Enter a valid 10-digit Indian mobile number."
+        }), 400
+
+    is_valid_pwd, pwd_err = validate_password(password)
+    if not is_valid_pwd:
+        return jsonify({
+            "success": False,
+            "error_code": "WEAK_PASSWORD",
+            "message": pwd_err
+        }), 400
 
     try:
         user = User(
@@ -106,7 +121,7 @@ def register_student():
         course = "Python"
 
     raw_phone = data.get("phone") or data.get("phone_number")
-    phone = raw_phone.strip() if isinstance(raw_phone, str) and raw_phone.strip() else None
+    phone = raw_phone.strip() if isinstance(raw_phone, str) and raw_phone.strip() else (str(raw_phone).strip() if raw_phone is not None and str(raw_phone).strip() else None)
     
     if not all([email, first_name, password]):
         return jsonify({
@@ -114,13 +129,21 @@ def register_student():
             "error_code": "INVALID_INPUT",
             "message": "All fields (Full Name, Gmail ID, Course, Phone Number, and Password) are required."
         }), 400
+
+    if not phone or not re.match(r"^[6-9][0-9]{9}$", phone):
+        return jsonify({
+            "success": False,
+            "error_code": "INVALID_PHONE_NUMBER",
+            "message": "Enter a valid 10-digit Indian mobile number."
+        }), 400
         
     first_name = first_name.strip()
-    if len(password) < 4:
+    is_valid_pwd, pwd_err = validate_password(password)
+    if not is_valid_pwd:
         return jsonify({
             "success": False,
             "error_code": "WEAK_PASSWORD",
-            "message": "Password must be at least 4 characters long."
+            "message": pwd_err
         }), 400
     
     # Check if Email already registered
