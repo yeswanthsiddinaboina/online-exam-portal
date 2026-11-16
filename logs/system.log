@@ -53530,3 +53530,104 @@ NameError: name 'Exam' is not defined
 [2026-10-29 17:14:24,086] INFO in security (Line 33): decode_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
 [2026-10-29 17:14:24,087] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1793308269, 'iat': 1793265069, 'sub': '1', 'role': 'admin'}
 [2026-10-29 17:14:24,087] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1793308269, 'iat': 1793265069, 'sub': '1', 'role': 'admin'}
+[2026-11-16 10:17:35,465] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-11-16 10:17:35,986] INFO in app (Line 117): Aligned existing default admin account password to Admin@123
+[2026-11-16 10:17:37,134] INFO in app (Line 45): Database tables synchronized successfully.
+[2026-11-16 10:17:37,603] INFO in app (Line 117): Aligned existing default admin account password to Admin@123
+[2026-11-16 10:17:49,781] INFO in security (Line 53): token_required check - Authorization Header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ4NDAyNzUsImlhdCI6MTc5NDc5NzA3NSwic3ViIjoiMSIsInJvbGUiOiJhZG1pbiJ9.--G5CKkO1RATCBIlzIIgXXrIK5XnslYKB4C-ptEeeeg
+[2026-11-16 10:17:49,782] INFO in security (Line 33): decode_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
+[2026-11-16 10:17:49,786] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1794840275, 'iat': 1794797075, 'sub': '1', 'role': 'admin'}
+[2026-11-16 10:17:49,788] INFO in security (Line 53): token_required check - Authorization Header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ4NDAyNzUsImlhdCI6MTc5NDc5NzA3NSwic3ViIjoiMSIsInJvbGUiOiJhZG1pbiJ9.--G5CKkO1RATCBIlzIIgXXrIK5XnslYKB4C-ptEeeeg
+[2026-11-16 10:17:49,793] INFO in security (Line 33): decode_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
+[2026-11-16 10:17:49,795] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1794840275, 'iat': 1794797075, 'sub': '1', 'role': 'admin'}
+[2026-11-16 10:17:49,820] WARNING in app (Line 148): HTTPException: 404 - The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+[2026-11-16 10:18:00,404] INFO in security (Line 53): token_required check - Authorization Header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ4NDAyNzUsImlhdCI6MTc5NDc5NzA3NSwic3ViIjoiMSIsInJvbGUiOiJhZG1pbiJ9.--G5CKkO1RATCBIlzIIgXXrIK5XnslYKB4C-ptEeeeg
+[2026-11-16 10:18:00,405] INFO in security (Line 33): decode_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
+[2026-11-16 10:18:00,407] INFO in security (Line 53): token_required check - Authorization Header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ4NDAyNzUsImlhdCI6MTc5NDc5NzA3NSwic3ViIjoiMSIsInJvbGUiOiJhZG1pbiJ9.--G5CKkO1RATCBIlzIIgXXrIK5XnslYKB4C-ptEeeeg
+[2026-11-16 10:18:00,408] INFO in security (Line 33): decode_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
+[2026-11-16 10:18:00,408] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1794840275, 'iat': 1794797075, 'sub': '1', 'role': 'admin'}
+[2026-11-16 10:18:00,409] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1794840275, 'iat': 1794797075, 'sub': '1', 'role': 'admin'}
+[2026-11-16 10:18:10,388] INFO in security (Line 53): token_required check - Authorization Header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ4NDAyNzUsImlhdCI6MTc5NDc5NzA3NSwic3ViIjoiMSIsInJvbGUiOiJhZG1pbiJ9.--G5CKkO1RATCBIlzIIgXXrIK5XnslYKB4C-ptEeeeg
+[2026-11-16 10:18:10,389] INFO in security (Line 33): decode_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
+[2026-11-16 10:18:10,390] INFO in security (Line 53): token_required check - Authorization Header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ4NDAyNzUsImlhdCI6MTc5NDc5NzA3NSwic3ViIjoiMSIsInJvbGUiOiJhZG1pbiJ9.--G5CKkO1RATCBIlzIIgXXrIK5XnslYKB4C-ptEeeeg
+[2026-11-16 10:18:10,392] INFO in security (Line 33): decode_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
+[2026-11-16 10:18:10,393] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1794840275, 'iat': 1794797075, 'sub': '1', 'role': 'admin'}
+[2026-11-16 10:18:10,391] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1794840275, 'iat': 1794797075, 'sub': '1', 'role': 'admin'}
+[2026-11-16 10:18:20,404] INFO in security (Line 53): token_required check - Authorization Header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ4NDAyNzUsImlhdCI6MTc5NDc5NzA3NSwic3ViIjoiMSIsInJvbGUiOiJhZG1pbiJ9.--G5CKkO1RATCBIlzIIgXXrIK5XnslYKB4C-ptEeeeg
+[2026-11-16 10:18:20,405] INFO in security (Line 33): decode_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
+[2026-11-16 10:18:20,406] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1794840275, 'iat': 1794797075, 'sub': '1', 'role': 'admin'}
+[2026-11-16 10:18:20,406] INFO in security (Line 53): token_required check - Authorization Header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ4NDAyNzUsImlhdCI6MTc5NDc5NzA3NSwic3ViIjoiMSIsInJvbGUiOiJhZG1pbiJ9.--G5CKkO1RATCBIlzIIgXXrIK5XnslYKB4C-ptEeeeg
+[2026-11-16 10:18:20,408] INFO in security (Line 33): decode_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
+[2026-11-16 10:18:20,410] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1794840275, 'iat': 1794797075, 'sub': '1', 'role': 'admin'}
+[2026-11-16 10:18:30,401] INFO in security (Line 53): token_required check - Authorization Header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ4NDAyNzUsImlhdCI6MTc5NDc5NzA3NSwic3ViIjoiMSIsInJvbGUiOiJhZG1pbiJ9.--G5CKkO1RATCBIlzIIgXXrIK5XnslYKB4C-ptEeeeg
+[2026-11-16 10:18:30,402] INFO in security (Line 33): decode_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
+[2026-11-16 10:18:30,403] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1794840275, 'iat': 1794797075, 'sub': '1', 'role': 'admin'}
+[2026-11-16 10:18:30,404] INFO in security (Line 53): token_required check - Authorization Header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ4NDAyNzUsImlhdCI6MTc5NDc5NzA3NSwic3ViIjoiMSIsInJvbGUiOiJhZG1pbiJ9.--G5CKkO1RATCBIlzIIgXXrIK5XnslYKB4C-ptEeeeg
+[2026-11-16 10:18:30,407] INFO in security (Line 33): decode_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
+[2026-11-16 10:18:30,408] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1794840275, 'iat': 1794797075, 'sub': '1', 'role': 'admin'}
+[2026-11-16 10:18:40,391] INFO in security (Line 53): token_required check - Authorization Header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ4NDAyNzUsImlhdCI6MTc5NDc5NzA3NSwic3ViIjoiMSIsInJvbGUiOiJhZG1pbiJ9.--G5CKkO1RATCBIlzIIgXXrIK5XnslYKB4C-ptEeeeg
+[2026-11-16 10:18:40,392] INFO in security (Line 33): decode_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
+[2026-11-16 10:18:40,393] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1794840275, 'iat': 1794797075, 'sub': '1', 'role': 'admin'}
+[2026-11-16 10:18:40,394] INFO in security (Line 53): token_required check - Authorization Header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ4NDAyNzUsImlhdCI6MTc5NDc5NzA3NSwic3ViIjoiMSIsInJvbGUiOiJhZG1pbiJ9.--G5CKkO1RATCBIlzIIgXXrIK5XnslYKB4C-ptEeeeg
+[2026-11-16 10:18:40,396] INFO in security (Line 33): decode_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
+[2026-11-16 10:18:40,399] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1794840275, 'iat': 1794797075, 'sub': '1', 'role': 'admin'}
+[2026-11-16 10:18:50,394] INFO in security (Line 53): token_required check - Authorization Header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ4NDAyNzUsImlhdCI6MTc5NDc5NzA3NSwic3ViIjoiMSIsInJvbGUiOiJhZG1pbiJ9.--G5CKkO1RATCBIlzIIgXXrIK5XnslYKB4C-ptEeeeg
+[2026-11-16 10:18:50,396] INFO in security (Line 53): token_required check - Authorization Header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ4NDAyNzUsImlhdCI6MTc5NDc5NzA3NSwic3ViIjoiMSIsInJvbGUiOiJhZG1pbiJ9.--G5CKkO1RATCBIlzIIgXXrIK5XnslYKB4C-ptEeeeg
+[2026-11-16 10:18:50,396] INFO in security (Line 33): decode_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
+[2026-11-16 10:18:50,397] INFO in security (Line 33): decode_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
+[2026-11-16 10:18:50,398] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1794840275, 'iat': 1794797075, 'sub': '1', 'role': 'admin'}
+[2026-11-16 10:18:50,398] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1794840275, 'iat': 1794797075, 'sub': '1', 'role': 'admin'}
+[2026-11-16 10:19:00,397] INFO in security (Line 53): token_required check - Authorization Header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ4NDAyNzUsImlhdCI6MTc5NDc5NzA3NSwic3ViIjoiMSIsInJvbGUiOiJhZG1pbiJ9.--G5CKkO1RATCBIlzIIgXXrIK5XnslYKB4C-ptEeeeg
+[2026-11-16 10:19:00,397] INFO in security (Line 33): decode_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
+[2026-11-16 10:19:00,398] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1794840275, 'iat': 1794797075, 'sub': '1', 'role': 'admin'}
+[2026-11-16 10:19:00,400] INFO in security (Line 53): token_required check - Authorization Header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ4NDAyNzUsImlhdCI6MTc5NDc5NzA3NSwic3ViIjoiMSIsInJvbGUiOiJhZG1pbiJ9.--G5CKkO1RATCBIlzIIgXXrIK5XnslYKB4C-ptEeeeg
+[2026-11-16 10:19:00,401] INFO in security (Line 33): decode_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
+[2026-11-16 10:19:00,403] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1794840275, 'iat': 1794797075, 'sub': '1', 'role': 'admin'}
+[2026-11-16 10:19:39,394] INFO in security (Line 53): token_required check - Authorization Header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ4NDAyNzUsImlhdCI6MTc5NDc5NzA3NSwic3ViIjoiMSIsInJvbGUiOiJhZG1pbiJ9.--G5CKkO1RATCBIlzIIgXXrIK5XnslYKB4C-ptEeeeg
+[2026-11-16 10:19:39,395] INFO in security (Line 33): decode_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
+[2026-11-16 10:19:39,396] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1794840275, 'iat': 1794797075, 'sub': '1', 'role': 'admin'}
+[2026-11-16 10:19:39,399] INFO in security (Line 53): token_required check - Authorization Header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ4NDAyNzUsImlhdCI6MTc5NDc5NzA3NSwic3ViIjoiMSIsInJvbGUiOiJhZG1pbiJ9.--G5CKkO1RATCBIlzIIgXXrIK5XnslYKB4C-ptEeeeg
+[2026-11-16 10:19:39,402] INFO in security (Line 33): decode_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
+[2026-11-16 10:19:39,403] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1794840275, 'iat': 1794797075, 'sub': '1', 'role': 'admin'}
+[2026-11-16 10:20:39,404] INFO in security (Line 53): token_required check - Authorization Header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ4NDAyNzUsImlhdCI6MTc5NDc5NzA3NSwic3ViIjoiMSIsInJvbGUiOiJhZG1pbiJ9.--G5CKkO1RATCBIlzIIgXXrIK5XnslYKB4C-ptEeeeg
+[2026-11-16 10:20:39,405] INFO in security (Line 53): token_required check - Authorization Header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ4NDAyNzUsImlhdCI6MTc5NDc5NzA3NSwic3ViIjoiMSIsInJvbGUiOiJhZG1pbiJ9.--G5CKkO1RATCBIlzIIgXXrIK5XnslYKB4C-ptEeeeg
+[2026-11-16 10:20:39,406] INFO in security (Line 33): decode_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
+[2026-11-16 10:20:39,406] INFO in security (Line 33): decode_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
+[2026-11-16 10:20:39,407] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1794840275, 'iat': 1794797075, 'sub': '1', 'role': 'admin'}
+[2026-11-16 10:20:39,408] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1794840275, 'iat': 1794797075, 'sub': '1', 'role': 'admin'}
+[2026-11-16 10:21:39,406] INFO in security (Line 53): token_required check - Authorization Header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ4NDAyNzUsImlhdCI6MTc5NDc5NzA3NSwic3ViIjoiMSIsInJvbGUiOiJhZG1pbiJ9.--G5CKkO1RATCBIlzIIgXXrIK5XnslYKB4C-ptEeeeg
+[2026-11-16 10:21:39,407] INFO in security (Line 53): token_required check - Authorization Header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ4NDAyNzUsImlhdCI6MTc5NDc5NzA3NSwic3ViIjoiMSIsInJvbGUiOiJhZG1pbiJ9.--G5CKkO1RATCBIlzIIgXXrIK5XnslYKB4C-ptEeeeg
+[2026-11-16 10:21:39,407] INFO in security (Line 33): decode_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
+[2026-11-16 10:21:39,408] INFO in security (Line 33): decode_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
+[2026-11-16 10:21:39,408] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1794840275, 'iat': 1794797075, 'sub': '1', 'role': 'admin'}
+[2026-11-16 10:21:39,409] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1794840275, 'iat': 1794797075, 'sub': '1', 'role': 'admin'}
+[2026-11-16 10:22:39,401] INFO in security (Line 53): token_required check - Authorization Header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ4NDAyNzUsImlhdCI6MTc5NDc5NzA3NSwic3ViIjoiMSIsInJvbGUiOiJhZG1pbiJ9.--G5CKkO1RATCBIlzIIgXXrIK5XnslYKB4C-ptEeeeg
+[2026-11-16 10:22:39,402] INFO in security (Line 33): decode_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
+[2026-11-16 10:22:39,404] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1794840275, 'iat': 1794797075, 'sub': '1', 'role': 'admin'}
+[2026-11-16 10:22:39,405] INFO in security (Line 53): token_required check - Authorization Header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ4NDAyNzUsImlhdCI6MTc5NDc5NzA3NSwic3ViIjoiMSIsInJvbGUiOiJhZG1pbiJ9.--G5CKkO1RATCBIlzIIgXXrIK5XnslYKB4C-ptEeeeg
+[2026-11-16 10:22:39,406] INFO in security (Line 33): decode_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
+[2026-11-16 10:22:39,409] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1794840275, 'iat': 1794797075, 'sub': '1', 'role': 'admin'}
+[2026-11-16 10:23:30,269] WARNING in app (Line 148): HTTPException: 404 - The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+[2026-11-16 10:23:39,404] INFO in security (Line 53): token_required check - Authorization Header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ4NDAyNzUsImlhdCI6MTc5NDc5NzA3NSwic3ViIjoiMSIsInJvbGUiOiJhZG1pbiJ9.--G5CKkO1RATCBIlzIIgXXrIK5XnslYKB4C-ptEeeeg
+[2026-11-16 10:23:39,406] INFO in security (Line 33): decode_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
+[2026-11-16 10:23:39,408] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1794840275, 'iat': 1794797075, 'sub': '1', 'role': 'admin'}
+[2026-11-16 10:23:39,408] INFO in security (Line 53): token_required check - Authorization Header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ4NDAyNzUsImlhdCI6MTc5NDc5NzA3NSwic3ViIjoiMSIsInJvbGUiOiJhZG1pbiJ9.--G5CKkO1RATCBIlzIIgXXrIK5XnslYKB4C-ptEeeeg
+[2026-11-16 10:23:39,411] INFO in security (Line 33): decode_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
+[2026-11-16 10:23:39,415] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1794840275, 'iat': 1794797075, 'sub': '1', 'role': 'admin'}
+[2026-11-16 10:23:48,876] INFO in security (Line 14): generate_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
+[2026-11-16 10:23:48,917] INFO in auth (Line 326): User logged in: test@gmail.com (Role: student)
+[2026-11-16 10:23:49,043] INFO in security (Line 53): token_required check - Authorization Header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ4NDgwMjgsImlhdCI6MTc5NDgwNDgyOCwic3ViIjoiMTAiLCJyb2xlIjoic3R1ZGVudCJ9.yvIudNS8_eekX92psBSSpFiQpUfEANw2HPO3QQRz8bc
+[2026-11-16 10:23:49,045] INFO in security (Line 53): token_required check - Authorization Header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ4NDgwMjgsImlhdCI6MTc5NDgwNDgyOCwic3ViIjoiMTAiLCJyb2xlIjoic3R1ZGVudCJ9.yvIudNS8_eekX92psBSSpFiQpUfEANw2HPO3QQRz8bc
+[2026-11-16 10:23:49,045] INFO in security (Line 33): decode_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
+[2026-11-16 10:23:49,046] INFO in security (Line 33): decode_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
+[2026-11-16 10:23:49,047] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1794848028, 'iat': 1794804828, 'sub': '10', 'role': 'student'}
+[2026-11-16 10:23:49,048] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1794848028, 'iat': 1794804828, 'sub': '10', 'role': 'student'}
+[2026-11-16 10:23:50,855] INFO in security (Line 53): token_required check - Authorization Header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ4NDAyNzUsImlhdCI6MTc5NDc5NzA3NSwic3ViIjoiMSIsInJvbGUiOiJhZG1pbiJ9.--G5CKkO1RATCBIlzIIgXXrIK5XnslYKB4C-ptEeeeg
+[2026-11-16 10:23:50,856] INFO in security (Line 33): decode_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
+[2026-11-16 10:23:50,858] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1794840275, 'iat': 1794797075, 'sub': '1', 'role': 'admin'}
+[2026-11-16 10:23:50,859] INFO in security (Line 53): token_required check - Authorization Header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ4NDAyNzUsImlhdCI6MTc5NDc5NzA3NSwic3ViIjoiMSIsInJvbGUiOiJhZG1pbiJ9.--G5CKkO1RATCBIlzIIgXXrIK5XnslYKB4C-ptEeeeg
+[2026-11-16 10:23:50,862] INFO in security (Line 33): decode_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
+[2026-11-16 10:23:50,866] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1794840275, 'iat': 1794797075, 'sub': '1', 'role': 'admin'}
+[2026-11-16 10:23:54,403] INFO in security (Line 53): token_required check - Authorization Header: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTQ4NDgwMjgsImlhdCI6MTc5NDgwNDgyOCwic3ViIjoiMTAiLCJyb2xlIjoic3R1ZGVudCJ9.yvIudNS8_eekX92psBSSpFiQpUfEANw2HPO3QQRz8bc
+[2026-11-16 10:23:54,403] INFO in security (Line 33): decode_token call - SECRET_KEY is: 'super-secret-dev-key-change-in-production'
+[2026-11-16 10:23:54,404] INFO in security (Line 72): token_required check - Decoded token payload: {'exp': 1794848028, 'iat': 1794804828, 'sub': '10', 'role': 'student'}
