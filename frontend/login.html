@@ -429,6 +429,7 @@
                                     <option value="Aptitude">Aptitude</option>
                                     <option value="Python">Python</option>
                                     <option value="Java">Java</option>
+                                    <option value="AI/ML">AI/ML</option>
                                 </select>
                             </div>
                         </div>
@@ -633,7 +634,62 @@
             }
 
             if (!course) {
-                alert("Please select your enrolled course (Drive, Python, or Java).");
+                alert("Please select your enrolled course (Aptitude, Python, Java, or AI/ML).");
+                return;
+            }
+
+            // Strong Password Policy Validation
+            if (password.startsWith(" ") || password.endsWith(" ")) {
+                alert("Password cannot contain leading or trailing spaces.");
+                return;
+            }
+
+            if (password.length < 8) {
+                alert("Password must be at least 8 characters long.");
+                return;
+            }
+
+            if (password.length > 64) {
+                alert("Password cannot exceed 64 characters.");
+                return;
+            }
+
+            if (!/[A-Z]/.test(password)) {
+                alert("Password must include at least one uppercase letter (A-Z).");
+                return;
+            }
+
+            if (!/[a-z]/.test(password)) {
+                alert("Password must include at least one lowercase letter (a-z).");
+                return;
+            }
+
+            if (!/[0-9]/.test(password)) {
+                alert("Password must include at least one digit (0-9).");
+                return;
+            }
+
+            const specialCharRegex = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/;
+            if (!specialCharRegex.test(password)) {
+                alert("Password must include at least one special character (!@#$%^&*...).");
+                return;
+            }
+
+            const commonWeakPasswords = [
+                "password123!", "password1234!", "admin123456!", "welcome1234!",
+                "qwerty12345!", "student1234!", "p@ssword123!", "p@ssw0rd123!",
+                "p@$$w0rd123!", "password@123", "password#123", "changeme123!",
+                "secureexam123!", "testing1234!", "summer2026!", "winter2026!",
+                "spring2026!", "autumn2026!", "welcome@1234", "admin@123456",
+                "administrator1!", "password2026!", "exampass1234!", "letmein12345!",
+                "sunshine1234!", "football1234!", "baseball1234!", "princess1234!",
+                "dragon123456!", "master123456!", "monkey123456!", "123456789012!",
+                "aa1234567890!", "abcdef123456!", "iloveyou1234!", "trustno1123!",
+                "qwertzuiop1!", "zaq12wsx3edc!", "1qaz2wsx3edc!",
+                "pass@123", "admin@123", "admin!123", "welcome@1", "p@ssword1", "testing@123"
+            ];
+            if (commonWeakPasswords.includes(password.toLowerCase().trim())) {
+                alert("Password is too common or easily guessed. Please choose a stronger password.");
                 return;
             }
 

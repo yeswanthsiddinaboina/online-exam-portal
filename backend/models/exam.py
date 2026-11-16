@@ -57,6 +57,10 @@ class Exam(db.Model):
         if ec == "java":
             return sc == "java"
 
+        # AI/ML exams are only for AI/ML students
+        if ec in ["ai/ml", "aiml"]:
+            return sc in ["ai/ml", "aiml"]
+
         return sc == ec
 
     def to_dict(self, include_config=True):

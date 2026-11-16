@@ -48,7 +48,22 @@ def register():
         }), 409
 
     raw_course = data.get("course")
-    course = raw_course.strip() if isinstance(raw_course, str) and raw_course.strip() in ["Python", "Java", "Aptitude", "Drive"] else None
+    if isinstance(raw_course, str):
+        c_clean = raw_course.strip()
+        if c_clean.lower() in ["ai/ml", "aiml"]:
+            course = "AI/ML"
+        elif c_clean.lower() == "drive":
+            course = "Drive"
+        elif c_clean.lower() == "aptitude":
+            course = "Aptitude"
+        elif c_clean.lower() == "java":
+            course = "Java"
+        elif c_clean.lower() == "python":
+            course = "Python"
+        else:
+            course = None
+    else:
+        course = None
     if role == "student" and not course:
         course = "Python"
 
@@ -116,8 +131,21 @@ def register_student():
     password = data.get("password")
     
     raw_course = data.get("course", "Python")
-    course = raw_course.strip() if isinstance(raw_course, str) else "Python"
-    if course not in ["Python", "Java", "Aptitude", "Drive"]:
+    if isinstance(raw_course, str):
+        c_clean = raw_course.strip()
+        if c_clean.lower() in ["ai/ml", "aiml"]:
+            course = "AI/ML"
+        elif c_clean.lower() == "drive":
+            course = "Drive"
+        elif c_clean.lower() == "aptitude":
+            course = "Aptitude"
+        elif c_clean.lower() == "java":
+            course = "Java"
+        elif c_clean.lower() == "python":
+            course = "Python"
+        else:
+            course = "Python"
+    else:
         course = "Python"
 
     raw_phone = data.get("phone") or data.get("phone_number")

@@ -485,6 +485,7 @@
                     <option value="Aptitude">📚 Aptitude</option>
                     <option value="Python">🐍 Python</option>
                     <option value="Java">☕ Java</option>
+                    <option value="AI/ML">🤖 AI/ML</option>
                 </select>
             </div>
 
@@ -798,6 +799,8 @@
                 selectEl.value = "Aptitude";
             } else if (currentCourse === "java") {
                 selectEl.value = "Java";
+            } else if (currentCourse === "ai/ml" || currentCourse === "aiml") {
+                selectEl.value = "AI/ML";
             } else {
                 selectEl.value = "Python";
             }

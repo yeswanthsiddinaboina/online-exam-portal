@@ -687,6 +687,73 @@ class SecureExamSystemTests(unittest.TestCase):
         self.assertEqual(user.course, "Aptitude")
         self.assertEqual(user.phone, "9123456780")
 
+    def test_student_aiml_course_registration_and_access_isolation(self):
+        """Tests that students can register for AI/ML course, admin can update to/from AI/ML, and exams are isolated."""
+        # 1. Register student with AI/ML course
+        reg_res = self.client.post("/api/auth/register-student", json={
+            "first_name": "AIML Candidate",
+            "email": "aiml_candidate@test.com",
+            "phone": "9876543210",
+            "course": "AI/ML",
+            "password": "Password123"
+        })
+        self.assertEqual(reg_res.status_code, 201)
+        user = User.query.filter_by(email="aiml_candidate@test.com").first()
+        self.assertIsNotNone(user)
+        self.assertEqual(user.course, "AI/ML")
+        self.assertEqual(user.phone, "9876543210")
+        user.registration_status = "APPROVED"
+        db.session.commit()
+
+        # 2. Admin login to create an AI/ML exam
+        admin_login = self.client.post("/api/auth/login", json={
+            "email": "admin@test.com",
+            "password": "AdminPass123!"
+        })
+        admin_token = admin_login.json["token"]
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+
+        res_exam = self.client.post("/api/exams", json={
+            "title": "Machine Learning Foundations",
+            "course": "AI/ML",
+            "duration_minutes": 60
+        }, headers=admin_headers)
+        self.assertEqual(res_exam.status_code, 201)
+        aiml_exam_id = res_exam.json["exam"]["id"]
+
+        # 3. AI/ML student login and fetch exams
+        aiml_login = self.client.post("/api/auth/login", json={
+            "email": "aiml_candidate@test.com",
+            "password": "Password123"
+        })
+        aiml_token = aiml_login.json["token"]
+        aiml_headers = {"Authorization": f"Bearer {aiml_token}"}
+
+        exams_res = self.client.get("/api/exams", headers=aiml_headers)
+        self.assertEqual(exams_res.status_code, 200)
+        accessible_ids = [e["id"] for e in exams_res.json["exams"]]
+        self.assertIn(aiml_exam_id, accessible_ids)
+
+        # 4. Admin updates student's course to Python
+        update_res = self.client.put(
+            f"/api/admin/registrations/{user.id}/course",
+            json={"course": "Python"},
+            headers=admin_headers
+        )
+        self.assertEqual(update_res.status_code, 200)
+        reloaded = User.query.get(user.id)
+        self.assertEqual(reloaded.course, "Python")
+
+        # 5. Admin updates student's course back to AI/ML
+        update_res2 = self.client.put(
+            f"/api/admin/registrations/{user.id}/course",
+            json={"course": "AI/ML"},
+            headers=admin_headers
+        )
+        self.assertEqual(update_res2.status_code, 200)
+        reloaded2 = User.query.get(user.id)
+        self.assertEqual(reloaded2.course, "AI/ML")
+
     def test_presentation_download_endpoints(self):
         """Tests that the presentation download endpoints (PDF, PPTX, HTML) stream files successfully."""
         # 1. Download Presentation PDF

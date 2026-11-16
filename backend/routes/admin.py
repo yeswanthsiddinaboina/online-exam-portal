@@ -1212,9 +1212,11 @@ def update_student_course(student_id):
         }), 400
 
     new_course = new_course.strip()
-    valid_courses = ["Aptitude", "Python", "Java"]
+    valid_courses = ["Aptitude", "Python", "Java", "AI/ML"]
     course_map = {c.lower(): c for c in valid_courses}
     course_map["drive"] = "Aptitude"
+    course_map["ai/ml"] = "AI/ML"
+    course_map["aiml"] = "AI/ML"
 
     normalized_course = course_map.get(new_course.lower())
     if not normalized_course:

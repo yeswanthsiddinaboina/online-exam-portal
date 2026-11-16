@@ -39,6 +39,12 @@ def get_all_exams():
                 Exam.is_deleted == False,
                 db.or_(Exam.course == "Java", Exam.course == "Python & Java", Exam.course == "All Courses", Exam.course == None)
             ).all()
+        elif sc_lower in ["ai/ml", "aiml"]:
+            exams = Exam.query.filter(
+                Exam.is_active == True,
+                Exam.is_deleted == False,
+                db.or_(Exam.course == "AI/ML", Exam.course == "All Courses", Exam.course == None)
+            ).all()
         else:
             # Fallback for legacy students without course set
             exams = Exam.query.filter_by(is_active=True, is_deleted=False).all()
@@ -164,7 +170,9 @@ def create_exam():
     course = raw_course.strip() if isinstance(raw_course, str) else "Python & Java"
     if course.lower() == "drive":
         course = "Aptitude"
-    if course not in ["Aptitude", "Python", "Java", "Python & Java", "All Courses"]:
+    elif course.lower() in ["ai/ml", "aiml"]:
+        course = "AI/ML"
+    if course not in ["Aptitude", "Python", "Java", "AI/ML", "Python & Java", "All Courses"]:
         course = "Python & Java"
 
     if not title:
@@ -262,7 +270,9 @@ def update_exam(exam_id):
             up_course = data["course"].strip() if isinstance(data["course"], str) else "Python & Java"
             if up_course.lower() == "drive":
                 up_course = "Aptitude"
-            if up_course in ["Aptitude", "Python", "Java", "Python & Java", "All Courses"]:
+            elif up_course.lower() in ["ai/ml", "aiml"]:
+                up_course = "AI/ML"
+            if up_course in ["Aptitude", "Python", "Java", "AI/ML", "Python & Java", "All Courses"]:
                 exam.course = up_course
 
         # Update security configs if specified

@@ -25,10 +25,13 @@ if not logger.handlers:
     logger.addHandler(console_handler)
     
     # File Handler
-    file_handler = logging.FileHandler(logs_dir / "system.log", encoding="utf-8")
-    file_handler.setLevel(logging.INFO)
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
+    try:
+        file_handler = logging.FileHandler(logs_dir / "system.log", encoding="utf-8")
+        file_handler.setLevel(logging.INFO)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+    except Exception:
+        pass
 
 def get_logger():
     return logger
